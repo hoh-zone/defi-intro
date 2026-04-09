@@ -1,6 +1,6 @@
 [book]
 authors = ["uvd"]
-language = "en"
-multilingual = false
+description = "面向开发者的 Sui DeFi 技术书：理解机制·编写代码·识别风险·构建可信赖协议"
+language = "zh-CN"
 src = "src"
-title = "defi intro"
+title = "Sui DeFi：从入门到警惕"
