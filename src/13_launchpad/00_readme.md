@@ -1,4 +1,4 @@
-# 第 10 章 Launchpad 与代币发行
+# 第 13 章 Launchpad 与代币发行
 
 ## Launchpad 不只是一个付款页面
 
