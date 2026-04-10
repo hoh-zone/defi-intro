@@ -140,7 +140,7 @@ module stableswap {
         let n = 2u128;
         let amp_n = (amp as u128) * n;
         let d_u128 = d as u128;
-        let c = d_u128 * d_u128 / (x as u128);
+        let mut c = d_u128 * d_u128 / (x as u128);
         c = c * d_u128 / (amp_n * n * n);
         let b = x as u128 + d_u128 / amp_n;
         let mut y = d_u128;
@@ -154,7 +154,7 @@ module stableswap {
         y as u64
     }
 
-    public fun get_amount_out(
+    public fun get_amount_out<A, B>(
         pool: &Pool<A, B>,
         amount_in: u64,
         zero_for_one: bool,

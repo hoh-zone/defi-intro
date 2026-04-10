@@ -67,6 +67,8 @@ module uniswap_v3 {
 
     struct Pool<phantom A, phantom B> has key {
         id: UID,
+        coin_a: Balance<A>,
+        coin_b: Balance<B>,
         sqrt_price: u128,
         current_tick: u64,
         tick_spacing: u64,
@@ -120,6 +122,8 @@ module uniswap_v3 {
         };
         Pool<A, B> {
             id: object::new(ctx),
+            coin_a: coin::into_balance(initial_a),
+            coin_b: coin::into_balance(initial_b),
             sqrt_price: initial_sqrt_price,
             current_tick: sqrt_price_to_tick(initial_sqrt_price),
             tick_spacing,
@@ -135,8 +139,8 @@ module uniswap_v3 {
         pool: &mut Pool<A, B>,
         tick_lower: u64,
         tick_upper: u64,
-        amount_a_desired: u64,
-        amount_b_desired: u64,
+        coin_input_a: Coin<A>,
+        coin_input_b: Coin<B>,
         amount_a_min: u64,
         amount_b_min: u64,
         ctx: &mut TxContext,
@@ -145,6 +149,9 @@ module uniswap_v3 {
         assert!(tick_lower < tick_upper, EInvalidTick);
         assert!(tick_lower % pool.tick_spacing == 0, EInvalidTick);
         assert!(tick_upper % pool.tick_spacing == 0, EInvalidTick);
+
+        let amount_a_desired = coin::value(&coin_input_a);
+        let amount_b_desired = coin::value(&coin_input_b);
 
         let (amount_a, amount_b, liquidity) = calculate_position_amounts(
             pool.sqrt_price,
@@ -181,6 +188,9 @@ module uniswap_v3 {
         let refund_b = if (amount_b_desired > amount_b) {
             coin::split(&mut coin_input_b, amount_b_desired - amount_b, ctx)
         } else { coin::zero(ctx) };
+
+        balance::join(&mut pool.coin_a, coin::into_balance(coin_input_a));
+        balance::join(&mut pool.coin_b, coin::into_balance(coin_input_b));
 
         (position, refund_a, refund_b)
     }

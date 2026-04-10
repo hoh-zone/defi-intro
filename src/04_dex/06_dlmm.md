@@ -43,6 +43,8 @@ module dlmm {
 
     struct Pool<phantom A, phantom B> has key {
         id: UID,
+        coin_a: Balance<A>,
+        coin_b: Balance<B>,
         active_bin: u64,
         bin_step: u64,
         base_fee_bps: u64,
@@ -153,7 +155,21 @@ module dlmm {
     }
 
     fun get_or_create_bin(pool: &mut Pool<A, B>, bin_id: u64): &mut Bin {
-        // 查找或创建 bin
+        let bin = get_bin_mut(pool, bin_id);
+        if (option::is_some(&bin)) {
+            option::extract(&mut bin)
+        } else {
+            let price = get_price_for_bin(pool.bin_step, bin_id);
+            let new_bin = Bin {
+                bin_id,
+                price,
+                reserve_a: 0,
+                reserve_b: 0,
+                total_supply: 0,
+            };
+            add_bin_to_pool(pool, new_bin);
+            get_bin_mut(pool, bin_id)
+        }
     }
 }
 ```

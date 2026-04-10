@@ -1,4 +1,4 @@
-# 12.3 部署、升级与紧急暂停
+# 18.3 部署、升级与紧急暂停
 
 ## 部署是一个过程
 
@@ -89,12 +89,16 @@ module protocol::pause {
 
     public fun is_paused(state: &PauseState, action: u8): bool {
         if (state.all_paused) { return true };
-        match (action) {
-            0 => state.deposits_paused,
-            1 => state.withdrawals_paused,
-            2 => state.borrows_paused,
-            3 => state.liquidations_paused,
-            _ => false,
+        if (action == 0) {
+            state.deposits_paused
+        } else if (action == 1) {
+            state.withdrawals_paused
+        } else if (action == 2) {
+            state.borrows_paused
+        } else if (action == 3) {
+            state.liquidations_paused
+        } else {
+            false
         }
     }
 }

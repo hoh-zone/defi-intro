@@ -15,7 +15,7 @@ LP 激励：
 
 veCETUS 锁仓：
   - 锁仓 CETUS 获得 veCETUS
-  - veCETUH 用于 gauge 投票决定各池奖励权重
+  - veCETUS 用于 gauge 投票决定各池奖励权重
   - 锁仓者获得交易手续费的分成
 ```
 
