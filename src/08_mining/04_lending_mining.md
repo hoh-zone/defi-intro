@@ -35,9 +35,9 @@ module liquidity_mining::lending_mining {
     use sui::table::{Self, Table};
     use sui::math;
 
-    const E_UNAUTHORIZED: u64 = 0;
-    const E_ZERO_AMOUNT: u64 = 1;
-    const E_NOT_FOUND: u64 = 2;
+    const EUnauthorized: u64 = 0;
+    const EZeroAmount: u64 = 1;
+    const ENotFound: u64 = 2;
     const PRECISION: u64 = 1_000_000_000;
 
     public struct LendingMiningMaster<phantom RewardCoin> has key {
@@ -92,7 +92,7 @@ module liquidity_mining::lending_mining {
             last_update_ms: clock.timestamp_ms(),
             markets: table::new(ctx),
             reward_balance: reward,
-            admin: tx_context::sender(ctx),
+            admin: ctx.sender(),
         };
         transfer::share_object(master);
     }
@@ -104,7 +104,7 @@ module liquidity_mining::lending_mining {
         borrow_weight: u64,
         ctx: &mut TxContext,
     ) {
-        assert!(tx_context::sender(ctx) == master.admin, E_UNAUTHORIZED);
+        assert!(ctx.sender() == master.admin, EUnauthorized);
         let market = MarketInfo {
             supply_stake: 0,
             borrow_stake: 0,
@@ -165,9 +165,9 @@ module liquidity_mining::lending_mining {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
-        assert!(amount > 0, E_ZERO_AMOUNT);
+        assert!(amount > 0, EZeroAmount);
         update_market(master, market_id, clock);
-        let user = tx_context::sender(ctx);
+        let user = ctx.sender();
         let market = table::borrow_mut(&mut master.markets, market_id);
         if (bag::contains(&market.supply_positions, user)) {
             let pos = bag::borrow_mut<SupplyPosition>(&mut market.supply_positions, user);
@@ -194,11 +194,11 @@ module liquidity_mining::lending_mining {
         ctx: &mut TxContext,
     ) {
         update_market(master, market_id, clock);
-        let user = tx_context::sender(ctx);
+        let user = ctx.sender();
         let market = table::borrow_mut(&mut master.markets, market_id);
-        assert!(bag::contains(&market.supply_positions, user), E_NOT_FOUND);
+        assert!(bag::contains(&market.supply_positions, user), ENotFound);
         let pos = bag::borrow_mut<SupplyPosition>(&mut market.supply_positions, user);
-        assert!(pos.amount >= amount, E_ZERO_AMOUNT);
+        assert!(pos.amount >= amount, EZeroAmount);
         pos.amount = pos.amount - amount;
         pos.reward_debt = pos.amount * market.supply_acc_per_share / PRECISION;
         market.supply_stake = market.supply_stake - amount;
@@ -211,9 +211,9 @@ module liquidity_mining::lending_mining {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
-        assert!(amount > 0, E_ZERO_AMOUNT);
+        assert!(amount > 0, EZeroAmount);
         update_market(master, market_id, clock);
-        let user = tx_context::sender(ctx);
+        let user = ctx.sender();
         let market = table::borrow_mut(&mut master.markets, market_id);
         if (bag::contains(&market.borrow_positions, user)) {
             let pos = bag::borrow_mut<BorrowPosition>(&mut market.borrow_positions, user);
@@ -240,11 +240,11 @@ module liquidity_mining::lending_mining {
         ctx: &mut TxContext,
     ) {
         update_market(master, market_id, clock);
-        let user = tx_context::sender(ctx);
+        let user = ctx.sender();
         let market = table::borrow_mut(&mut master.markets, market_id);
-        assert!(bag::contains(&market.borrow_positions, user), E_NOT_FOUND);
+        assert!(bag::contains(&market.borrow_positions, user), ENotFound);
         let pos = bag::borrow_mut<BorrowPosition>(&mut market.borrow_positions, user);
-        assert!(pos.amount >= amount, E_ZERO_AMOUNT);
+        assert!(pos.amount >= amount, EZeroAmount);
         pos.amount = pos.amount - amount;
         pos.reward_debt = pos.amount * market.borrow_acc_per_share / PRECISION;
         market.borrow_stake = market.borrow_stake - amount;
@@ -257,7 +257,7 @@ module liquidity_mining::lending_mining {
         ctx: &mut TxContext,
     ): Coin<RewardCoin> {
         update_market(master, market_id, clock);
-        let user = tx_context::sender(ctx);
+        let user = ctx.sender();
         let market = table::borrow_mut(&mut master.markets, market_id);
         let mut total_pending = 0u64;
         if (bag::contains(&market.supply_positions, user)) {

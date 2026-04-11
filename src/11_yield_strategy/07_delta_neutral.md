@@ -80,10 +80,10 @@ module yield_strategy::delta_neutral {
     use sui::tx_context::TxContext;
     use sui::event;
 
-    const E_NOT_OWNER: u64 = 0;
-    const E_ZERO_AMOUNT: u64 = 1;
-    const E_DELTA_EXCEEDED: u64 = 2;
-    const E_INSUFFICIENT_BALANCE: u64 = 3;
+    const ENotOwner: u64 = 0;
+    const EZeroAmount: u64 = 1;
+    const EDeltaExceeded: u64 = 2;
+    const EInsufficientBalance: u64 = 3;
     const PRECISION: u64 = 1_000_000_000;
 
     public struct DeltaNeutralPosition has key {
@@ -114,12 +114,12 @@ module yield_strategy::delta_neutral {
         target_delta_bps: u64,
         ctx: &mut TxContext,
     ) {
-        assert!(coin::value(&initial_long) > 0, E_ZERO_AMOUNT);
-        assert!(target_delta_bps <= 1000, E_DELTA_EXCEEDED);
-        let long_value = coin::value(&initial_long) * entry_price / PRECISION;
+        assert!(initial_long.value() > 0, EZeroAmount);
+        assert!(target_delta_bps <= 1000, EDeltaExceeded);
+        let long_value = initial_long.value() * entry_price / PRECISION;
         let position = DeltaNeutralPosition {
             id: object::new(ctx),
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
             long_balance: coin::into_balance(initial_long),
             short_amount,
             lp_shares: 0,
@@ -129,14 +129,14 @@ module yield_strategy::delta_neutral {
             total_fees_earned: 0,
             total_funding_paid: 0,
         };
-        transfer::transfer(position, tx_context::sender(ctx));
+        transfer::transfer(position, ctx.sender());
     }
 
     public fun current_delta(
         position: &DeltaNeutralPosition,
         current_price: u64,
     ): u64 {
-        let long_value = balance::value(&position.long_balance) * current_price / PRECISION;
+        let long_value = position.long_balance.value() * current_price / PRECISION;
         let short_value = position.short_amount * current_price / PRECISION;
         if (long_value + short_value == 0) { return 0 };
         if (long_value > short_value) {
@@ -157,7 +157,7 @@ module yield_strategy::delta_neutral {
         position: &DeltaNeutralPosition,
         current_price: u64,
     ): u64 {
-        let long_value = balance::value(&position.long_balance) * current_price / PRECISION;
+        let long_value = position.long_balance.value() * current_price / PRECISION;
         let target_short = long_value * (10000 - position.target_delta_bps) / 10000;
         let current_short_value = position.short_amount * current_price / PRECISION;
         if (target_short > current_short_value) {
@@ -172,10 +172,10 @@ module yield_strategy::delta_neutral {
         current_price: u64,
         ctx: &mut TxContext,
     ) {
-        assert!(tx_context::sender(ctx) == position.owner, E_NOT_OWNER);
+        assert!(ctx.sender() == position.owner, ENotOwner);
         let delta_before = current_delta(position, current_price);
-        assert!(delta_before > position.max_delta_bps, E_DELTA_EXCEEDED);
-        let long_value = balance::value(&position.long_balance) * current_price / PRECISION;
+        assert!(delta_before > position.max_delta_bps, EDeltaExceeded);
+        let long_value = position.long_balance.value() * current_price / PRECISION;
         let target_short = long_value * (10000 - position.target_delta_bps) / 10000;
         let new_short_amount = target_short * PRECISION / current_price;
         let old_short = position.short_amount;
@@ -205,7 +205,7 @@ module yield_strategy::delta_neutral {
     }
 
     public fun net_pnl(position: &DeltaNeutralPosition, current_price: u64): u64 {
-        let long_value = balance::value(&position.long_balance) * current_price / PRECISION;
+        let long_value = position.long_balance.value() * current_price / PRECISION;
         let short_cost = position.short_amount * current_price / PRECISION;
         let unrealized = if (long_value > short_cost) { long_value - short_cost } else { 0 };
         position.total_fees_earned + unrealized - position.total_funding_paid
@@ -215,10 +215,10 @@ module yield_strategy::delta_neutral {
         position: DeltaNeutralPosition<BaseCoin>,
         ctx: &mut TxContext,
     ): Coin<BaseCoin> {
-        assert!(tx_context::sender(ctx) == position.owner, E_NOT_OWNER);
+        assert!(ctx.sender() == position.owner, ENotOwner);
         let base = coin::from_balance(position.long_balance, ctx);
         let DeltaNeutralPosition { id, owner: _, long_balance: _, short_amount: _, lp_shares: _, target_delta_bps: _, max_delta_bps: _, entry_price: _, total_fees_earned: _, total_funding_paid: _ } = position;
-        object::delete(id);
+        id.delete();
         base
     }
 }

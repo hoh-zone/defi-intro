@@ -38,18 +38,18 @@ Sui 支持合约升级。升级策略：
 
 ```move
 module protocol::upgrade {
-    struct PackageCap has key {
+    public struct PackageCap has key {
         id: UID,
         package_id: ID,
     }
 
-    struct UpgradePolicy has store {
+    public struct UpgradePolicy has store {
         max_upgrade_delay_ms: u64,
         required_signatures: u64,
         pending_upgrade: Option<UpgradeProposal>,
     }
 
-    struct UpgradeProposal has store {
+    public struct UpgradeProposal has store {
         new_package_digest: vector<u8>,
         proposed_at: u64,
         signers: vector<address>,
@@ -71,7 +71,7 @@ module protocol::upgrade {
 
 ```move
 module protocol::pause {
-    struct PauseState has store {
+    public struct PauseState has store {
         deposits_paused: bool,
         withdrawals_paused: bool,
         borrows_paused: bool,

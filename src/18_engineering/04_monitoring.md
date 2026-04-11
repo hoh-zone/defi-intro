@@ -14,7 +14,7 @@
 ## 事件驱动监控
 
 ```move
-struct AlertEvent has copy, drop {
+public struct AlertEvent has copy, drop {
     alert_type: u8,
     severity: u8,
     pool_id: ID,

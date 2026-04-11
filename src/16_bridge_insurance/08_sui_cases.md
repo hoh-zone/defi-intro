@@ -131,7 +131,7 @@ module protocol::safety_fund {
     use sui::tx_context::TxContext;
     use sui::clock::Clock;
 
-    const E_UNAUTHORIZED: u64 = 0;
+    const EUnauthorized: u64 = 0;
 
     public struct SafetyFund<phantom CoinType> has key {
         id: UID,
@@ -152,7 +152,7 @@ module protocol::safety_fund {
             fee_rate_bps,
             total_collected: 0,
             total_disbursed: 0,
-            admin: tx_context::sender(ctx),
+            admin: ctx.sender(),
         };
         transfer::share_object(fund);
     }
@@ -172,7 +172,7 @@ module protocol::safety_fund {
         recipient: address,
         ctx: &mut TxContext,
     ) {
-        assert!(tx_context::sender(ctx) == fund.admin, E_UNAUTHORIZED);
+        assert!(ctx.sender() == fund.admin, EUnauthorized);
         assert!(balance::value(&fund.balance) >= amount, 1);
         let coin = coin::take(&mut fund.balance, amount, ctx);
         fund.total_disbursed = fund.total_disbursed + amount;

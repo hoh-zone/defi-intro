@@ -21,7 +21,7 @@ module fixed_rate_dex {
     const EPoolPaused: u64 = 2;
     const EUnauthorized: u64 = 3;
 
-    struct FixedRatePool<phantom A, phantom B> has key {
+    public struct FixedRatePool<phantom A, phantom B> has key {
         id: UID,
         balance_a: Balance<A>,
         balance_b: Balance<B>,
@@ -29,7 +29,7 @@ module fixed_rate_dex {
         paused: bool,
     }
 
-    struct AdminCap has key, store {
+    public struct AdminCap has key, store {
         id: UID,
         pool_id: ID,
     }
@@ -52,7 +52,7 @@ module fixed_rate_dex {
             pool_id: object::id(&pool),
         };
         transfer::share_object(pool);
-        transfer::transfer(cap, tx_context::sender(ctx));
+        transfer::transfer(cap, ctx.sender());
     }
 
     public fun swap_a_to_b<A, B>(

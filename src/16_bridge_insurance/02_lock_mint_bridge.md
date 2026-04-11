@@ -37,11 +37,11 @@ module bridge::lock_mint {
     use sui::table::{Self, Table};
     use sui::vec_set::{Self, VecSet};
 
-    const E_UNAUTHORIZED: u64 = 0;
-    const E_INVALID_PROOF: u64 = 1;
-    const E_ALREADY_PROCESSED: u64 = 2;
-    const E_INSUFFICIENT_LIQUIDITY: u64 = 3;
-    const E_AMOUNT_MISMATCH: u64 = 4;
+    const EUnauthorized: u64 = 0;
+    const EInvalidProof: u64 = 1;
+    const EAlreadyProcessed: u64 = 2;
+    const EInsufficientLiquidity: u64 = 3;
+    const EAmountMismatch: u64 = 4;
 
     public struct BridgeAdmin has key {
         id: UID,
@@ -118,13 +118,13 @@ module bridge::lock_mint {
         clock: &Clock,
     ) {
         let amount = coin::value(&coin);
-        assert!(amount > 0, E_AMOUNT_MISMATCH);
+        assert!(amount > 0, EAmountMismatch);
         balance::join(&mut vault.balance, coin::into_balance(coin));
         vault.total_locked = vault.total_locked + amount;
         event::emit(LockEvent {
             source_chain_id: 0,
             target_chain_id: target_chain,
-            sender: tx_context::sender(),
+            sender: ctx.sender(),
             recipient,
             amount,
             nonce,
@@ -140,7 +140,7 @@ module bridge::lock_mint {
         processed_nonces: &mut Table<u64, bool>,
         ctx: &mut TxContext,
     ) {
-        assert!(!table::contains(processed_nonces, proof.nonce), E_ALREADY_PROCESSED);
+        assert!(!table::contains(processed_nonces, proof.nonce), EAlreadyProcessed);
         verify_proof(admin, &proof);
         table::add(processed_nonces, proof.nonce, true);
         let coins = coin::mint(&mut cap.cap, amount, ctx);
@@ -156,12 +156,12 @@ module bridge::lock_mint {
         nonce: u64,
     ) {
         let amount = coin::value(&coin);
-        assert!(amount > 0, E_AMOUNT_MISMATCH);
+        assert!(amount > 0, EAmountMismatch);
         coin::destroy_zero(coin);
         event::emit(BurnEvent {
             source_chain_id: 0,
             target_chain_id,
-            sender: tx_context::sender(),
+            sender: ctx.sender(),
             recipient,
             amount,
             nonce,
@@ -177,8 +177,8 @@ module bridge::lock_mint {
         processed_nonces: &mut Table<u64, bool>,
         ctx: &mut TxContext,
     ) {
-        assert!(!table::contains(processed_nonces, proof.nonce), E_ALREADY_PROCESSED);
-        assert!(balance::value(&vault.balance) >= amount, E_INSUFFICIENT_LIQUIDITY);
+        assert!(!table::contains(processed_nonces, proof.nonce), EAlreadyProcessed);
+        assert!(balance::value(&vault.balance) >= amount, EInsufficientLiquidity);
         verify_proof(admin, &proof);
         table::add(processed_nonces, proof.nonce, true);
         let coin = coin::take(&mut vault.balance, amount, ctx);
@@ -199,7 +199,7 @@ module bridge::lock_mint {
             };
             i = i + 1;
         };
-        assert!(valid_sigs >= admin.threshold, E_INVALID_PROOF);
+        assert!(valid_sigs >= admin.threshold, EInvalidProof);
     }
 
     public fun add_attester(
@@ -207,7 +207,7 @@ module bridge::lock_mint {
         attester: address,
         ctx: &mut TxContext,
     ) {
-        assert!(tx_context::sender(ctx) == object::uid_to_address(&admin.id), E_UNAUTHORIZED);
+        assert!(ctx.sender() == object::uid_to_address(&admin.id), EUnauthorized);
         admin.attesters.insert(attester);
     }
 
@@ -230,7 +230,7 @@ table::add(processed_nonces, proof.nonce, true);
 ### 多签验证
 
 ```move
-assert!(valid_sigs >= admin.threshold, E_INVALID_PROOF);
+assert!(valid_sigs >= admin.threshold, EInvalidProof);
 ```
 
 需要至少 `threshold` 个 attester 签名才能验证一个跨链消息。threshold 通常设为 attester 数量的 2/3。
@@ -238,7 +238,7 @@ assert!(valid_sigs >= admin.threshold, E_INVALID_PROOF);
 ### 金库余额检查
 
 ```move
-assert!(balance::value(&vault.balance) >= amount, E_INSUFFICIENT_LIQUIDITY);
+assert!(balance::value(&vault.balance) >= amount, EInsufficientLiquidity);
 ```
 
 释放前检查金库是否有足够的资产。如果金库资产不足（例如被攻击），交易会 revert 而不是凭空铸造。

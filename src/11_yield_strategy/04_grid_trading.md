@@ -69,11 +69,11 @@ module yield_strategy::grid_trading {
     use sui::tx_context::TxContext;
     use sui::event;
 
-    const E_NOT_OWNER: u64 = 0;
-    const E_INVALID_PARAMS: u64 = 1;
-    const E_INSUFFICIENT_BALANCE: u64 = 2;
-    const E_PRICE_OUT_OF_RANGE: u64 = 3;
-    const E_GRID_NOT_TRIGGERED: u64 = 4;
+    const ENotOwner: u64 = 0;
+    const EInvalidParams: u64 = 1;
+    const EInsufficientBalance: u64 = 2;
+    const EPriceOutOfRange: u64 = 3;
+    const EGridNotTriggered: u64 = 4;
     const PRECISION: u64 = 1_000_000_000;
 
     public struct GridConfig has store {
@@ -118,9 +118,9 @@ module yield_strategy::grid_trading {
         initial_price: u64,
         ctx: &mut TxContext,
     ) {
-        assert!(upper_price > lower_price, E_INVALID_PARAMS);
-        assert!(grid_count > 1, E_INVALID_PARAMS);
-        assert!(initial_price >= lower_price && initial_price <= upper_price, E_INVALID_PARAMS);
+        assert!(upper_price > lower_price, EInvalidParams);
+        assert!(grid_count > 1, EInvalidParams);
+        assert!(initial_price >= lower_price && initial_price <= upper_price, EInvalidParams);
         let spacing = (upper_price - lower_price) / grid_count;
         let mut active = vector::empty();
         let mut i = 0;
@@ -147,7 +147,7 @@ module yield_strategy::grid_trading {
             base_balance: coin::into_balance(base),
             quote_balance: coin::into_balance(quote),
             last_price: initial_price,
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
         };
         transfer::share_object(bot);
     }
@@ -158,7 +158,7 @@ module yield_strategy::grid_trading {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
-        assert!(tx_context::sender(ctx) == bot.owner, E_NOT_OWNER);
+        assert!(ctx.sender() == bot.owner, ENotOwner);
         let mut i = 0;
         while (i < bot.config.grid_count) {
             let grid_price = bot.config.lower_price + bot.config.grid_spacing * (i + 1);
@@ -237,7 +237,7 @@ module yield_strategy::grid_trading {
         quote_amount: u64,
         ctx: &mut TxContext,
     ): (Coin<BaseCoin>, Coin<QuoteCoin>) {
-        assert!(tx_context::sender(ctx) == bot.owner, E_NOT_OWNER);
+        assert!(ctx.sender() == bot.owner, ENotOwner);
         let base = coin::take(&mut bot.base_balance, base_amount, ctx);
         let quote = coin::take(&mut bot.quote_balance, quote_amount, ctx);
         (base, quote)

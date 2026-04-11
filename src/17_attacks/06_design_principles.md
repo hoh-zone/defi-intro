@@ -42,7 +42,7 @@
 public fun deposit(pool: &mut Pool, amount: u64, ctx: &mut TxContext) {
     sui::event::emit(DepositEvent {
         pool_id: object::id(pool),
-        depositor: tx_context::sender(ctx),
+        depositor: ctx.sender(),
         amount,
         timestamp: sui::clock::timestamp_ms(sui::clock::create_for_testing()),
     });

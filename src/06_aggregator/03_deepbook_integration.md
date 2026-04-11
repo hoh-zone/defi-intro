@@ -12,7 +12,7 @@ module deepbook {
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
-    struct OrderBook<phantom Base, phantom Quote> has key {
+    public struct OrderBook<phantom Base, phantom Quote> has key {
         id: UID,
         base_currency: Balance<Base>,
         quote_currency: Balance<Quote>,
@@ -21,7 +21,7 @@ module deepbook {
         maker_fee_bps: u64,
     }
 
-    struct Order<phantom Base, phantom Quote> has key, store {
+    public struct Order<phantom Base, phantom Quote> has key, store {
         id: UID,
         book_id: ID,
         owner: address,
@@ -33,7 +33,7 @@ module deepbook {
         timestamp: u64,
     }
 
-    struct Level2 has store {
+    public struct Level2 has store {
         price: u64,
         quantity: u64,
         order_count: u64,
@@ -56,7 +56,7 @@ module deepbook {
         let order = Order<Base, Quote> {
             id: object::new(ctx),
             book_id: object::id(book),
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
             is_bid,
             price,
             original_quantity: quantity,
@@ -115,7 +115,7 @@ module deepbook {
         order: Order<Base, Quote>,
         ctx: &mut TxContext,
     ): (Coin<Base>, Coin<Quote>) {
-        assert!(order.owner == tx_context::sender(ctx), 1);
+        assert!(order.owner == ctx.sender(), 1);
         let unfilled = order.original_quantity - order.filled_quantity;
         let (refund_base, refund_quote) = if (order.is_bid) {
             let refund_amount = unfilled * order.price;
@@ -123,7 +123,7 @@ module deepbook {
         } else {
             (coin::take(&mut book.base_currency, unfilled, ctx), coin::zero(ctx))
         };
-        object::delete(order);
+        .delete()(order);
         (refund_base, refund_quote)
     }
 

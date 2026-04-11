@@ -141,3 +141,19 @@
 | 对抗测试 | 第 18 章 18.2 | expected_failure 测试示例 |
 | 紧急暂停 | 第 18 章 18.3 | 细粒度 PauseState |
 | 权限矩阵 | 第 19 章 19.2 | 完整的权限矩阵模板 |
+
+### Move 安全实践
+
+| 示例 | 位置 | 描述 |
+|------|------|------|
+| 类型即权限 | 第 20 章 20.1 | Level1/Level2/Level3 类型化权限 |
+| 角色 Capability | 第 20 章 20.2 | PauseCap/ParamsCap/OracleCap/EmergencyCap |
+| Capability 工厂 | 第 20 章 20.2 | MarketCap/PoolCap 动态创建 |
+| 安全算术库 | 第 20 章 20.3 | safe_mul/safe_mul_div/safe_sub 完整实现 |
+| 收益分配精度安全 | 第 20 章 20.3 | u256 中间精度的 Pool/UserPosition |
+| 资金安全完整示例 | 第 20 章 20.4 | deposit/withdraw 双重检查 + 事件 |
+| 时间锁 | 第 20 章 20.5 | ScheduledOp + 延迟执行 |
+| 密钥轮换 | 第 20 章 20.5 | Committee 成员轮换 + 版本控制 |
+| 细粒度暂停 | 第 20 章 20.7 | PauseState 按操作类型暂停 |
+| 安全检查清单 | 第 20 章 20.8 | 28 项上线前检查清单 |
+| Move Prover 示例 | 第 20 章 20.8 | 存款金额守恒的形式化验证 |

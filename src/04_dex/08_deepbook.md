@@ -16,7 +16,7 @@ AMM（V2/V3/DLMM/StableSwap）共同的特点是：价格由算法决定，不�
 ### 限价单
 
 ```move
-struct Order<phantom A, phantom B> has key, store {
+public struct Order<phantom A, phantom B> has key, store {
     id: UID,
     book_id: ID,
     owner: address,
@@ -69,7 +69,7 @@ module deepbook {
     const EInvalidPrice: u64 = 404;
     const EInvalidQuantity: u64 = 405;
 
-    struct OrderBook<phantom Base, phantom Quote> has key {
+    public struct OrderBook<phantom Base, phantom Quote> has key {
         id: UID,
         base_balance: Balance<Base>,
         quote_balance: Balance<Quote>,
@@ -81,7 +81,7 @@ module deepbook {
         paused: bool,
     }
 
-    struct Order<phantom Base, phantom Quote> has key, store {
+    public struct Order<phantom Base, phantom Quote> has key, store {
         id: UID,
         book_id: ID,
         owner: address,
@@ -93,13 +93,13 @@ module deepbook {
         timestamp: u64,
     }
 
-    struct Level has store {
+    public struct Level has store {
         price: u64,
         total_quantity: u64,
         order_count: u64,
     }
 
-    struct FillEvent has copy, drop {
+    public struct FillEvent has copy, drop {
         order_id: u64,
         maker: address,
         taker: address,
@@ -150,7 +150,7 @@ module deepbook {
         let order = Order<Base, Quote> {
             id: object::new(ctx),
             book_id: object::id(book),
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
             is_bid: true,
             price,
             original_quantity: quantity,
@@ -178,7 +178,7 @@ module deepbook {
         let order = Order<Base, Quote> {
             id: object::new(ctx),
             book_id: object::id(book),
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
             is_bid: false,
             price,
             original_quantity: quantity,
@@ -235,7 +235,7 @@ module deepbook {
         order: Order<Base, Quote>,
         ctx: &mut TxContext,
     ): (Coin<Base>, Coin<Quote>) {
-        assert!(order.owner == tx_context::sender(ctx), ENotOwner);
+        assert!(order.owner == ctx.sender(), ENotOwner);
         let unfilled = order.original_quantity - order.filled_quantity;
         let (refund_base, refund_quote) = if (order.is_bid) {
             let refund = ((unfilled as u128) * (order.price as u128) / 1000000) as u64;
@@ -243,7 +243,7 @@ module deepbook {
         } else {
             (coin::take(&mut book.base_balance, unfilled, ctx), coin::zero(ctx))
         };
-        object::delete(order);
+        .delete()(order);
         (refund_base, refund_quote)
     }
 

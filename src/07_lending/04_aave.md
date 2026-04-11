@@ -58,7 +58,7 @@ V2 引入了更精细的清算机制：
 - 账户健康因子实时计算
 
 ```move
-struct AaveV2Account has store {
+public struct AaveV2Account has store {
     total_collateral_value: u128,
     total_debt_value: u128,
     health_factor: u64,

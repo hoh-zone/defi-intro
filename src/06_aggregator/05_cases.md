@@ -16,7 +16,7 @@ Cetus 不仅是一个 DEX，它还内置了跨池路由功能。当用户在 Cet
 module cetus_router {
     use sui::coin::{Self, Coin};
 
-    struct SwapRoute has store {
+    public struct SwapRoute has store {
         pools: vector<ID>,
         input_types: vector<u8>,
         output_types: vector<u8>,

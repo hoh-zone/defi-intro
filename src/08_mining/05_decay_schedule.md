@@ -194,8 +194,8 @@ module liquidity_mining::emission_scheduler {
     use sui::tx_context::TxContext;
     use liquidity_mining::epoch_decay::{Self, EpochDecay};
 
-    const E_UNAUTHORIZED: u64 = 0;
-    const E_INSUFFICIENT_BALANCE: u64 = 1;
+    const EUnauthorized: u64 = 0;
+    const EInsufficientBalance: u64 = 1;
 
     public struct EmissionController<phantom RewardCoin> has key {
         id: UID,
@@ -219,7 +219,7 @@ module liquidity_mining::emission_scheduler {
             decay: epoch_decay::new(rates, epoch_ms, clock.timestamp_ms()),
             last_collection_ms: clock.timestamp_ms(),
             uncollected_reward: 0,
-            admin: tx_context::sender(ctx),
+            admin: ctx.sender(),
         };
         transfer::share_object(controller);
     }
@@ -243,8 +243,8 @@ module liquidity_mining::emission_scheduler {
         amount: u64,
         ctx: &mut TxContext,
     ): Coin<RewardCoin> {
-        assert!(tx_context::sender(ctx) == controller.admin, E_UNAUTHORIZED);
-        assert!(controller.uncollected_reward >= amount, E_INSUFFICIENT_BALANCE);
+        assert!(ctx.sender() == controller.admin, EUnauthorized);
+        assert!(controller.uncollected_reward >= amount, EInsufficientBalance);
         controller.uncollected_reward = controller.uncollected_reward - amount;
         coin::take(&mut controller.treasury, amount, ctx)
     }

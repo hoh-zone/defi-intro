@@ -35,14 +35,14 @@ module flash_loan {
     const EUnauthorized: u64 = 202;
     const EPoolPaused: u64 = 203;
 
-    struct FlashLoanPool<phantom T> has key {
+    public struct FlashLoanPool<phantom T> has key {
         id: UID,
         treasury: Balance<T>,
         fee_bps: u64,
         paused: bool,
     }
 
-    struct FlashLoanCap has key, store {
+    public struct FlashLoanCap has key, store {
         id: UID,
         pool_id: ID,
     }
@@ -59,7 +59,7 @@ module flash_loan {
             pool_id: object::id(&pool),
         };
         transfer::share_object(pool);
-        transfer::transfer(cap, tx_context::sender(ctx));
+        transfer::transfer(cap, ctx.sender());
     }
 
     public fun fund_pool<T>(
@@ -139,7 +139,7 @@ module arbitrage_bot {
         let (repayment, profit) = split_coin(final_coin, total_due, ctx);
 
         flash_loan::repay(flash_pool, repayment, total_due);
-        transfer::transfer(profit, tx_context::sender(ctx));
+        transfer::transfer(profit, ctx.sender());
     }
 
     fun split_coin<T>(
@@ -190,7 +190,7 @@ module liquidation_bot {
 
         let (repayment, bonus) = coin::split(seized_collateral, total_due, ctx);
         flash_loan::repay(flash_pool, repayment, total_due);
-        transfer::transfer(bonus, tx_context::sender(ctx));
+        transfer::transfer(bonus, ctx.sender());
     }
 }
 ```

@@ -28,7 +28,7 @@ module deepbook_leverage_mm {
     const EInsufficientSpread: u64 = 900;
     const EHealthFactorTooLow: u64 = 901;
 
-    struct LeverageMMPosition has key, store {
+    public struct LeverageMMPosition has key, store {
         id: UID,
         owner: address,
         market_id: ID,
@@ -54,7 +54,7 @@ module deepbook_leverage_mm {
         ask_quantity: u64,
         ctx: &mut TxContext,
     ): (LeverageMMPosition, vector<Order<Base, Quote>>) {
-        let collateral_amount = coin::value(&collateral);
+        let collateral_amount = collateral.value();
         let deposit = lending::supply(lending_market, collateral, ctx);
         lending::enable_collateral(&mut deposit);
 
@@ -89,7 +89,7 @@ module deepbook_leverage_mm {
 
         let position = LeverageMMPosition {
             id: object::new(ctx),
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
             market_id: object::id(lending_market),
             book_id: object::id(order_book),
             collateral_amount,
@@ -113,7 +113,7 @@ module deepbook_leverage_mm {
         ctx: &mut TxContext,
     ) {
         let mut i = 0;
-        while (i < vector::length(&bid_orders)) {
+        while (i < bid_orders.length()) {
             let order = vector::borrow_mut(&mut bid_orders, i);
             let (_, refund) = deepbook::cancel_order(order_book, order, ctx);
             lending::repay_quote(lending_market, refund, ctx);
@@ -121,14 +121,14 @@ module deepbook_leverage_mm {
         };
 
         let mut j = 0;
-        while (j < vector::length(&ask_orders)) {
+        while (j < ask_orders.length()) {
             let order = vector::borrow_mut(&mut ask_orders, j);
             let (refund_base, _) = deepbook::cancel_order(order_book, order, ctx);
             lending::repay_base(lending_market, refund_base, ctx);
             j = j + 1;
         };
 
-        object::delete(position);
+        position.delete();
     }
 }
 ```

@@ -37,11 +37,11 @@ module liquidity_mining::boost_mining {
     use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
 
-    const E_ZERO_AMOUNT: u64 = 0;
-    const E_UNAUTHORIZED: u64 = 1;
-    const E_NOT_FOUND: u64 = 2;
-    const E_LOCK_TOO_SHORT: u64 = 3;
-    const E_ALREADY_LOCKED: u64 = 4;
+    const EZeroAmount: u64 = 0;
+    const EUnauthorized: u64 = 1;
+    const ENotFound: u64 = 2;
+    const ELockTooShort: u64 = 3;
+    const EAlreadyLocked: u64 = 4;
     const PRECISION: u64 = 1_000_000_000;
     const BASE_RATIO: u64 = 400_000_000;
     const BOOST_RATIO: u64 = 600_000_000;
@@ -90,7 +90,7 @@ module liquidity_mining::boost_mining {
             reward_balance: initial_reward,
             positions: bag::new(ctx),
             locks: bag::new(ctx),
-            admin: tx_context::sender(ctx),
+            admin: ctx.sender(),
         };
         transfer::share_object(pool);
     }
@@ -102,8 +102,8 @@ module liquidity_mining::boost_mining {
         user: address,
         clock: &Clock,
     ) {
-        assert!(duration_ms >= 86_400_000 * 7, E_LOCK_TOO_SHORT);
-        assert!(!bag::contains(&pool.locks, user), E_ALREADY_LOCKED);
+        assert!(duration_ms >= 86_400_000 * 7, ELockTooShort);
+        assert!(!bag::contains(&pool.locks, user), EAlreadyLocked);
         let max_duration_ms: u64 = 86_400_000 * 365 * 4;
         let normalized_duration = if (duration_ms > max_duration_ms) { max_duration_ms } else { duration_ms };
         let slope = amount * PRECISION / max_duration_ms;
@@ -160,9 +160,9 @@ module liquidity_mining::boost_mining {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
-        assert!(amount > 0, E_ZERO_AMOUNT);
+        assert!(amount > 0, EZeroAmount);
         update_pool(pool, clock);
-        let user = tx_context::sender(ctx);
+        let user = ctx.sender();
         if (bag::contains(&pool.positions, user)) {
             let pos = bag::borrow_mut<Position>(&mut pool.positions, user);
             pos.base_reward_debt = (pos.stake_amount + amount) * pool.acc_base_per_share / PRECISION;
@@ -217,9 +217,9 @@ module liquidity_mining::gauge_voting {
     use sui::tx_context::TxContext;
     use sui::table::{Self, Table};
 
-    const E_ZERO_VOTE: u64 = 0;
-    const E_NO_POWER: u64 = 1;
-    const E_UNAUTHORIZED: u64 = 2;
+    const EZeroVote: u64 = 0;
+    const ENoPower: u64 = 1;
+    const EUnauthorized: u64 = 2;
 
     public struct VoteEscrow has key {
         id: UID,
@@ -251,7 +251,7 @@ module liquidity_mining::gauge_voting {
         weight: u64,
         ctx: &mut TxContext,
     ) {
-        let voter = tx_context::sender(ctx);
+        let voter = ctx.sender();
         assert!(bag::contains(&ve.voter_power, voter), E_NO_VOTE);
         let power = bag::borrow_mut<VoterPower>(&mut ve.voter_power, voter);
 

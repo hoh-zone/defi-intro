@@ -41,10 +41,10 @@ module liquidity_mining::accumulator {
     use sui::bag::{Self, Bag};
     use sui::object::{Self, UID};
 
-    const E_INSUFFICIENT_STAKE: u64 = 0;
-    const E_ZERO_STAKE: u64 = 1;
-    const E_POOL_NOT_STARTED: u64 = 2;
-    const E_NOT_STAKER: u64 = 3;
+    const EInsufficientStake: u64 = 0;
+    const EZeroStake: u64 = 1;
+    const EPoolNotStarted: u64 = 2;
+    const ENotStaker: u64 = 3;
 
     const PRECISION: u64 = 1_000_000_000;
 
@@ -110,7 +110,7 @@ module liquidity_mining::accumulator {
     ) {
         update_reward<StakeCoin, RewardCoin>(pool, clock);
         let amount = coin::value(&coin);
-        assert!(amount > 0, E_ZERO_STAKE);
+        assert!(amount > 0, EZeroStake);
 
         if (bag::contains(&pool.stakes, user)) {
             let user_stake = bag::borrow_mut<UserStake>(&mut pool.stakes, user);
@@ -137,9 +137,9 @@ module liquidity_mining::accumulator {
         ctx: &mut TxContext,
     ): Coin<StakeCoin> {
         update_reward<StakeCoin, RewardCoin>(pool, clock);
-        assert!(bag::contains(&pool.stakes, user), E_NOT_STAKER);
+        assert!(bag::contains(&pool.stakes, user), ENotStaker);
         let user_stake = bag::borrow_mut<UserStake>(&mut pool.stakes, user);
-        assert!(user_stake.amount >= amount, E_INSUFFICIENT_STAKE);
+        assert!(user_stake.amount >= amount, EInsufficientStake);
         user_stake.amount = user_stake.amount - amount;
         user_stake.reward_debt = user_stake.amount * pool.acc_reward_per_share / PRECISION;
 
@@ -154,7 +154,7 @@ module liquidity_mining::accumulator {
         ctx: &mut TxContext,
     ): Coin<RewardCoin> {
         update_reward<StakeCoin, RewardCoin>(pool, clock);
-        assert!(bag::contains(&pool.stakes, user), E_NOT_STAKER);
+        assert!(bag::contains(&pool.stakes, user), ENotStaker);
         let user_stake = bag::borrow_mut<UserStake>(&mut pool.stakes, user);
         let pending = user_stake.amount * pool.acc_reward_per_share / PRECISION - user_stake.reward_debt;
         user_stake.reward_debt = user_stake.amount * pool.acc_reward_per_share / PRECISION;

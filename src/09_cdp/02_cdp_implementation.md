@@ -17,9 +17,9 @@ module cdp {
     const EDebtCeiling: u64 = 304;
     const ESystemPaused: u64 = 305;
 
-    struct STABLE has copy, drop {}
+    public struct STABLE has copy, drop {}
 
-    struct CDPSystem has key {
+    public struct CDPSystem has key {
         id: UID,
         treasury_cap: TreasuryCap<STABLE>,
         collateral_balance: Balance<SUI>,
@@ -32,7 +32,7 @@ module cdp {
         paused: bool,
     }
 
-    struct CDPPosition has key, store {
+    public struct CDPPosition has key, store {
         id: UID,
         system_id: ID,
         owner: address,
@@ -41,7 +41,7 @@ module cdp {
         created_at: u64,
     }
 
-    struct GovernanceCap has key, store {
+    public struct GovernanceCap has key, store {
         id: UID,
         system_id: ID,
     }
@@ -84,7 +84,7 @@ public fun init(
         system_id: object::id(&system),
     };
     transfer::share_object(system);
-    transfer::transfer(gov_cap, tx_context::sender(ctx));
+    transfer::transfer(gov_cap, ctx.sender());
     coin::update_currency_metadata(coin_metadata, ctx);
 }
 ```
@@ -116,12 +116,12 @@ public fun open_position(
     system.total_debt = system.total_debt + mint_amount;
 
     let stable_coin = coin::mint(&mut system.treasury_cap, mint_amount, ctx);
-    transfer::transfer(stable_coin, tx_context::sender(ctx));
+    transfer::transfer(stable_coin, ctx.sender());
 
     CDPPosition {
         id: object::new(ctx),
         system_id: object::id(system),
-        owner: tx_context::sender(ctx),
+        owner: ctx.sender(),
         collateral_amount,
         debt_amount: mint_amount,
         created_at: sui::clock::timestamp_ms(sui::clock::create(ctx)),
@@ -164,7 +164,7 @@ public fun repay_and_close(
         position.collateral_amount,
         ctx,
     );
-    object::delete(position);
+    .delete()(position);
     collateral_return
 }
 ```
@@ -197,7 +197,7 @@ public fun liquidate(
         collateral_to_seize
     };
 
-    object::delete(position);
+    .delete()(position);
     coin::take(&mut system.collateral_balance, seize_amount, ctx)
 }
 ```

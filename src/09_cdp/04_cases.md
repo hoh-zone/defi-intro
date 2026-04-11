@@ -7,7 +7,7 @@
 只接受一种抵押品（如 SUI）。实现简单，风险可控。
 
 ```move
-struct SingleAssetCDP {
+public struct SingleAssetCDP {
     collateral_type: u8, // 只有一种
     system: CDPSystem,
 }
@@ -20,12 +20,12 @@ struct SingleAssetCDP {
 接受多种抵押品（SUI、USDC、ETH 等）。每种资产有独立的风险参数。
 
 ```move
-struct MultiAssetCDP {
+public struct MultiAssetCDP {
     collateral_type: u8,
     asset_params: vector<AssetParams>,
 }
 
-struct AssetParams {
+public struct AssetParams {
     collateral_ratio_bps: u64,
     liquidation_threshold_bps: u64,
     debt_ceiling: u64,
@@ -40,7 +40,7 @@ struct AssetParams {
 用户可以为不同操作创建独立的 CDP 仓位，而不是一个全局仓位。
 
 ```move
-struct CDPPosition has key, store {
+public struct CDPPosition has key, store {
     id: UID,
     owner: address,
     collateral_coin_type: u8,

@@ -37,7 +37,7 @@ graph LR
 价格数据如何存储在链上？
 
 ```move
-struct PriceFeed has key {
+public struct PriceFeed has key {
     id: UID,
     price: u64,
     conf: u64,
@@ -86,7 +86,7 @@ module lending_oracle {
     const EConfidenceTooLow: u64 = 102;
     const EDeviationTooHigh: u64 = 103;
 
-    struct OracleConfig has key {
+    public struct OracleConfig has key {
         id: UID,
         max_age_ms: u64,
         min_price: u64,

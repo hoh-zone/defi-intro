@@ -56,9 +56,9 @@ module yield_strategy::orderbook_mm {
     use sui::tx_context::TxContext;
     use sui::balance::{Self, Balance};
 
-    const E_NOT_OWNER: u64 = 0;
-    const E_INVALID_SPREAD: u64 = 1;
-    const E_INSUFFICIENT_INVENTORY: u64 = 2;
+    const ENotOwner: u64 = 0;
+    const EInvalidSpread: u64 = 1;
+    const EInsufficientInventory: u64 = 2;
     const PRECISION: u64 = 1_000_000_000;
 
     public struct MarketMaker has key {
@@ -82,7 +82,7 @@ module yield_strategy::orderbook_mm {
         order_size: u64,
         ctx: &mut TxContext,
     ) {
-        assert!(spread_bps > 0 && spread_bps < 10000, E_INVALID_SPREAD);
+        assert!(spread_bps > 0 && spread_bps < 10000, EInvalidSpread);
         let mm = MarketMaker {
             id: object::new(ctx),
             base_balance: coin::into_balance(base),
@@ -94,7 +94,7 @@ module yield_strategy::orderbook_mm {
             total_bought: 0,
             total_sold: 0,
             total_fees: 0,
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
         };
         transfer::share_object(mm);
     }
@@ -134,7 +134,7 @@ module yield_strategy::orderbook_mm {
     ): Coin<QuoteCoin> {
         let (bid_price, _) = compute_quotes(mm);
         let cost = amount * bid_price / PRECISION;
-        assert!(balance::value(&mm.quote_balance) >= cost, E_INSUFFICIENT_INVENTORY);
+        assert!(mm.quote_balance.value() >= cost, EInsufficientInventory);
         mm.total_bought = mm.total_bought + amount;
         coin::take(&mut mm.quote_balance, cost, ctx)
     }
@@ -144,7 +144,7 @@ module yield_strategy::orderbook_mm {
         amount: u64,
         ctx: &mut TxContext,
     ): Coin<BaseCoin> {
-        assert!(balance::value(&mm.base_balance) >= amount, E_INSUFFICIENT_INVENTORY);
+        assert!(mm.base_balance.value() >= amount, EInsufficientInventory);
         mm.total_sold = mm.total_sold + amount;
         coin::take(&mut mm.base_balance, amount, ctx)
     }
@@ -153,7 +153,7 @@ module yield_strategy::orderbook_mm {
         mm: &mut MarketMaker<BaseCoin, QuoteCoin>,
         base_received: Coin<BaseCoin>,
     ) {
-        let value = coin::value(&base_received);
+        let value = base_received.value();
         balance::join(&mut mm.base_balance, coin::into_balance(base_received));
         mm.total_fees = mm.total_fees + value * mm.spread_bps / 20000;
     }
@@ -162,7 +162,7 @@ module yield_strategy::orderbook_mm {
         mm: &mut MarketMaker<BaseCoin, QuoteCoin>,
         quote_received: Coin<QuoteCoin>,
     ) {
-        let value = coin::value(&quote_received);
+        let value = quote_received.value();
         balance::join(&mut mm.quote_balance, coin::into_balance(quote_received));
         mm.total_fees = mm.total_fees + value * mm.spread_bps / 20000;
     }
@@ -172,8 +172,8 @@ module yield_strategy::orderbook_mm {
     }
 
     public fun inventory_value(mm: &MarketMaker, price: u64): u64 {
-        let base_val = balance::value(&mm.base_balance) * price / PRECISION;
-        let quote_val = balance::value(&mm.quote_balance);
+        let base_val = mm.base_balance.value() * price / PRECISION;
+        let quote_val = mm.quote_balance.value();
         base_val + quote_val
     }
 }

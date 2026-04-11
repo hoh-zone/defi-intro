@@ -21,7 +21,7 @@ module flash_loan_arbitrage {
     const EInsufficientProfit: u64 = 2000;
     const ERepaymentFailed: u64 = 2001;
 
-    struct ArbitrageResult has store {
+    public struct ArbitrageResult has store {
         gross_profit: u64,
         flash_loan_fee: u64,
         gas_cost: u64,
@@ -58,7 +58,7 @@ module flash_loan_arbitrage {
 
         let net_profit = coin::value(&profit);
         assert!(net_profit >= min_net_profit, EInsufficientProfit);
-        transfer::transfer(profit, tx_context::sender(ctx));
+        transfer::transfer(profit, ctx.sender());
 
         ArbitrageResult {
             gross_profit,
@@ -95,7 +95,7 @@ module flash_loan_arbitrage {
 
         let (repayment, profit) = coin::split(&mut output, output_amount - total_due, ctx);
         flash_loan::repay(flash_pool, repayment, total_due);
-        transfer::transfer(profit, tx_context::sender(ctx));
+        transfer::transfer(profit, ctx.sender());
 
         output
     }
@@ -126,7 +126,7 @@ module flash_loan_arbitrage {
         let (repayment, _) = coin::split(&mut stable_from_dex, total_due, ctx);
         flash_loan::repay(flash_pool, repayment, total_due);
 
-        transfer::transfer(stable_from_dex, tx_context::sender(ctx));
+        transfer::transfer(stable_from_dex, ctx.sender());
         collateral_out
     }
 }

@@ -22,13 +22,13 @@ module cetus_lending {
     const EHealthFactorTooLow: u64 = 801;
     const EPoolPaused: u64 = 802;
 
-    struct LendingMarket has key {
+    public struct LendingMarket has key {
         id: UID,
         reserves: vector<Reserve>,
         paused: bool,
     }
 
-    struct Reserve has store {
+    public struct Reserve has store {
         coin_type: u8,
         total_deposits: u64,
         total_borrows: u64,
@@ -39,7 +39,7 @@ module cetus_lending {
         risk_config: ReserveRiskConfig,
     }
 
-    struct ReserveRiskConfig has store {
+    public struct ReserveRiskConfig has store {
         ltv_bps: u64,
         liquidation_threshold_bps: u64,
         liquidation_penalty_bps: u64,
@@ -47,14 +47,14 @@ module cetus_lending {
         supply_cap: u64,
     }
 
-    struct InterestModel has store {
+    public struct InterestModel has store {
         base_rate_bps: u64,
         slope1_bps: u64,
         slope2_bps: u64,
         optimal_utilization_bps: u64,
     }
 
-    struct DepositReceipt has key, store {
+    public struct DepositReceipt has key, store {
         id: UID,
         market_id: ID,
         reserve_index: u8,
@@ -63,7 +63,7 @@ module cetus_lending {
         index_at_deposit: u128,
     }
 
-    struct BorrowReceipt has key, store {
+    public struct BorrowReceipt has key, store {
         id: UID,
         market_id: ID,
         reserve_index: u8,
@@ -162,7 +162,7 @@ module cetus_leverage {
 
         let mut i = 0;
         while (i < loop_count) {
-            let max_borrow = cetus_lending::get_max_borrow(market, &deposit);
+            let max_borrow = cetus_lending::max_borrow(market, &deposit);
             let borrow_amount = if (i == loop_count - 1) {
                 max_borrow
             } else {
@@ -189,7 +189,7 @@ module cetus_leverage {
         borrow: BorrowReceipt,
         ctx: &mut TxContext,
     ) {
-        let debt_amount = cetus_lending::get_debt_amount(&borrow);
+        let debt_amount = cetus_lending::debt_amount(&borrow);
         let collateral_withdrawn = cetus_lending::withdraw(market, deposit, ctx);
         let repayment_coin = cetus_clmm::swap(pool, collateral_withdrawn, ctx);
         cetus_lending::repay(market, borrow, repayment_coin, ctx);

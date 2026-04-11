@@ -35,7 +35,7 @@ sources/
 module protocol::admin {
     use sui::object::{Self, UID};
 
-    struct AdminCap has key, store {
+    public struct AdminCap has key, store {
         id: UID,
         roles: u64,
     }
@@ -61,7 +61,7 @@ module protocol::admin {
 
 ```move
 module protocol::events {
-    struct DepositEvent has copy, drop {
+    public struct DepositEvent has copy, drop {
         pool_id: ID,
         user: address,
         amount: u64,
@@ -69,7 +69,7 @@ module protocol::events {
         timestamp: u64,
     }
 
-    struct BorrowEvent has copy, drop {
+    public struct BorrowEvent has copy, drop {
         pool_id: ID,
         user: address,
         amount: u64,
@@ -77,7 +77,7 @@ module protocol::events {
         timestamp: u64,
     }
 
-    struct LiquidationEvent has copy, drop {
+    public struct LiquidationEvent has copy, drop {
         pool_id: ID,
         borrower: address,
         liquidator: address,

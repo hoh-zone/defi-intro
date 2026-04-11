@@ -37,11 +37,11 @@ module bridge::cross_chain_messaging {
     use sui::clock::Clock;
     use sui::table::{Self, Table};
 
-    const E_UNAUTHORIZED: u64 = 0;
-    const E_INVALID_PROOF: u64 = 1;
-    const E_ALREADY_EXECUTED: u64 = 2;
-    const E_NOT_PENDING: u64 = 3;
-    const E_TIMEOUT_NOT_REACHED: u64 = 4;
+    const EUnauthorized: u64 = 0;
+    const EInvalidProof: u64 = 1;
+    const EAlreadyExecuted: u64 = 2;
+    const ENotPending: u64 = 3;
+    const ETimeoutNotReached: u64 = 4;
 
     public struct MessageId has copy, drop, store {
         source_chain: u64,
@@ -96,7 +96,7 @@ module bridge::cross_chain_messaging {
             pending_messages: table::new(ctx),
             executed: table::new(ctx),
             timeout_buffer_ms,
-            admin: tx_context::sender(ctx),
+            admin: ctx.sender(),
         };
         transfer::share_object(bus);
     }
@@ -124,7 +124,7 @@ module bridge::cross_chain_messaging {
         event::emit(MessageSent {
             msg_id,
             target_chain,
-            sender: tx_context::sender(),
+            sender: ctx.sender(),
         });
         msg_id
     }
@@ -135,8 +135,8 @@ module bridge::cross_chain_messaging {
         proof: vector<u8>,
         ctx: &mut TxContext,
     ) {
-        assert!(!table::contains(&bus.executed, msg_id), E_ALREADY_EXECUTED);
-        assert!(table::contains(&bus.pending_messages, msg_id), E_NOT_PENDING);
+        assert!(!table::contains(&bus.executed, msg_id), EAlreadyExecuted);
+        assert!(table::contains(&bus.pending_messages, msg_id), ENotPending);
         let _msg = table::borrow(&bus.pending_messages, msg_id);
         table::add(&mut bus.executed, msg_id, MessageStatus {
             is_executed: true,
@@ -145,7 +145,7 @@ module bridge::cross_chain_messaging {
         table::remove(&mut bus.pending_messages, msg_id);
         event::emit(MessageExecuted {
             msg_id,
-            executor: tx_context::sender(),
+            executor: ctx.sender(),
             success: true,
         });
     }
@@ -156,9 +156,9 @@ module bridge::cross_chain_messaging {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
-        assert!(table::contains(&bus.pending_messages, msg_id), E_NOT_PENDING);
+        assert!(table::contains(&bus.pending_messages, msg_id), ENotPending);
         let msg = table::borrow(&bus.pending_messages, msg_id);
-        assert!(clock.timestamp_ms() > msg.timeout_ms, E_TIMEOUT_NOT_REACHED);
+        assert!(clock.timestamp_ms() > msg.timeout_ms, ETimeoutNotReached);
         table::add(&mut bus.executed, msg_id, MessageStatus {
             is_executed: false,
             is_rolled_back: true,

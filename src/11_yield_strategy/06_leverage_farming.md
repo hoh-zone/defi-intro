@@ -61,10 +61,10 @@ module yield_strategy::leverage_farming {
     use sui::tx_context::TxContext;
     use sui::event;
 
-    const E_NOT_OWNER: u64 = 0;
-    const E_COLLATERAL_RATIO: u64 = 1;
-    const E_ZERO_AMOUNT: u64 = 2;
-    const E_MAX_LEVERAGE: u64 = 3;
+    const ENotOwner: u64 = 0;
+    const ECollateralRatio: u64 = 1;
+    const EZeroAmount: u64 = 2;
+    const EMaxLeverage: u64 = 3;
     const PRECISION: u64 = 1_000_000_000;
 
     public struct LeveragedPosition has key {
@@ -98,16 +98,16 @@ module yield_strategy::leverage_farming {
         base_price_in_quote: u64,
         ctx: &mut TxContext,
     ) {
-        let collateral_amount = coin::value(&base_collateral);
-        assert!(collateral_amount > 0, E_ZERO_AMOUNT);
-        assert!(target_leverage_bps > PRECISION && target_leverage_bps <= 5 * PRECISION, E_MAX_LEVERAGE);
+        let collateral_amount = base_collateral.value();
+        assert!(collateral_amount > 0, EZeroAmount);
+        assert!(target_leverage_bps > PRECISION && target_leverage_bps <= 5 * PRECISION, EMaxLeverage);
         let leverage = target_leverage_bps / PRECISION;
         let total_base = collateral_amount * leverage;
         let borrow_base_equivalent = total_base - collateral_amount;
         let borrow_quote = borrow_base_equivalent * base_price_in_quote / PRECISION;
         let position = LeveragedPosition {
             id: object::new(ctx),
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
             deposited_base: coin::into_balance(base_collateral),
             borrowed_quote: balance::zero(),
             lp_shares: 0,
@@ -116,20 +116,20 @@ module yield_strategy::leverage_farming {
             liquidation_threshold_bps: 7500,
         };
         event::emit(PositionOpened {
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
             base_deposited: collateral_amount,
             quote_borrowed: borrow_quote,
             leverage,
         });
-        transfer::transfer(position, tx_context::sender(ctx));
+        transfer::transfer(position, ctx.sender());
     }
 
     public fun health_factor(
         position: &LeveragedPosition,
         current_base_price: u64,
     ): u64 {
-        let base_value = balance::value(&position.deposited_base) * current_base_price / PRECISION;
-        let debt = balance::value(&position.borrowed_quote);
+        let base_value = position.deposited_base.value() * current_base_price / PRECISION;
+        let debt = position.borrowed_quote.value();
         if (debt == 0) { return PRECISION * 10 };
         base_value * position.liquidation_threshold_bps / (debt * 100)
     }
@@ -153,8 +153,8 @@ module yield_strategy::leverage_farming {
     public fun estimated_liquidation_price(
         position: &LeveragedPosition,
     ): u64 {
-        let debt = balance::value(&position.borrowed_quote);
-        let collateral = balance::value(&position.deposited_base);
+        let debt = position.borrowed_quote.value();
+        let collateral = position.deposited_base.value();
         if (collateral == 0) { return 0 };
         debt * 10000 / (collateral * position.liquidation_threshold_bps / PRECISION)
     }
@@ -164,7 +164,7 @@ module yield_strategy::leverage_farming {
         more: Coin<BaseCoin>,
         ctx: &mut TxContext,
     ) {
-        assert!(tx_context::sender(ctx) == position.owner, E_NOT_OWNER);
+        assert!(ctx.sender() == position.owner, ENotOwner);
         balance::join(&mut position.deposited_base, coin::into_balance(more));
     }
 
@@ -173,16 +173,16 @@ module yield_strategy::leverage_farming {
         repayment: Coin<QuoteCoin>,
         ctx: &mut TxContext,
     ): Coin<BaseCoin> {
-        assert!(tx_context::sender(ctx) == position.owner, E_NOT_OWNER);
-        let debt = balance::value(&position.borrowed_quote);
-        let repaid = coin::value(&repayment);
-        assert!(repaid >= debt, E_COLLATERAL_RATIO);
-        let remaining_base = balance::value(&position.deposited_base);
+        assert!(ctx.sender() == position.owner, ENotOwner);
+        let debt = position.borrowed_quote.value();
+        let repaid = repaid.value();
+        assert!(repaid >= debt, ECollateralRatio);
+        let remaining_base = position.deposited_base.value();
         let base = coin::from_balance(position.deposited_base, ctx);
         coin::destroy_zero(coin::from_balance(position.borrowed_quote, ctx));
         coin::destroy_zero(repayment);
         let LeveragedPosition { id, owner: _, deposited_base: _, borrowed_quote: _, lp_shares: _, leverage: _, entry_base_price: _, liquidation_threshold_bps: _ } = position;
-        object::delete(id);
+        id.delete();
         base
     }
 }

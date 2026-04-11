@@ -74,7 +74,7 @@ graph TD
 | 操纵 | TWAP + 闪电贷检测 | 时间加权平均 + 单区块交易量限制 |
 
 ```move
-struct PriceGuard has store {
+public struct PriceGuard has store {
     last_price: u64,
     twap_accumulator: u128,
     last_update_time: u64,

@@ -83,7 +83,7 @@ module liquidation_bot {
 
         let (repayment, profit) = coin::split(&mut sold, sold_amount - total_due, ctx);
         flash_loan::repay(flash_pool, repayment, total_due);
-        transfer::transfer(profit, tx_context::sender(ctx));
+        transfer::transfer(profit, ctx.sender());
 
         sold
     }

@@ -61,13 +61,13 @@ module aggregator {
     const EInvalidRoute: u64 = 601;
     const ERouteExpired: u64 = 602;
 
-    struct RoutePlan has store {
+    public struct RoutePlan has store {
         hops: vector<Hop>,
         deadline: u64,
         min_output: u64,
     }
 
-    struct Hop has store {
+    public struct Hop has store {
         pool_id: ID,
         dex_type: u8,
         input_token: u8,
@@ -79,7 +79,7 @@ module aggregator {
     const DEX_DEEPBOOK: u8 = 1;
     const DEX_AMM: u8 = 2;
 
-    struct AggregatorCap has key {
+    public struct AggregatorCap has key {
         id: UID,
     }
 

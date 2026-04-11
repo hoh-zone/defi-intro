@@ -58,7 +58,7 @@ module dex_arbitrage {
         let base_amount = coin::value(&base_coin);
 
         let best_bid = orderbook::get_best_bid(orderbook);
-        let amm_price = amm::get_price(amm_pool);
+        let amm_price = amm::price(amm_pool);
         assert!(best_bid > amm_price, ENoArbitrage);
 
         let output = orderbook::market_sell(orderbook, base_coin, ctx);

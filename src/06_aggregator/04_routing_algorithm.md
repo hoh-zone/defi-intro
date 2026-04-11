@@ -53,7 +53,7 @@ module aggregator_split {
 
     const EInsufficientOutput: u64 = 600;
 
-    struct SplitRoute has store {
+    public struct SplitRoute has store {
         pool_a_id: ID,
         pool_b_id: ID,
         share_a_bps: u64,
@@ -98,13 +98,13 @@ module aggregator_split {
 ```
 
 ```move
-struct MultiHopRoute has store {
+public struct MultiHopRoute has store {
     hops: vector<Hop>,
     min_output: u64,
     deadline: u64,
 }
 
-struct Hop has store {
+public struct Hop has store {
     pool_id: ID,
     dex_type: u8,
 }

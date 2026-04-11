@@ -71,7 +71,7 @@ module spot_leverage {
     const EExceedsMaxLeverage: u64 = 700;
     const EHealthFactorTooLow: u64 = 701;
 
-    struct LeveragePosition has key, store {
+    public struct LeveragePosition has key, store {
         id: UID,
         owner: address,
         collateral_token: u8,
@@ -83,7 +83,7 @@ module spot_leverage {
         created_at: u64,
     }
 
-    struct LeverageConfig has store {
+    public struct LeverageConfig has store {
         max_leverage_bps: u64,
         collateral_threshold_bps: u64,
         liquidation_threshold_bps: u64,

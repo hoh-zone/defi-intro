@@ -8,13 +8,13 @@
 - 分离后，预言机更新不会阻塞资金池操作
 
 ```move
-struct LendingMarket has key {
+public struct LendingMarket has key {
     id: UID,
     reserves: vector<Reserve>,
     paused: bool,
 }
 
-struct OracleConfig has key {
+public struct OracleConfig has key {
     id: UID,
     market_id: ID,
     max_price_age_ms: u64,
@@ -39,7 +39,7 @@ module defi_oracle {
     const EDevTooHigh: u64 = 4;
     const ENotAdmin: u64 = 5;
 
-    struct PriceGuardConfig has key {
+    public struct PriceGuardConfig has key {
         id: UID,
         max_age_ms: u64,
         min_confidence_ratio_bps: u64,
@@ -48,7 +48,7 @@ module defi_oracle {
         use_fallback: bool,
     }
 
-    struct PriceSnapshot has store {
+    public struct PriceSnapshot has store {
         last_valid_price: u64,
         last_valid_time: u64,
         twap_sum: u128,
@@ -130,7 +130,7 @@ public fun emergency_pause(
     market: &mut LendingMarket,
     cap: &EmergencyCap,
 ) {
-    assert!(tx_context::sender(&mut dummy_ctx()) == config.emergency_admin, ENotAdmin);
+    assert!(dummy_ctx().sender() == config.emergency_admin, ENotAdmin);
     market.paused = true;
 }
 ```

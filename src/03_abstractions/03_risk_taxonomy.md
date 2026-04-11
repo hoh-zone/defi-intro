@@ -42,7 +42,7 @@ graph TD
 在 Move 代码中，风险参数通常表现为配置对象：
 
 ```move
-struct RiskConfig has store {
+public struct RiskConfig has store {
     liquidation_threshold_bps: u64,
     liquidation_penalty_bps: u64,
     max_ltv_bps: u64,

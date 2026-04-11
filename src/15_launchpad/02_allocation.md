@@ -35,7 +35,7 @@
 ## Bot 防御的 Move 实现
 
 ```move
-struct AntiBot has store {
+public struct AntiBot has store {
     min_stake_duration_ms: u64,
     max_subscriptions_per_epoch: u64,
     subscription_count: u64,

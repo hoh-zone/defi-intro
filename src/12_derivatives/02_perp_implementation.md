@@ -17,7 +17,7 @@ module perp {
     const EMaintenanceMarginBreached: u64 = 404;
     const ENotLiquidatable: u64 = 405;
 
-    struct PerpMarket<phantom Base, phantom Quote> has key {
+    public struct PerpMarket<phantom Base, phantom Quote> has key {
         id: UID,
         base_reserve: Balance<Base>,
         quote_reserve: Balance<Quote>,
@@ -34,7 +34,7 @@ module perp {
         paused: bool,
     }
 
-    struct Position<phantom Base, phantom Quote> has key, store {
+    public struct Position<phantom Base, phantom Quote> has key, store {
         id: UID,
         market_id: ID,
         owner: address,
@@ -46,7 +46,7 @@ module perp {
         unrealized_pnl: i128,
     }
 
-    struct AdminCap has key, store {
+    public struct AdminCap has key, store {
         id: UID,
         market_id: ID,
     }
@@ -64,7 +64,7 @@ public fun open_position<Base, Quote>(
     ctx: &mut TxContext,
 ): Position<Base, Quote> {
     assert!(!market.paused, EMarketPaused);
-    let margin = coin::value(&margin_coin);
+    let margin = margin_coin.value();
     assert!(margin > 0 && size > 0, EPositionTooSmall);
 
     let leverage = (size as u128) * 10000 / (margin as u128);
@@ -86,7 +86,7 @@ public fun open_position<Base, Quote>(
     Position<Base, Quote> {
         id: object::new(ctx),
         market_id: object::id(market),
-        owner: tx_context::sender(ctx),
+        owner: ctx.sender(),
         size,
         entry_price,
         margin,
@@ -106,7 +106,7 @@ public fun add_margin<Base, Quote>(
     margin_coin: Coin<Quote>,
 ) {
     assert!(object::id(market) == position.market_id, ENotOwner);
-    let extra = coin::value(&margin_coin);
+    let extra = margin_coin.value();
     position.margin = position.margin + extra;
     balance::join(&mut market.quote_reserve, coin::into_balance(margin_coin));
 }
@@ -183,7 +183,7 @@ public fun liquidate<Base, Quote>(
         market.total_short_size = market.total_short_size - position.size;
     };
 
-    object::delete(position);
+    position.delete();
     coin::take(&mut market.quote_reserve, to_liquidator, ctx)
 }
 ```

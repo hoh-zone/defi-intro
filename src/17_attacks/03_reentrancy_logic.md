@@ -13,7 +13,7 @@ public fun withdraw(pool: &mut Pool, position: Position, ctx: &mut TxContext): C
     let amount = position.shares * pool.balance / pool.total_shares;
     pool.total_shares = pool.total_shares - position.shares;
     let coin = coin::take(&mut pool.coins, amount, ctx);
-    object::delete(position);
+    .delete()(position);
     coin
 }
 ```

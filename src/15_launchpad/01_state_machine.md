@@ -42,7 +42,7 @@ module launchpad {
     const STATE_CLOSED: u8 = 4;
     const STATE_CANCELLED: u8 = 5;
 
-    struct LaunchpadRound has key {
+    public struct LaunchpadRound has key {
         id: UID,
         state: u8,
         token_price: u64,
@@ -58,14 +58,14 @@ module launchpad {
         paused: bool,
     }
 
-    struct Whitelist has key {
+    public struct Whitelist has key {
         id: UID,
         round_id: ID,
         entries: vector<address>,
         allocations: vector<u64>,
     }
 
-    struct Subscription has key, store {
+    public struct Subscription has key, store {
         id: UID,
         round_id: ID,
         buyer: address,
@@ -73,7 +73,7 @@ module launchpad {
         claimed: u64,
     }
 
-    struct AdminCap has key, store {
+    public struct AdminCap has key, store {
         id: UID,
         round_id: ID,
     }
@@ -112,7 +112,7 @@ module launchpad {
         };
         transfer::share_object(round);
         transfer::share_object(whitelist);
-        transfer::transfer(cap, tx_context::sender(ctx));
+        transfer::transfer(cap, ctx.sender());
     }
 
     public fun start_whitelist(
@@ -153,7 +153,7 @@ module launchpad {
         ctx: &mut TxContext,
     ): Subscription {
         assert!(round.state == STATE_SALE_OPEN, EInvalidState);
-        let buyer = tx_context::sender(ctx);
+        let buyer = ctx.sender();
         let alloc_idx = find_whitelist_index(whitelist, buyer);
         assert!(alloc_idx < vector::length(&whitelist.entries), ENotWhitelisted);
         let max_alloc = *vector::borrow(&whitelist.allocations, alloc_idx);

@@ -7,7 +7,7 @@
 LST 的数量不变，但每个 LST 对应的 SUI 数量随时间增长。
 
 ```move
-struct StakedSUI has key {
+public struct StakedSUI has key {
     id: UID,
     principal: Balance<SUI>,
     pool_id: ID,
@@ -34,7 +34,7 @@ public fun redeem(pool: &mut StakingPool, lsst_amount: u64, ctx: &mut TxContext)
 LST 与 SUI 的兑换率固定为 1:1，但用户通过 staking_reward 获得额外的 LST。
 
 ```move
-struct LiquidStakingPool has key {
+public struct LiquidStakingPool has key {
     id: UID,
     staked_sui: Balance<SUI>,
     lst_supply: u64,

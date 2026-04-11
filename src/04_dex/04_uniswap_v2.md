@@ -26,7 +26,7 @@ module uniswap_v2 {
     const EUnauthorized: u64 = 5;
     const KLastMismatch: u64 = 6;
 
-    struct Pool<phantom A, phantom B> has key {
+    public struct Pool<phantom A, phantom B> has key {
         id: UID,
         coin_a: Balance<A>,
         coin_b: Balance<B>,
@@ -39,13 +39,13 @@ module uniswap_v2 {
         paused: bool,
     }
 
-    struct LP<phantom A, phantom B> has key, store {
+    public struct LP<phantom A, phantom B> has key, store {
         id: UID,
         pool_id: ID,
         shares: u64,
     }
 
-    struct AdminCap has key, store {
+    public struct AdminCap has key, store {
         id: UID,
         pool_id: ID,
         fee_recipient: address,
@@ -72,7 +72,7 @@ module uniswap_v2 {
         let cap = AdminCap {
             id: object::new(ctx),
             pool_id: object::id(&pool),
-            fee_recipient: tx_context::sender(ctx),
+            fee_recipient: ctx.sender(),
         };
         (pool, cap)
     }
@@ -140,7 +140,7 @@ module uniswap_v2 {
 
         let coin_a = coin::take(&mut pool.coin_a, amount_a as u64, ctx);
         let coin_b = coin::take(&mut pool.coin_b, amount_b as u64, ctx);
-        object::delete(lp);
+        .delete()(lp);
         (coin_a, coin_b)
     }
 

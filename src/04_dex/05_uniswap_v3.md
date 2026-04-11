@@ -65,7 +65,7 @@ module uniswap_v3 {
     const EPoolPaused: u64 = 103;
     const EInvalidAmount: u64 = 104;
 
-    struct Pool<phantom A, phantom B> has key {
+    public struct Pool<phantom A, phantom B> has key {
         id: UID,
         coin_a: Balance<A>,
         coin_b: Balance<B>,
@@ -79,14 +79,14 @@ module uniswap_v3 {
         paused: bool,
     }
 
-    struct TickInfo has store {
+    public struct TickInfo has store {
         liquidity_gross: u128,
         fee_growth_outside_a: u128,
         fee_growth_outside_b: u128,
         initialized: bool,
     }
 
-    struct Position<phantom A, phantom B> has key, store {
+    public struct Position<phantom A, phantom B> has key, store {
         id: UID,
         pool_id: ID,
         tick_lower: u64,
@@ -98,7 +98,7 @@ module uniswap_v3 {
         tokens_owed_b: u64,
     }
 
-    struct AdminCap has key, store {
+    public struct AdminCap has key, store {
         id: UID,
         pool_id: ID,
     }

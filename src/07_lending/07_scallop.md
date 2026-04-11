@@ -25,7 +25,7 @@ Scallop 引入了 Vault 机制，将存款人的资金分层管理：
 
 ```move
 module scallop {
-    struct Vault<phantom T> has key {
+    public struct Vault<phantom T> has key {
         id: UID,
         total_deposits: u64,
         available: u64,
@@ -34,7 +34,7 @@ module scallop {
         strategy_id: ID,
     }
 
-    struct VaultReceipt<phantom T> has key, store {
+    public struct VaultReceipt<phantom T> has key, store {
         id: UID,
         vault_id: ID,
         shares: u64,
@@ -58,7 +58,7 @@ Scallop 在预言机集成上特别保守：
 
 ```move
 module scallop_lending {
-    struct LendingMarket has key {
+    public struct LendingMarket has key {
         id: UID,
         reserves: vector<Reserve>,
         zero_rate_markets: vector<u8>,
@@ -66,7 +66,7 @@ module scallop_lending {
         paused: bool,
     }
 
-    struct Reserve has store {
+    public struct Reserve has store {
         coin_type: u8,
         total_deposits: u64,
         total_borrows: u64,
@@ -75,7 +75,7 @@ module scallop_lending {
         risk_config: ReserveRiskConfig,
     }
 
-    struct UserAccount has key, store {
+    public struct UserAccount has key, store {
         id: UID,
         market_id: ID,
         owner: address,
@@ -83,14 +83,14 @@ module scallop_lending {
         borrow_positions: vector<BorrowPosition>,
     }
 
-    struct DepositPosition has store {
+    public struct DepositPosition has store {
         reserve_index: u8,
         amount: u64,
         is_collateral: bool,
         vault_shares: u64,
     }
 
-    struct BorrowPosition has store {
+    public struct BorrowPosition has store {
         reserve_index: u8,
         amount: u64,
         is_zero_rate: bool,

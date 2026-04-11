@@ -22,7 +22,7 @@ module sui_savings {
     const EPoolPaused: u64 = 2;
     const EInvalidAmount: u64 = 3;
 
-    struct SavingsPool<phantom T> has key {
+    public struct SavingsPool<phantom T> has key {
         id: UID,
         principal: Balance<T>,
         reward_pool: Balance<T>,
@@ -32,19 +32,19 @@ module sui_savings {
         paused: bool,
     }
 
-    struct SavingsReceipt<phantom T> has key, store {
+    public struct SavingsReceipt<phantom T> has key, store {
         id: UID,
         pool_id: ID,
         shares: u64,
         deposit_epoch: u64,
     }
 
-    struct AdminCap<phantom T> has key, store {
+    public struct AdminCap<phantom T> has key, store {
         id: UID,
         pool_id: ID,
     }
 
-    struct SavingsEvent has copy, drop {
+    public struct SavingsEvent has copy, drop {
         action: u64,
         amount: u64,
         shares: u64,
@@ -82,7 +82,7 @@ public fun init<T>(
         pool_id: object::id(&pool),
     };
     transfer::share_object(pool);
-    transfer::transfer(cap, tx_context::sender(ctx));
+    transfer::transfer(cap, ctx.sender());
 }
 ```
 
@@ -134,12 +134,12 @@ public fun withdraw<T>(
     assert!(balance::value(&pool.principal) >= principal_value, EInsufficientBalance);
     pool.total_shares = pool.total_shares - receipt.shares;
     let coin = coin::take(&mut pool.principal, principal_value, ctx);
-    object::delete(receipt);
+    .delete()(receipt);
     coin
 }
 ```
 
-取出时按份额比例计算应得的本金。注意 `object::delete(receipt)`——取出后凭证被销毁，防止重复取出。
+取出时按份额比例计算应得的本金。注意 `.delete()(receipt)`——取出后凭证被销毁，防止重复取出。
 
 ## 领取利息
 

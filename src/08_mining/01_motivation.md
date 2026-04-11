@@ -54,9 +54,9 @@ module liquidity_mining::core {
     use sui::tx_context::TxContext;
     use sui::clock::Clock;
 
-    const E_INSUFFICIENT_STAKE: u64 = 0;
-    const E_NOT_AUTHORIZED: u64 = 1;
-    const E_POOL_EXPIRED: u64 = 2;
+    const EInsufficientStake: u64 = 0;
+    const ENotAuthorized: u64 = 1;
+    const EPoolExpired: u64 = 2;
 
     public struct StakeInfo has store, drop {
         amount: u64,

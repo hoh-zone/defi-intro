@@ -23,7 +23,7 @@
 - 发布者签名
 
 ```move
-struct PriceFact has copy, drop, store {
+public struct PriceFact has copy, drop, store {
     price: u64,
     conf: u64,
     publish_time: u64,

@@ -25,7 +25,7 @@ module sandwich_attack {
         victim_swap_amount: u64,
         ctx: &mut TxContext,
     ): Coin<B> {
-        let price_before = amm::get_price(pool);
+        let price_before = amm::price(pool);
         let price_after_victim = amm::simulate_swap(pool, victim_swap_amount);
         let target_price = (price_before + price_after_victim) / 2;
         let optimal_amount = calculate_front_run_amount(pool, target_price);

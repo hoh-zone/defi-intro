@@ -10,7 +10,7 @@ module cetus_clmm {
     use sui::balance::{Self, Balance};
     use sui::object::{Self, UID};
 
-    struct Pool has key {
+    public struct Pool has key {
         id: UID,
         coin_a_type: u8,
         coin_b_type: u8,
@@ -23,13 +23,13 @@ module cetus_clmm {
         fee_growth_global_b: u128,
     }
 
-    struct TickBitmap has key {
+    public struct TickBitmap has key {
         id: UID,
         pool_id: ID,
         bitmap: vector<u64>,
     }
 
-    struct Position has key, store {
+    public struct Position has key, store {
         id: UID,
         pool_id: ID,
         tick_lower: u64,

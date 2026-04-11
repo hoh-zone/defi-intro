@@ -51,7 +51,7 @@ module stableswap {
     const EPoolPaused: u64 = 302;
     const EConvergenceFailed: u64 = 303;
 
-    struct Pool<phantom A, phantom B> has key {
+    public struct Pool<phantom A, phantom B> has key {
         id: UID,
         balance_a: Balance<A>,
         balance_b: Balance<B>,
@@ -61,13 +61,13 @@ module stableswap {
         paused: bool,
     }
 
-    struct LP<phantom A, phantom B> has key, store {
+    public struct LP<phantom A, phantom B> has key, store {
         id: UID,
         pool_id: ID,
         shares: u64,
     }
 
-    struct AdminCap has key, store {
+    public struct AdminCap has key, store {
         id: UID,
         pool_id: ID,
     }

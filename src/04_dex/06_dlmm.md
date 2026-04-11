@@ -41,7 +41,7 @@ module dlmm {
     const EPoolPaused: u64 = 202;
     const EInvalidAmount: u64 = 203;
 
-    struct Pool<phantom A, phantom B> has key {
+    public struct Pool<phantom A, phantom B> has key {
         id: UID,
         coin_a: Balance<A>,
         coin_b: Balance<B>,
@@ -54,7 +54,7 @@ module dlmm {
         paused: bool,
     }
 
-    struct Bin has store {
+    public struct Bin has store {
         bin_id: u64,
         price: u64,
         reserve_a: u64,
@@ -62,7 +62,7 @@ module dlmm {
         total_supply: u64,
     }
 
-    struct BinPosition has key, store {
+    public struct BinPosition has key, store {
         id: UID,
         pool_id: ID,
         bin_id: u64,

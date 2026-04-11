@@ -25,10 +25,10 @@ module liquidity_mining::dex_mining {
     use sui::table::{Self, Table};
     use sui::math::max;
 
-    const E_ZERO_AMOUNT: u64 = 0;
-    const E_UNAUTHORIZED: u64 = 1;
-    const E_POOL_NOT_FOUND: u64 = 2;
-    const E_INVALID_WEIGHT: u64 = 3;
+    const EZeroAmount: u64 = 0;
+    const EUnauthorized: u64 = 1;
+    const EPoolNotFound: u64 = 2;
+    const EInvalidWeight: u64 = 3;
     const PRECISION: u64 = 1_000_000_000;
 
     public struct MiningMaster<phantom RewardCoin> has key {
@@ -70,7 +70,7 @@ module liquidity_mining::dex_mining {
             last_update_ms: clock.timestamp_ms(),
             global_acc_per_weight: 0,
             pools: table::new(ctx),
-            admin: tx_context::sender(ctx),
+            admin: ctx.sender(),
         };
         transfer::public_share_object(master);
         transfer::public_freeze_object(initial_reward);
@@ -83,9 +83,9 @@ module liquidity_mining::dex_mining {
         weight: u64,
         ctx: &mut TxContext,
     ) {
-        assert!(tx_context::sender(ctx) == master.admin, E_UNAUTHORIZED);
-        assert!(weight > 0, E_INVALID_WEIGHT);
-        assert!(!table::contains(&master.pools, pool_id), E_POOL_NOT_FOUND);
+        assert!(ctx.sender() == master.admin, EUnauthorized);
+        assert!(weight > 0, EInvalidWeight);
+        assert!(!table::contains(&master.pools, pool_id), EPoolNotFound);
         let pool = MiningPool {
             lp_coin_type,
             total_stake: 0,
@@ -129,9 +129,9 @@ module liquidity_mining::dex_mining {
         ctx: &mut TxContext,
     ) {
         let amount = coin::value(&lp_coin);
-        assert!(amount > 0, E_ZERO_AMOUNT);
+        assert!(amount > 0, EZeroAmount);
         update_pool(master, pool_id, clock);
-        let user = tx_context::sender(ctx);
+        let user = ctx.sender();
         let pool = table::borrow_mut(&mut master.pools, pool_id);
         if (bag::contains(&pool.stakes, user)) {
             let pos = bag::borrow_mut<UserPosition>(&mut pool.stakes, user);
@@ -160,11 +160,11 @@ module liquidity_mining::dex_mining {
         ctx: &mut TxContext,
     ): Coin<LpCoin> {
         update_pool(master, pool_id, clock);
-        let user = tx_context::sender(ctx);
+        let user = ctx.sender();
         let pool = table::borrow_mut(&mut master.pools, pool_id);
-        assert!(bag::contains(&pool.stakes, user), E_UNAUTHORIZED);
+        assert!(bag::contains(&pool.stakes, user), EUnauthorized);
         let pos = bag::borrow_mut<UserPosition>(&mut pool.stakes, user);
-        assert!(pos.amount >= amount, E_ZERO_AMOUNT);
+        assert!(pos.amount >= amount, EZeroAmount);
         pos.amount = pos.amount - amount;
         pos.reward_debt = pos.amount * pool.acc_reward_per_share / PRECISION;
         pool.total_stake = pool.total_stake - amount;
@@ -178,7 +178,7 @@ module liquidity_mining::dex_mining {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
-        assert!(tx_context::sender(ctx) == master.admin, E_UNAUTHORIZED);
+        assert!(ctx.sender() == master.admin, EUnauthorized);
         let pool = table::borrow_mut(&mut master.pools, pool_id);
         let old_weight = pool.weight;
         master.total_weight = master.total_weight - old_weight + new_weight;

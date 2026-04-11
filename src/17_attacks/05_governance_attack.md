@@ -36,7 +36,7 @@
 ### 时间锁（Timelock）
 
 ```move
-struct TimelockedAction has key {
+public struct TimelockedAction has key {
     id: UID,
     action_type: u8,
     new_value: u64,
@@ -56,7 +56,7 @@ public fun propose_action(
         action_type,
         new_value,
         execute_after: sui::clock::timestamp_ms(sui::clock::create_for_testing()) + delay_ms,
-        created_by: tx_context::sender(ctx),
+        created_by: ctx.sender(),
         cancelled: false,
     }
 }
@@ -77,14 +77,14 @@ public fun execute_action(
 ### 多签（Multisig）
 
 ```move
-struct MultisigCap has key {
+public struct MultisigCap has key {
     id: UID,
     required_signatures: u64,
     signers: vector<address>,
     pending_actions: vector<PendingAction>,
 }
 
-struct PendingAction has store {
+public struct PendingAction has store {
     action_type: u8,
     new_value: u64,
     signatures: vector<address>,

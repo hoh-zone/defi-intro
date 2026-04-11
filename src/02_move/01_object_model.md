@@ -78,7 +78,7 @@ public entry fun withdraw(
     ctx: &mut TxContext,
 ): Coin<SUI> {
     let UserPosition { id, vault_id: _, deposited, reward_debt: _ } = position;
-    object::delete(id);
+    .delete()(id);
     let coin = coin::take(&mut vault.deposits, deposited, ctx);
     coin
 }

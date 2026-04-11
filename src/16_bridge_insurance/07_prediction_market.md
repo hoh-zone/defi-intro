@@ -25,12 +25,12 @@ module insurance::prediction_market {
     use sui::clock::Clock;
     use sui::event;
 
-    const E_UNAUTHORIZED: u64 = 0;
-    const E_MARKET_CLOSED: u64 = 1;
-    const E_ALREADY_RESOLVED: u64 = 2;
-    const E_NOT_RESOLVED: u64 = 3;
-    const E_ZERO_AMOUNT: u64 = 4;
-    const E_INVALID_OUTCOME: u64 = 5;
+    const EUnauthorized: u64 = 0;
+    const EMarketClosed: u64 = 1;
+    const EAlreadyResolved: u64 = 2;
+    const ENotResolved: u64 = 3;
+    const EZeroAmount: u64 = 4;
+    const EInvalidOutcome: u64 = 5;
     const PRECISION: u64 = 1_000_000_000;
 
     public struct YES has copy, drop, store {}
@@ -101,7 +101,7 @@ module insurance::prediction_market {
             collateral_cap: cap,
             dispute_stake: 0,
             disputes: vector::empty(),
-            resolver: tx_context::sender(ctx),
+            resolver: ctx.sender(),
         };
         event::emit(MarketCreated {
             market_id: object::uid_to_address(&market.id),
@@ -117,17 +117,17 @@ module insurance::prediction_market {
         clock: &Clock,
         ctx: &mut TxContext,
     ): Coin<YES> {
-        assert!(!market.resolved, E_ALREADY_RESOLVED);
-        assert!(clock.timestamp_ms() < market.end_ms, E_MARKET_CLOSED);
+        assert!(!market.resolved, EAlreadyResolved);
+        assert!(clock.timestamp_ms() < market.end_ms, EMarketClosed);
         let amount = coin::value(&payment);
-        assert!(amount > 0, E_ZERO_AMOUNT);
+        assert!(amount > 0, EZeroAmount);
         let cost = amount / 2;
         balance::join(&mut market.yes_bonded, coin::into_balance(coin::split(&mut payment, cost, ctx)));
         let shares = cost;
         market.yes_supply = market.yes_supply + shares;
         event::emit(SharesBought {
             market_id: object::uid_to_address(&market.id),
-            buyer: tx_context::sender(ctx),
+            buyer: ctx.sender(),
             outcome: 1,
             shares,
             cost,
@@ -141,17 +141,17 @@ module insurance::prediction_market {
         clock: &Clock,
         ctx: &mut TxContext,
     ): Coin<NO> {
-        assert!(!market.resolved, E_ALREADY_RESOLVED);
-        assert!(clock.timestamp_ms() < market.end_ms, E_MARKET_CLOSED);
+        assert!(!market.resolved, EAlreadyResolved);
+        assert!(clock.timestamp_ms() < market.end_ms, EMarketClosed);
         let amount = coin::value(&payment);
-        assert!(amount > 0, E_ZERO_AMOUNT);
+        assert!(amount > 0, EZeroAmount);
         let cost = amount / 2;
         balance::join(&mut market.no_bonded, coin::into_balance(coin::split(&mut payment, cost, ctx)));
         let shares = cost;
         market.no_supply = market.no_supply + shares;
         event::emit(SharesBought {
             market_id: object::uid_to_address(&market.id),
-            buyer: tx_context::sender(ctx),
+            buyer: ctx.sender(),
             outcome: 0,
             shares,
             cost,
@@ -165,10 +165,10 @@ module insurance::prediction_market {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
-        assert!(tx_context::sender(ctx) == market.resolver, E_UNAUTHORIZED);
-        assert!(!market.resolved, E_ALREADY_RESOLVED);
-        assert!(clock.timestamp_ms() >= market.end_ms, E_MARKET_CLOSED);
-        assert!(outcome == 1 || outcome == 0, E_INVALID_OUTCOME);
+        assert!(ctx.sender() == market.resolver, EUnauthorized);
+        assert!(!market.resolved, EAlreadyResolved);
+        assert!(clock.timestamp_ms() >= market.end_ms, EMarketClosed);
+        assert!(outcome == 1 || outcome == 0, EInvalidOutcome);
         market.outcome = outcome;
         market.resolved = true;
         event::emit(MarketResolved {
@@ -182,8 +182,8 @@ module insurance::prediction_market {
         shares: Coin<YES>,
         ctx: &mut TxContext,
     ): Coin<CollateralCoin> {
-        assert!(market.resolved, E_NOT_RESOLVED);
-        assert!(market.outcome == 1, E_INVALID_OUTCOME);
+        assert!(market.resolved, ENotResolved);
+        assert!(market.outcome == 1, EInvalidOutcome);
         let amount = coin::value(&shares);
         coin::destroy_zero(shares);
         let total_pool = balance::value(&market.yes_bonded) + balance::value(&market.no_bonded);
@@ -196,8 +196,8 @@ module insurance::prediction_market {
         shares: Coin<NO>,
         ctx: &mut TxContext,
     ): Coin<CollateralCoin> {
-        assert!(market.resolved, E_NOT_RESOLVED);
-        assert!(market.outcome == 0, E_INVALID_OUTCOME);
+        assert!(market.resolved, ENotResolved);
+        assert!(market.outcome == 0, EInvalidOutcome);
         let amount = coin::value(&shares);
         coin::destroy_zero(shares);
         let total_pool = balance::value(&market.yes_bonded) + balance::value(&market.no_bonded);
@@ -220,7 +220,7 @@ module insurance::prediction_market {
     ) {
         let stake_amount = coin::value(&stake);
         market.disputes.push_back(Dispute {
-            disputer: tx_context::sender(ctx),
+            disputer: ctx.sender(),
             proposed_outcome,
             stake: stake_amount,
             evidence_hash,

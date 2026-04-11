@@ -52,7 +52,7 @@ module isolated_lending {
     const EHealthFactorTooLow: u64 = 901;
     const EUnauthorized: u64 = 902;
 
-    struct IsolatedPair<phantom Collateral, phantom Borrow> has key {
+    public struct IsolatedPair<phantom Collateral, phantom Borrow> has key {
         id: UID,
         collateral_balance: Balance<Collateral>,
         borrow_balance: Balance<Borrow>,
@@ -66,7 +66,7 @@ module isolated_lending {
         supply_cap: u64,
     }
 
-    struct UserPosition<phantom Collateral, phantom Borrow> has key, store {
+    public struct UserPosition<phantom Collateral, phantom Borrow> has key, store {
         id: UID,
         pair_id: ID,
         owner: address,
@@ -112,7 +112,7 @@ module isolated_lending {
             UserPosition<Collateral, Borrow> {
                 id: object::new(ctx),
                 pair_id: object::id(pair),
-                owner: tx_context::sender(ctx),
+                owner: ctx.sender(),
                 collateral_amount: amount,
                 borrow_amount: 0,
             }

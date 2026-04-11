@@ -69,7 +69,7 @@ DeFi 协议展示的"总收益"通常是三层之和：
 ### 如何拆解
 
 ```move
-struct YieldBreakdown has copy, drop, store {
+public struct YieldBreakdown has copy, drop, store {
     fee_apy_bps: u64,
     incentive_apy_bps: u64,
     subsidy_apy_bps: u64,

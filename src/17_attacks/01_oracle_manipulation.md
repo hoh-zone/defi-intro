@@ -67,7 +67,7 @@ module attack_oracle_manipulation {
 不用即时价格，用一段时间内的加权平均价格。
 
 ```move
-struct TWAP has store {
+public struct TWAP has store {
     cumulative_price: u128,
     last_timestamp: u64,
     last_price: u64,

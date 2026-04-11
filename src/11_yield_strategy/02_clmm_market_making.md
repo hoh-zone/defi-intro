@@ -70,9 +70,9 @@ module yield_strategy::auto_rebalance {
     use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
 
-    const E_NOT_OWNER: u64 = 0;
-    const E_OUT_OF_RANGE: u64 = 1;
-    const E_ALREADY_IN_RANGE: u64 = 2;
+    const ENotOwner: u64 = 0;
+    const EOutOfRange: u64 = 1;
+    const EAlreadyInRange: u64 = 2;
     const PRECISION: u64 = 1_000_000_000;
 
     public struct RebalanceParams has store {
@@ -111,9 +111,9 @@ module yield_strategy::auto_rebalance {
             rebalance_count: 0,
             last_rebalance_ms: 0,
             total_fees_collected: 0,
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
         };
-        transfer::transfer(vault, tx_context::sender(ctx));
+        transfer::transfer(vault, ctx.sender());
     }
 
     public fun should_rebalance(
@@ -151,7 +151,7 @@ module yield_strategy::auto_rebalance {
         min_liquidity: u64,
         ctx: &mut TxContext,
     ) {
-        assert!(tx_context::sender(ctx) == vault.owner, E_NOT_OWNER);
+        assert!(ctx.sender() == vault.owner, ENotOwner);
         vault.params.tick_range_bps = tick_range_bps;
         vault.params.min_liquidity = min_liquidity;
     }

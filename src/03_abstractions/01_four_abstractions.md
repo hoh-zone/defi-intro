@@ -9,7 +9,7 @@
 在 Sui 上，池通常是一个 **Shared Object**——因为任何人都可以向它存入或从中取出，它不能被某个地址独占。
 
 ```move
-struct Pool<phantom T> has key {
+public struct Pool<phantom T> has key {
     id: UID,
     balance: Balance<T>,
     total_shares: u64,
@@ -31,7 +31,7 @@ struct Pool<phantom T> has key {
 在 Sui 上，仓位通常是一个 **Owned Object**——它只属于某个地址，只有持有者能操作它。
 
 ```move
-struct Position<phantom T> has key, store {
+public struct Position<phantom T> has key, store {
     id: UID,
     pool_id: ID,
     shares: u64,
@@ -55,7 +55,7 @@ struct Position<phantom T> has key, store {
 价格本身不是对象，它通常从两个来源获取：
 
 ```move
-struct PriceInfo has copy, drop, store {
+public struct PriceInfo has copy, drop, store {
     price: u64,
     confidence: u64,
     timestamp: u64,
@@ -79,7 +79,7 @@ struct PriceInfo has copy, drop, store {
 | 补贴收益 | 项目方预算 | 低 | "前30天双倍收益" |
 
 ```move
-struct YieldAccumulator has store {
+public struct YieldAccumulator has store {
     accumulated_fee: u64,
     accumulated_incentive: u64,
     accumulated_subsidy: u64,

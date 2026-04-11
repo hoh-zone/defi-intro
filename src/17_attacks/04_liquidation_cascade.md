@@ -36,7 +36,7 @@ graph TD
 ### 清算激励
 
 ```move
-struct LiquidationConfig has store {
+public struct LiquidationConfig has store {
     penalty_bps: u64,
     min_penalty: u64,
     max_penalty: u64,
@@ -63,7 +63,7 @@ public fun calculate_liquidation_incentive(
 ### 熔断机制
 
 ```move
-struct CircuitBreaker has store {
+public struct CircuitBreaker has store {
     max_liquidations_per_epoch: u64,
     current_count: u64,
     current_epoch: u64,

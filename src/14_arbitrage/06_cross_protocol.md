@@ -71,13 +71,13 @@ module cross_protocol_arbitrage {
     use sui::coin::{Self, Coin};
     use sui::tx_context::{Self, TxContext};
 
-    struct ArbitragePath has store {
+    public struct ArbitragePath has store {
         steps: vector<Step>,
         expected_output: u64,
         max_slippage_bps: u64,
     }
 
-    struct Step has store {
+    public struct Step has store {
         protocol: u8,
         action: u8,
         input_token: u8,

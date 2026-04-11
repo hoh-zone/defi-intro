@@ -41,7 +41,7 @@ V2 最重要创新：存款被代币化为 cToken。
 ```
 
 ```move
-struct CToken<phantom T> has key, store {
+public struct CToken<phantom T> has key, store {
     id: UID,
     underlying: Balance<T>,
     total_supply: u64,
@@ -89,7 +89,7 @@ cToken 的意义：
 V2 将风险管理从借贷逻辑中独立出来：
 
 ```move
-struct Comptroller has key {
+public struct Comptroller has key {
     id: UID,
     markets: vector<MarketInfo>,
     close_factor_bps: u64,
@@ -98,7 +98,7 @@ struct Comptroller has key {
     paused: bool,
 }
 
-struct MarketInfo has store {
+public struct MarketInfo has store {
     ctoken_id: ID,
     is_listed: bool,
     collateral_factor_bps: u64,
@@ -163,7 +163,7 @@ V4 将借贷协议拆分为独立的模块：
 
 ```move
 module compound_v4 {
-    struct ModuleRegistry has key {
+    public struct ModuleRegistry has key {
         id: UID,
         rate_module: ID,
         collateral_module: ID,

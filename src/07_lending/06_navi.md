@@ -26,12 +26,12 @@ Navi 支持在一个市场中用一种资产做抵押，借出多种资产：
 
 ```move
 module navi {
-    struct Market has key {
+    public struct Market has key {
         id: UID,
         reserves: vector<Reserve>,
     }
 
-    struct Reserve has store {
+    public struct Reserve has store {
         coin_type: u8,
         total_deposits: u64,
         total_borrows: u64,
@@ -39,7 +39,7 @@ module navi {
         risk_config: ReserveRiskConfig,
     }
 
-    struct ReserveRiskConfig has store {
+    public struct ReserveRiskConfig has store {
         ltv_bps: u64,
         liquidation_threshold_bps: u64,
         liquidation_penalty_bps: u64,
@@ -48,7 +48,7 @@ module navi {
         base_borrow_index: u128,
     }
 
-    struct AccountPosition has key, store {
+    public struct AccountPosition has key, store {
         id: UID,
         market_id: ID,
         owner: address,
@@ -56,14 +56,14 @@ module navi {
         borrows: vector<BorrowEntry>,
     }
 
-    struct DepositEntry has store {
+    public struct DepositEntry has store {
         reserve_index: u8,
         amount: u64,
         use_as_collateral: bool,
         index_at_deposit: u128,
     }
 
-    struct BorrowEntry has store {
+    public struct BorrowEntry has store {
         reserve_index: u8,
         amount: u64,
         index_at_borrow: u128,

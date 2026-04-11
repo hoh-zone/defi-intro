@@ -38,13 +38,13 @@
 解锁条件与特定事件挂钩（如 TVL 达标、交易量达标）。
 
 ```move
-struct EventVesting has store {
+public struct EventVesting has store {
     total: u64,
     claimed: u64,
     milestones: vector<Milestone>,
 }
 
-struct Milestone has store {
+public struct Milestone has store {
     description: vector<u8>,
     unlock_amount: u64,
     triggered: bool,

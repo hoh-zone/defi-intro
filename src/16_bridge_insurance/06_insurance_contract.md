@@ -13,13 +13,13 @@ module insurance::parametric {
     use sui::table::{Self, Table};
     use sui::math;
 
-    const E_UNAUTHORIZED: u64 = 0;
-    const E_POLICY_EXPIRED: u64 = 1;
-    const E_NOT_TRIGGERED: u64 = 2;
-    const E_ALREADY_CLAIMED: u64 = 3;
-    const E_INSUFFICIENT_POOL: u64 = 4;
-    const E_INVALID_AMOUNT: u64 = 5;
-    const E_POLICY_ACTIVE: u64 = 6;
+    const EUnauthorized: u64 = 0;
+    const EPolicyExpired: u64 = 1;
+    const ENotTriggered: u64 = 2;
+    const EAlreadyClaimed: u64 = 3;
+    const EInsufficientPool: u64 = 4;
+    const EInvalidAmount: u64 = 5;
+    const EPolicyActive: u64 = 6;
 
     public struct InsurancePool<phantom PayoutCoin> has key {
         id: UID,
@@ -93,7 +93,7 @@ module insurance::parametric {
                 triggered_since_ms: 0,
                 is_triggered: false,
             },
-            admin: tx_context::sender(ctx),
+            admin: ctx.sender(),
         };
         transfer::share_object(pool);
     }
@@ -106,7 +106,7 @@ module insurance::parametric {
         let amount = coin::value(&coin);
         balance::join(&mut pool.capital, coin::into_balance(coin));
         event::emit(PoolCapitalized {
-            provider: tx_context::sender(ctx),
+            provider: ctx.sender(),
             amount,
         });
     }
@@ -120,16 +120,16 @@ module insurance::parametric {
         ctx: &mut TxContext,
     ): u64 {
         let premium_amount = coin::value(&premium);
-        assert!(premium_amount > 0, E_INVALID_AMOUNT);
-        assert!(coverage_amount > 0, E_INVALID_AMOUNT);
+        assert!(premium_amount > 0, EInvalidAmount);
+        assert!(coverage_amount > 0, EInvalidAmount);
         let new_exposure = pool.total_exposure + coverage_amount;
         let max_coverage = balance::value(&pool.capital) * pool.max_exposure_ratio_bps / 10000;
-        assert!(new_exposure <= max_coverage, E_INSUFFICIENT_POOL);
+        assert!(new_exposure <= max_coverage, EInsufficientPool);
         balance::join(&mut pool.capital, coin::into_balance(premium));
         let policy_id = pool.policy_counter;
         pool.policy_counter = pool.policy_counter + 1;
         let policy = Policy {
-            holder: tx_context::sender(ctx),
+            holder: ctx.sender(),
             coverage_amount,
             premium_paid: premium_amount,
             start_ms: clock.timestamp_ms(),
@@ -141,7 +141,7 @@ module insurance::parametric {
         pool.total_exposure = new_exposure;
         event::emit(PolicyPurchased {
             policy_id,
-            holder: tx_context::sender(ctx),
+            holder: ctx.sender(),
             coverage: coverage_amount,
             premium: premium_amount,
             end_ms: clock.timestamp_ms() + duration_ms,
@@ -189,18 +189,18 @@ module insurance::parametric {
         clock: &Clock,
         ctx: &mut TxContext,
     ): Coin<PayoutCoin> {
-        assert!(is_trigger_active(pool, clock), E_NOT_TRIGGERED);
+        assert!(is_trigger_active(pool, clock), ENotTriggered);
         let policy = table::borrow_mut(&mut pool.policies, policy_id);
-        assert!(tx_context::sender(ctx) == policy.holder, E_UNAUTHORIZED);
-        assert!(clock.timestamp_ms() <= policy.end_ms, E_POLICY_EXPIRED);
-        assert!(!policy.claimed, E_ALREADY_CLAIMED);
+        assert!(ctx.sender() == policy.holder, EUnauthorized);
+        assert!(clock.timestamp_ms() <= policy.end_ms, EPolicyExpired);
+        assert!(!policy.claimed, EAlreadyClaimed);
         policy.claimed = true;
         pool.total_exposure = pool.total_exposure - policy.coverage_amount;
         let payout = policy.coverage_amount;
-        assert!(balance::value(&pool.capital) >= payout, E_INSUFFICIENT_POOL);
+        assert!(balance::value(&pool.capital) >= payout, EInsufficientPool);
         event::emit(ClaimPaid {
             policy_id,
-            holder: tx_context::sender(ctx),
+            holder: ctx.sender(),
             payout,
         });
         coin::take(&mut pool.capital, payout, ctx)

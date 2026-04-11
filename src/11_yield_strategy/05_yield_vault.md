@@ -38,11 +38,11 @@ module yield_strategy::yield_vault {
     use sui::tx_context::TxContext;
     use sui::event;
 
-    const E_NOT_OWNER: u64 = 0;
-    const E_ZERO_DEPOSIT: u64 = 1;
-    const E_ZERO_WITHDRAW: u64 = 2;
-    const E_INSUFFICIENT_SHARES: u64 = 3;
-    const E_STRATEGY_FAILED: u64 = 4;
+    const ENotOwner: u64 = 0;
+    const EZeroDeposit: u64 = 1;
+    const EZeroWithdraw: u64 = 2;
+    const EInsufficientShares: u64 = 3;
+    const EStrategyFailed: u64 = 4;
     const PRECISION: u64 = 1_000_000_000;
 
     public struct Vault<phantom Asset> has key {
@@ -104,14 +104,14 @@ module yield_strategy::yield_vault {
             fee_rate_bps,
             performance_fee_bps,
             fees_collected: balance::zero(),
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
         };
         transfer::share_object(vault);
     }
 
     public fun price_per_share<Asset>(vault: &Vault<Asset>): u64 {
         if (vault.total_shares == 0) { return PRECISION };
-        balance::value(&vault.balance) * PRECISION / vault.total_shares
+        vault.balance.value() * PRECISION / vault.total_shares
     }
 
     public fun deposit<Asset>(
@@ -119,18 +119,18 @@ module yield_strategy::yield_vault {
         coin: Coin<Asset>,
         ctx: &mut TxContext,
     ) {
-        let amount = coin::value(&coin);
-        assert!(amount > 0, E_ZERO_DEPOSIT);
+        let amount = coin.value();
+        assert!(amount > 0, EZeroDeposit);
         let shares = if (vault.total_shares == 0) {
             amount * PRECISION / PRECISION
         } else {
-            amount * vault.total_shares / balance::value(&vault.balance)
+            amount * vault.total_shares / vault.balance.value()
         };
-        assert!(shares > 0, E_ZERO_DEPOSIT);
+        assert!(shares > 0, EZeroDeposit);
         balance::join(&mut vault.balance, coin::into_balance(coin));
         vault.total_shares = vault.total_shares + shares;
         event::emit(Deposited {
-            user: tx_context::sender(ctx),
+            user: ctx.sender(),
             amount,
             shares_minted: shares,
         });
@@ -141,15 +141,15 @@ module yield_strategy::yield_vault {
         shares: u64,
         ctx: &mut TxContext,
     ): Coin<Asset> {
-        assert!(shares > 0, E_ZERO_WITHDRAW);
-        assert!(shares <= vault.total_shares, E_INSUFFICIENT_SHARES);
-        let amount = shares * balance::value(&vault.balance) / vault.total_shares;
+        assert!(shares > 0, EZeroWithdraw);
+        assert!(shares <= vault.total_shares, EInsufficientShares);
+        let amount = shares * vault.balance.value() / vault.total_shares;
         let withdrawal_fee = amount * vault.fee_rate_bps / 10000;
         let net_amount = amount - withdrawal_fee;
         balance::join(&mut vault.fees_collected, balance::split(balance::split(&mut vault.balance, amount), withdrawal_fee));
         vault.total_shares = vault.total_shares - shares;
         event::emit(Withdrawn {
-            user: tx_context::sender(ctx),
+            user: ctx.sender(),
             shares_burned: shares,
             amount: net_amount,
         });
@@ -162,7 +162,7 @@ module yield_strategy::yield_vault {
         clock_ms: u64,
         ctx: &mut TxContext,
     ) {
-        assert!(tx_context::sender(ctx) == vault.owner, E_NOT_OWNER);
+        assert!(ctx.sender() == vault.owner, ENotOwner);
         let profit_amount = coin::value(&profit);
         let perf_fee = profit_amount * vault.performance_fee_bps / 10000;
         let net_profit = profit_amount - perf_fee;
@@ -178,14 +178,14 @@ module yield_strategy::yield_vault {
     }
 
     public fun total_assets<Asset>(vault: &Vault<Asset>): u64 {
-        balance::value(&vault.balance)
+        vault.balance.value()
     }
 
     public fun collect_fees<Asset>(
         vault: &mut Vault<Asset>,
         ctx: &mut TxContext,
     ): Coin<Asset> {
-        assert!(tx_context::sender(ctx) == vault.owner, E_NOT_OWNER);
+        assert!(ctx.sender() == vault.owner, ENotOwner);
         let amount = balance::value(&vault.fees_collected);
         coin::take(&mut vault.fees_collected, amount, ctx)
     }
