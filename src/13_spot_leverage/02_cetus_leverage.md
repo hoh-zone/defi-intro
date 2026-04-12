@@ -84,7 +84,7 @@ async function openCetusLeverageLong(params: {
     targetLeverage: number;
     targetAsset: string;
 }) {
-    const ptb = new TransactionBlock();
+    const tx = new Transaction();
 
     let depositAmount = params.collateralAmount;
     let totalBorrowed = 0;
@@ -99,30 +99,30 @@ async function openCetusLeverageLong(params: {
             params.targetAsset
         );
 
-        const borrowCoin = ptb.moveCall({
+        const borrowCoin = tx.moveCall({
             target: `${CETUS_LENDING}::market::borrow`,
             arguments: [
-                ptb.object(MARKET_ID),
-                ptb.pure(borrowAmount),
-                ptb.object(DEPOSIT_RECEIPT),
+                tx.object(MARKET_ID),
+                tx.pure.u64(borrowAmount),
+                tx.object(DEPOSIT_RECEIPT),
             ],
             typeArguments: [params.collateralType],
         });
 
-        const [swapOutput] = ptb.moveCall({
+        const [swapOutput] = tx.moveCall({
             target: `${CETUS_ROUTER}::swap::swap_exact_input`,
             arguments: [
-                ptb.object(POOL_ID),
+                tx.object(POOL_ID),
                 borrowCoin,
-                ptb.pure(0),
+                tx.pure.u64(0),
             ],
             typeArguments: [params.targetAsset, params.collateralType],
         });
 
-        const newDeposit = ptb.moveCall({
+        const newDeposit = tx.moveCall({
             target: `${CETUS_LENDING}::market::supply`,
             arguments: [
-                ptb.object(MARKET_ID),
+                tx.object(MARKET_ID),
                 swapOutput,
             ],
             typeArguments: [params.targetAsset],
@@ -132,7 +132,7 @@ async function openCetusLeverageLong(params: {
         totalBorrowed += borrowAmount;
     }
 
-    return ptb;
+    return tx;
 }
 ```
 

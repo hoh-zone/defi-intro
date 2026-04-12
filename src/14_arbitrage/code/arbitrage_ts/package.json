@@ -1,0 +1,18 @@
+{
+  "name": "arbitrage-ts",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dex-spread": "tsx src/dex_spread_arbitrage.ts",
+    "liquidation": "tsx src/liquidation_arbitrage.ts"
+  },
+  "dependencies": {
+    "@mysten/sui": "^0.55.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "tsx": "^4.19.0",
+    "@types/node": "^22.0.0"
+  }
+}

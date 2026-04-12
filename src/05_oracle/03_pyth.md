@@ -145,7 +145,7 @@ async function borrowWithPyth(feedId: string) {
     const tx = new Transaction();
     tx.moveCall({
         target: "0xpyth::price_feed::update_price_feeds",
-        arguments: [tx.pure(updateData)],
+        arguments: [tx.pure.vector('vector<u8>', updateData)],
     });
 
     tx.moveCall({
@@ -153,8 +153,8 @@ async function borrowWithPyth(feedId: string) {
         arguments: [
             tx.object(MARKET_ID),
             tx.object(PRICE_FEED_ID),
-            tx.pure(updateData),
-            tx.pure(borrowAmount),
+            tx.pure.vector('vector<u8>', updateData),
+            tx.pure.u64(borrowAmount),
         ],
     });
 

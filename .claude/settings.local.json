@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(for dir:*)",
+      "Bash(do echo:*)",
+      "Read(//Users/mac/work/hoh/defi-intro/src/**)",
+      "Bash(done)",
+      "Bash(sui move:*)",
+      "Bash(grep -v \"^$\")"
+    ]
+  }
+}

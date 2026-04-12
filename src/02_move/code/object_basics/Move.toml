@@ -1,0 +1,5 @@
+[package]
+name = "object_basics"
+edition = "2024"
+
+[dependencies]

@@ -1,0 +1,5 @@
+[package]
+name = "uniswap_v2"
+edition = "2024"
+
+[dependencies]

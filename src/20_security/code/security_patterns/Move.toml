@@ -1,0 +1,5 @@
+[package]
+name = "security_patterns"
+edition = "2024"
+
+[dependencies]

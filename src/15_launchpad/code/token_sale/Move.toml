@@ -1,0 +1,5 @@
+[package]
+name = "token_sale"
+edition = "2024"
+
+[dependencies]

@@ -1,0 +1,5 @@
+[package]
+name = "cdp_stablecoin"
+edition = "2024"
+
+[dependencies]

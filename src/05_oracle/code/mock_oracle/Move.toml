@@ -1,0 +1,5 @@
+[package]
+name = "mock_oracle"
+edition = "2024"
+
+[dependencies]

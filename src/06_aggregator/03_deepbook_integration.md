@@ -189,13 +189,13 @@ function buildDeepBookMarketOrderPTB(
     maxPay: number,
     coinIn: TransactionObjectArg
 ): TransactionObjectArg {
-    const ptb = new TransactionBlock();
-    const [baseOut, change] = ptb.moveCall({
+    const tx = new Transaction();
+    const [baseOut, change] = tx.moveCall({
         target: `${DEEPBOOK_PACKAGE}::orderbook::market_order`,
         arguments: [
-            ptb.object(bookId),
-            ptb.pure(side === 'buy'),
-            ptb.pure(quantity),
+            tx.object(bookId),
+            tx.pure.bool(side === 'buy'),
+            tx.pure.u64(quantity),
             coinIn,
         ],
         typeArguments: [BASE_TYPE, QUOTE_TYPE],

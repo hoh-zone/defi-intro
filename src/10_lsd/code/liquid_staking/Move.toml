@@ -1,0 +1,5 @@
+[package]
+name = "liquid_staking"
+edition = "2024"
+
+[dependencies]

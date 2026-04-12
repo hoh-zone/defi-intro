@@ -1,0 +1,5 @@
+[package]
+name = "lending_market"
+edition = "2024"
+
+[dependencies]

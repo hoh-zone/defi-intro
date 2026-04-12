@@ -132,27 +132,27 @@ function buildAggregatorPTB(
     splits: Split[],
     inputCoin: TransactionObjectArg
 ): TransactionObjectArg {
-    const ptb = new TransactionBlock();
+    const tx = new Transaction();
 
     let totalOutputCoin: TransactionObjectArg | null = null;
 
     for (const split of splits) {
-        const [splitCoin] = ptb.splitCoins(inputCoin, [ptb.pure(split.amount)]);
+        const [splitCoin] = tx.splitCoins(inputCoin, [tx.pure.u64(split.amount)]);
 
         let outputCoin: TransactionObjectArg;
         switch (split.dex) {
             case 'cetus':
-                outputCoin = buildCetusSwap(ptb, split.poolId, splitCoin);
+                outputCoin = buildCetusSwap(tx, split.poolId, splitCoin);
                 break;
             case 'deepbook':
-                outputCoin = buildDeepBookMarketOrder(ptb, split.bookId, splitCoin);
+                outputCoin = buildDeepBookMarketOrder(tx, split.bookId, splitCoin);
                 break;
         }
 
         if (totalOutputCoin === null) {
             totalOutputCoin = outputCoin;
         } else {
-            ptb.mergeCoins(totalOutputCoin, [outputCoin]);
+            tx.mergeCoins(totalOutputCoin, [outputCoin]);
         }
     }
 

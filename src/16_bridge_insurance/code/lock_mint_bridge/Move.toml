@@ -1,0 +1,5 @@
+[package]
+name = "lock_mint_bridge"
+edition = "2024"
+
+[dependencies]

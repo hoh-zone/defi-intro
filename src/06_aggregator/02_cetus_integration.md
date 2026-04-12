@@ -145,14 +145,14 @@ function buildCetusSwapPTB(
     minAmountOut: number,
     coinIn: TransactionObjectArg
 ): TransactionObjectArg {
-    const ptb = new TransactionBlock();
-    const [coinOut] = ptb.moveCall({
+    const tx = new Transaction();
+    const [coinOut] = tx.moveCall({
         target: `${CETUS_PACKAGE}::pool::swap_a_to_b`,
         arguments: [
-            ptb.object(poolId),
-            ptb.object(TICK_BITMAP_ID),
-            ptb.pure(amountIn),
-            ptb.pure(MIN_SQRT_PRICE),
+            tx.object(poolId),
+            tx.object(TICK_BITMAP_ID),
+            tx.pure.u64(amountIn),
+            tx.pure.u64(MIN_SQRT_PRICE),
         ],
         typeArguments: [COIN_A_TYPE, COIN_B_TYPE],
     });
