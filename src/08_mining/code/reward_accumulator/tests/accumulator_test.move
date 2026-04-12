@@ -1,13 +1,13 @@
 #[test_only]
 module reward_accumulator::test_stake_coin {
     public struct STAKE has drop {}
-}
 
+}
 #[test_only]
 module reward_accumulator::test_reward_coin {
     public struct REWARD has drop {}
-}
 
+}
 #[test_only]
 module reward_accumulator::accumulator_test {
     use sui::coin::{Self, TreasuryCap};
@@ -771,4 +771,5 @@ module reward_accumulator::accumulator_test {
 
         scenario.end();
     }
+
 }

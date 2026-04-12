@@ -8,7 +8,7 @@
 ///   total staked amount.
 /// - An "accumulator" pattern tracks `acc_reward_per_share` so that pending
 ///   rewards can be computed on-demand without iterating over every user.
-module reward_accumulator::accumulator {
+module reward_accumulator::accumulator;
     use sui::coin::{Self, Coin};
     use sui::balance::{Self, Balance};
     use sui::bag::{Self, Bag};
@@ -415,4 +415,3 @@ module reward_accumulator::accumulator {
         bag::destroy_empty(stakes);
         id.delete();
     }
-}

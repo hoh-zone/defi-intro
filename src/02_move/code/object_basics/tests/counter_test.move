@@ -1,5 +1,5 @@
 #[test_only]
-module object_basics::counter_test {
+module object_basics::counter_test;
     use object_basics::counter;
     use sui::test_scenario;
     use sui::object;
@@ -281,4 +281,3 @@ module object_basics::counter_test {
 
         scenario.end();
     }
-}

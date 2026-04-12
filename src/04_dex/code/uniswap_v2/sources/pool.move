@@ -2,7 +2,7 @@
 ///
 /// This module implements the core logic of a Uniswap V2-style automated
 /// market maker using the constant-product invariant: x * y = k.
-module uniswap_v2::pool {
+module uniswap_v2::pool;
     use sui::balance::{Self, Balance};
     use sui::coin::{Self, Coin};
     use sui::object::{Self, ID};
@@ -394,4 +394,3 @@ module uniswap_v2::pool {
     ) {
         pool.paused = paused;
     }
-}

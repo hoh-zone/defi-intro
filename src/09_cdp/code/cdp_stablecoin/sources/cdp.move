@@ -7,7 +7,7 @@
 /// For educational purposes, the collateral price is passed as a parameter
 /// rather than read from an oracle. In production you would integrate
 /// with a price oracle (see Chapter 5).
-module cdp_stablecoin::cdp {
+module cdp_stablecoin::cdp;
     use sui::coin::{Self, Coin, TreasuryCap};
     use sui::balance::{Self, Balance};
     use sui::object::{Self, ID};
@@ -575,4 +575,3 @@ module cdp_stablecoin::cdp {
         let GovernanceCap { id, system_id: _ } = cap;
         id.delete();
     }
-}

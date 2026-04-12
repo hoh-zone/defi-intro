@@ -1,13 +1,13 @@
 #[test_only]
 module uniswap_v2::test_coin_a {
     public struct COINA has copy, drop, store {}
-}
 
+}
 #[test_only]
 module uniswap_v2::test_coin_b {
     public struct COINB has copy, drop, store {}
-}
 
+}
 #[test_only]
 module uniswap_v2::pool_test {
     use sui::coin::{Self, Coin, TreasuryCap};
@@ -527,4 +527,5 @@ module uniswap_v2::pool_test {
 
         scenario.end();
     }
+
 }

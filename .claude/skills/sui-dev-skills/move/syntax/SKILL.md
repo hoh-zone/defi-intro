@@ -5,16 +5,33 @@ description: Move language syntax — module layout, imports, mutability, visibi
 
 ## 1. Module Layout
 
-Use the new single-line module declaration without braces:
+Use the single-line module declaration without braces (braceless syntax):
 
 ```move
-// ✅
+// ✅ Single-module file
 module my_package::my_module;
+```
 
-// ❌ Legacy — do not use
-module my_package::my_module {
-    ...
+Exception: files that contain **multiple modules** must use brace syntax for all modules in that file:
+
+```move
+// ✅ Multi-module file — braces required
+#[test_only]
+module my_package::test_coin {
+    public struct TESTCOIN has copy, drop, store {}
 }
+
+#[test_only]
+module my_package::my_test {
+    use my_package::test_coin::TESTCOIN;
+    #[test]
+    fun test_something() { ... }
+}
+```
+
+```move
+// ❌ Cannot mix braceless modules in a multi-module file
+// Sui compiler error: "Cannot define an additional 'module' via label in a file with multiple modules"
 ```
 
 Standard section order within a module:

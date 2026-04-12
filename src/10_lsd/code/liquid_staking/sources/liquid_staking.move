@@ -7,7 +7,7 @@
 ///
 /// As rewards are added, total_sui grows while total_lst stays same → rate increases.
 
-module liquid_staking::liquid_staking {
+module liquid_staking::liquid_staking;
     use sui::coin::{Self, Coin, TreasuryCap};
     use sui::balance::{Self, Balance};
     use sui::sui::SUI;
@@ -188,4 +188,3 @@ module liquid_staking::liquid_staking {
         assert!(pool.paused, EPoolPaused);
         pool.paused = false;
     }
-}

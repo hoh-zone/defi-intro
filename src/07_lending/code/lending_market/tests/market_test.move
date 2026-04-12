@@ -2,8 +2,8 @@
 module lending_market::test_coins {
     public struct COLLATERAL has copy, drop, store {}
     public struct BORROW has copy, drop, store {}
-}
 
+}
 #[test_only]
 module lending_market::market_test {
     use sui::coin;
@@ -508,4 +508,5 @@ module lending_market::market_test {
 
         scenario.end();
     }
+
 }

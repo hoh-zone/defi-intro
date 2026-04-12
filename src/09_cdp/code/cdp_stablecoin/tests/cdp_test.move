@@ -2,8 +2,8 @@
 module cdp_stablecoin::test_coins {
     /// A mock collateral token type used exclusively in tests.
     public struct MOCK_COLL has copy, drop, store {}
-}
 
+}
 #[test_only]
 module cdp_stablecoin::cdp_test {
     use sui::coin;
@@ -416,4 +416,5 @@ module cdp_stablecoin::cdp_test {
 
         scenario.end();
     }
+
 }

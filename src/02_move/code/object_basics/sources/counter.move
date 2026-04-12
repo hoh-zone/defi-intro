@@ -5,7 +5,7 @@
 /// - Events and error codes
 /// - Object creation, transfer, and sharing
 
-module object_basics::counter {
+module object_basics::counter;
     use sui::event;
     use sui::object::{Self};
     use sui::transfer;
@@ -182,4 +182,3 @@ module object_basics::counter {
         let AdminCap { id, counter_id: _ } = cap;
         id.delete();
     }
-}

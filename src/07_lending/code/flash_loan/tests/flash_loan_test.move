@@ -2,8 +2,8 @@
 module flash_loan::test_coin {
     /// A simple coin type used only in tests.
     public struct LOANCOIN has copy, drop, store {}
-}
 
+}
 #[test_only]
 module flash_loan::flash_loan_test {
     use sui::test_scenario;
@@ -313,4 +313,5 @@ module flash_loan::flash_loan_test {
         transfer::public_transfer(treasury_cap, @0x0);
         scenario.end();
     }
+
 }

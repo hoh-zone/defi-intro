@@ -7,7 +7,10 @@
       "Read(//Users/mac/work/hoh/defi-intro/src/**)",
       "Bash(done)",
       "Bash(sui move:*)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(for f:*)",
+      "Read(//private/tmp/claude-502/-Users-mac-work-hoh-defi-intro/8db6bb62-4e32-4013-bcbc-2ea5ddd83434/tasks/**)",
+      "Bash(for project:*)"
     ]
   }
 }

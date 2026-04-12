@@ -1,8 +1,8 @@
 #[test_only]
 module sui_savings::test_coin {
     public struct TESTCOIN has copy, drop, store {}
-}
 
+}
 #[test_only]
 module sui_savings::savings_test {
     use sui::coin;
@@ -389,4 +389,5 @@ module sui_savings::savings_test {
 
         scenario.end();
     }
+
 }
