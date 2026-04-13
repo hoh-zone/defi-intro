@@ -25,8 +25,8 @@ module object_basics::counter_test;
 
         // Verify Counter was shared with initial values
         let counter = test_scenario::take_shared<counter::Counter>(&scenario);
-        assert!(counter::get_count(&counter) == 0);
-        assert!(counter::get_step(&counter) == 1);
+        assert!(counter::count(&counter) == 0);
+        assert!(counter::step(&counter) == 1);
 
         // Cleanup
         test_scenario::return_shared(counter);
@@ -45,7 +45,7 @@ module object_basics::counter_test;
         // Increment as USER (anyone can increment a shared object)
         let mut counter = test_scenario::take_shared<counter::Counter>(&scenario);
         counter::increment(&mut counter);
-        assert!(counter::get_count(&counter) == 1);
+        assert!(counter::count(&counter) == 1);
         test_scenario::return_shared(counter);
 
         scenario.end();
@@ -63,11 +63,11 @@ module object_basics::counter_test;
         {
             let mut counter = test_scenario::take_shared<counter::Counter>(&scenario);
             counter::increment(&mut counter);
-            assert!(counter::get_count(&counter) == 1);
+            assert!(counter::count(&counter) == 1);
             counter::increment(&mut counter);
-            assert!(counter::get_count(&counter) == 2);
+            assert!(counter::count(&counter) == 2);
             counter::increment(&mut counter);
-            assert!(counter::get_count(&counter) == 3);
+            assert!(counter::count(&counter) == 3);
             test_scenario::return_shared(counter);
         };
 
@@ -87,7 +87,7 @@ module object_basics::counter_test;
         let mut counter = test_scenario::take_shared<counter::Counter>(&scenario);
         counter::increment(&mut counter);
         counter::increment(&mut counter);
-        assert!(counter::get_count(&counter) == 2);
+        assert!(counter::count(&counter) == 2);
         test_scenario::return_shared(counter);
         scenario.return_to_sender(admin_cap);
 
@@ -96,7 +96,7 @@ module object_basics::counter_test;
         let admin_cap = scenario.take_from_sender<counter::AdminCap>();
         let mut counter = test_scenario::take_shared<counter::Counter>(&scenario);
         counter::reset(&admin_cap, &mut counter);
-        assert!(counter::get_count(&counter) == 0);
+        assert!(counter::count(&counter) == 0);
         test_scenario::return_shared(counter);
         scenario.return_to_sender(admin_cap);
 
@@ -115,7 +115,7 @@ module object_basics::counter_test;
         let admin_cap = scenario.take_from_sender<counter::AdminCap>();
         let mut counter = test_scenario::take_shared<counter::Counter>(&scenario);
         counter::set_step(&admin_cap, &mut counter, 5);
-        assert!(counter::get_step(&counter) == 5);
+        assert!(counter::step(&counter) == 5);
         test_scenario::return_shared(counter);
         scenario.return_to_sender(admin_cap);
 
@@ -124,9 +124,9 @@ module object_basics::counter_test;
         {
             let mut counter = test_scenario::take_shared<counter::Counter>(&scenario);
             counter::increment(&mut counter);
-            assert!(counter::get_count(&counter) == 5);
+            assert!(counter::count(&counter) == 5);
             counter::increment(&mut counter);
-            assert!(counter::get_count(&counter) == 10);
+            assert!(counter::count(&counter) == 10);
             test_scenario::return_shared(counter);
         };
 
@@ -224,7 +224,7 @@ module object_basics::counter_test;
         let admin_cap = scenario.take_from_sender<counter::AdminCap>();
         let mut counter = test_scenario::take_shared<counter::Counter>(&scenario);
         counter::increment(&mut counter);
-        assert!(counter::get_count(&counter) == 1);
+        assert!(counter::count(&counter) == 1);
         // Now set step to max u64 so count (1) + step (MAX) overflows
         counter::set_step(&admin_cap, &mut counter, 18446744073709551615);
         test_scenario::return_shared(counter);
@@ -252,8 +252,8 @@ module object_basics::counter_test;
         // Verify initial state
         let admin_cap = scenario.take_from_sender<counter::AdminCap>();
         let counter = test_scenario::take_shared<counter::Counter>(&scenario);
-        assert!(counter::get_count(&counter) == 0);
-        assert!(counter::get_step(&counter) == 1);
+        assert!(counter::count(&counter) == 0);
+        assert!(counter::step(&counter) == 1);
         test_scenario::return_shared(counter);
         scenario.return_to_sender(admin_cap);
 
@@ -262,7 +262,7 @@ module object_basics::counter_test;
         {
             let mut counter = test_scenario::take_shared<counter::Counter>(&scenario);
             counter::increment(&mut counter);
-            assert!(counter::get_count(&counter) == 1);
+            assert!(counter::count(&counter) == 1);
             test_scenario::return_shared(counter);
         };
 
@@ -272,9 +272,9 @@ module object_basics::counter_test;
             let admin_cap = scenario.take_from_sender<counter::AdminCap>();
             let mut counter = test_scenario::take_shared<counter::Counter>(&scenario);
             counter::set_step(&admin_cap, &mut counter, 10);
-            assert!(counter::get_step(&counter) == 10);
+            assert!(counter::step(&counter) == 10);
             counter::increment(&mut counter);
-            assert!(counter::get_count(&counter) == 11);
+            assert!(counter::count(&counter) == 11);
             test_scenario::return_shared(counter);
             scenario.return_to_sender(admin_cap);
         };

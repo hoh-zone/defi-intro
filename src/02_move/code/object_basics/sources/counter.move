@@ -7,7 +7,7 @@
 
 module object_basics::counter;
     use sui::event;
-    use sui::object::{Self};
+    use sui::object;
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
@@ -70,8 +70,8 @@ module object_basics::counter;
 
     /// Create a new Counter shared object and transfer an AdminCap
     /// to the sender. The Counter starts at count = 0 with step = 1.
-    public entry fun create(ctx: &mut TxContext) {
-        let sender = tx_context::sender(ctx);
+    entry fun create(ctx: &mut TxContext) {
+        let sender = ctx.sender();
 
         // Create the Counter object and record its ID
         let counter_uid = object::new(ctx);
@@ -105,7 +105,7 @@ module object_basics::counter;
 
     /// Increment the counter by the configured step.
     /// Anyone can call this since Counter is a shared object.
-    public entry fun increment(counter: &mut Counter) {
+    entry fun increment(counter: &mut Counter) {
         let current = counter.count;
         let step = counter.step;
         // Overflow check: step must not exceed (MAX_U64 - current)
@@ -120,7 +120,7 @@ module object_basics::counter;
     }
 
     /// Reset the counter back to zero. Only the admin can do this.
-    public entry fun reset(
+    entry fun reset(
         cap: &AdminCap,
         counter: &mut Counter,
     ) {
@@ -137,7 +137,7 @@ module object_basics::counter;
     }
 
     /// Change the increment step. Only the admin can do this.
-    public entry fun set_step(
+    entry fun set_step(
         cap: &AdminCap,
         counter: &mut Counter,
         new_step: u64,
@@ -158,12 +158,12 @@ module object_basics::counter;
     // ========== Read-only functions ==========
 
     /// Get the current count value (can be called as a move call)
-    public fun get_count(counter: &Counter): u64 {
+    public fun count(counter: &Counter): u64 {
         counter.count
     }
 
     /// Get the current step value
-    public fun get_step(counter: &Counter): u64 {
+    public fun step(counter: &Counter): u64 {
         counter.step
     }
 

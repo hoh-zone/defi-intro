@@ -3,6 +3,7 @@ module mock_oracle::oracle_test;
 use sui::test_scenario;
 use mock_oracle::price_oracle;
 use mock_oracle::aggregator;
+use std::unit_test::assert_eq;
 
 const ADMIN: address = @0xAD;
 
@@ -10,7 +11,7 @@ const ADMIN: address = @0xAD;
 
 #[test]
 /// Verify that create_for_test creates an Oracle (shared) and an AdminCap owned by sender.
-fun test_oracle_init() {
+fun oracle_init() {
     let mut scenario = test_scenario::begin(ADMIN);
 
     let ctx = scenario.ctx();
@@ -19,9 +20,9 @@ fun test_oracle_init() {
     scenario.next_tx(ADMIN);
     {
         let oracle = test_scenario::take_shared<price_oracle::Oracle>(&scenario);
-        let feed = price_oracle::get_price(&oracle);
-        assert!(price_oracle::feed_price(&feed) == 0, 0);
-        assert!(price_oracle::feed_confidence(&feed) == 0, 0);
+        let feed = price_oracle::price(&oracle);
+        assert_eq!(price_oracle::feed_price(&feed), 0);
+        assert_eq!(price_oracle::feed_confidence(&feed), 0);
         test_scenario::return_shared(oracle);
     };
     scenario.next_tx(ADMIN);
@@ -34,7 +35,7 @@ fun test_oracle_init() {
 
 #[test]
 /// Update price and read it back.
-fun test_price_update_and_get() {
+fun price_update_and_get() {
     let mut scenario = test_scenario::begin(ADMIN);
 
     // Use create_for_test to create oracle objects that can be taken together.
@@ -48,10 +49,10 @@ fun test_price_update_and_get() {
 
         price_oracle::update_price(&cap, &mut oracle, 1_000, 100, 1000);
 
-        let feed = price_oracle::get_price(&oracle);
-        assert!(price_oracle::feed_price(&feed) == 1_000, 0);
-        assert!(price_oracle::feed_confidence(&feed) == 100, 0);
-        assert!(price_oracle::feed_timestamp(&feed) == 1000, 0);
+        let feed = price_oracle::price(&oracle);
+        assert_eq!(price_oracle::feed_price(&feed), 1_000);
+        assert_eq!(price_oracle::feed_confidence(&feed), 100);
+        assert_eq!(price_oracle::feed_timestamp(&feed), 1000);
 
         test_scenario::return_shared(oracle);
         price_oracle::delete_admin_cap(cap);
@@ -61,7 +62,7 @@ fun test_price_update_and_get() {
 
 #[test]
 /// Update price multiple times and verify TWAP.
-fun test_twap_calculation() {
+fun twap_calculation() {
     let mut scenario = test_scenario::begin(ADMIN);
 
     let ctx = scenario.ctx();
@@ -80,7 +81,7 @@ fun test_twap_calculation() {
         price_oracle::update_price(&cap, &mut oracle, 3_000, 100, 3000);
 
         // TWAP over 2000 ms ending at t=3000.
-        let twap = price_oracle::get_twap(&oracle, 2000, 3000);
+        let twap = price_oracle::twap(&oracle, 2000, 3000);
         assert!(twap == 1_500, twap);
 
         test_scenario::return_shared(oracle);
@@ -89,10 +90,9 @@ fun test_twap_calculation() {
     scenario.end();
 }
 
-#[test]
-#[expected_failure(abort_code = price_oracle::EStalePrice)]
+#[test, expected_failure(abort_code = price_oracle::EStalePrice)]
 /// Reject a price that is too stale.
-fun test_stale_price_rejection() {
+fun stale_price_rejection() {
     let mut scenario = test_scenario::begin(ADMIN);
 
     let ctx = scenario.ctx();
@@ -121,10 +121,9 @@ fun test_stale_price_rejection() {
     scenario.end();
 }
 
-#[test]
-#[expected_failure(abort_code = price_oracle::EPriceDeviation)]
+#[test, expected_failure(abort_code = price_oracle::EPriceDeviation)]
 /// Reject a price that deviates too much from the reference.
-fun test_price_deviation_rejection() {
+fun price_deviation_rejection() {
     let mut scenario = test_scenario::begin(ADMIN);
 
     let ctx = scenario.ctx();
@@ -156,7 +155,7 @@ fun test_price_deviation_rejection() {
 
 #[test]
 /// Safe read passes when price is fresh and within deviation.
-fun test_safe_read_ok() {
+fun safe_read_ok() {
     let mut scenario = test_scenario::begin(ADMIN);
 
     let ctx = scenario.ctx();
@@ -186,7 +185,7 @@ fun test_safe_read_ok() {
 
 #[test]
 /// validate_price_range works correctly.
-fun test_validate_price_range() {
+fun validate_price_range() {
     assert!(price_oracle::validate_price_range(500, 100, 1000), 0);
     assert!(price_oracle::validate_price_range(100, 100, 1000), 0);
     assert!(price_oracle::validate_price_range(1000, 100, 1000), 0);
@@ -196,7 +195,7 @@ fun test_validate_price_range() {
 
 #[test]
 /// aggregate_prices returns the median.
-fun test_aggregate_median() {
+fun aggregate_median() {
     // Odd number of sources.
     let mut prices = vector::empty();
     vector::push_back(&mut prices, 300);
@@ -216,18 +215,16 @@ fun test_aggregate_median() {
     assert!(median2 == 250, median2);
 }
 
-#[test]
-#[expected_failure(abort_code = price_oracle::EInvalidPrice)]
+#[test, expected_failure(abort_code = price_oracle::EInvalidPrice)]
 /// aggregate_prices aborts on empty vector.
-fun test_aggregate_empty() {
+fun aggregate_empty() {
     let mut prices = vector::empty();
     price_oracle::aggregate_prices(&mut prices);
 }
 
-#[test]
-#[expected_failure(abort_code = price_oracle::EInvalidPrice)]
+#[test, expected_failure(abort_code = price_oracle::EInvalidPrice)]
 /// update_price rejects zero price.
-fun test_update_price_zero() {
+fun update_price_zero() {
     let mut scenario = test_scenario::begin(ADMIN);
 
     let ctx = scenario.ctx();
@@ -248,7 +245,7 @@ fun test_update_price_zero() {
 
 #[test]
 /// Aggregator init and source count.
-fun test_aggregator_init() {
+fun aggregator_init() {
     let mut scenario = test_scenario::begin(ADMIN);
 
     let ctx = scenario.ctx();
@@ -257,7 +254,7 @@ fun test_aggregator_init() {
     scenario.next_tx(ADMIN);
     {
         let agg = test_scenario::take_shared<aggregator::Aggregator>(&scenario);
-        assert!(aggregator::get_source_count(&agg) == 0, 0);
+        assert_eq!(aggregator::source_count(&agg), 0);
         test_scenario::return_shared(agg);
     };
     scenario.next_tx(ADMIN);
@@ -270,7 +267,7 @@ fun test_aggregator_init() {
 
 #[test]
 /// Single source aggregation.
-fun test_single_source_aggregation() {
+fun single_source_aggregation() {
     let mut scenario = test_scenario::begin(ADMIN);
 
     let ctx = scenario.ctx();
@@ -284,10 +281,10 @@ fun test_single_source_aggregation() {
         let sid = aggregator::add_source(&cap, &mut agg, scenario.ctx());
         aggregator::update_source_price(&cap, &mut agg, sid, 1_000, 1000);
 
-        assert!(aggregator::get_source_count(&agg) == 1, 0);
-        assert!(aggregator::get_active_source_count(&agg) == 1, 0);
+        assert_eq!(aggregator::source_count(&agg), 1);
+        assert_eq!(aggregator::active_source_count(&agg), 1);
 
-        let price = aggregator::get_aggregated_price(&agg);
+        let price = aggregator::aggregated_price(&agg);
         assert!(price == 1_000, price);
 
         test_scenario::return_shared(agg);
@@ -298,7 +295,7 @@ fun test_single_source_aggregation() {
 
 #[test]
 /// Multiple sources, all same price.
-fun test_all_sources_same_price() {
+fun all_sources_same_price() {
     let mut scenario = test_scenario::begin(ADMIN);
 
     let ctx = scenario.ctx();
@@ -317,7 +314,7 @@ fun test_all_sources_same_price() {
         aggregator::update_source_price(&cap, &mut agg, s2, 2_000, 1000);
         aggregator::update_source_price(&cap, &mut agg, s3, 2_000, 1000);
 
-        let price = aggregator::get_aggregated_price(&agg);
+        let price = aggregator::aggregated_price(&agg);
         assert!(price == 2_000, price);
 
         test_scenario::return_shared(agg);
@@ -328,7 +325,7 @@ fun test_all_sources_same_price() {
 
 #[test]
 /// Multiple sources with different prices => median.
-fun test_multi_source_median() {
+fun multi_source_median() {
     let mut scenario = test_scenario::begin(ADMIN);
 
     let ctx = scenario.ctx();
@@ -352,7 +349,7 @@ fun test_multi_source_median() {
         aggregator::update_source_price(&cap, &mut agg, s5, 980, 1000);
 
         // Sorted: 980, 990, 1000, 1010, 1020 => median = 1000
-        let price = aggregator::get_aggregated_price(&agg);
+        let price = aggregator::aggregated_price(&agg);
         assert!(price == 1_000, price);
 
         test_scenario::return_shared(agg);
@@ -363,7 +360,7 @@ fun test_multi_source_median() {
 
 #[test]
 /// TWAP over full observation history.
-fun test_twap_full_history() {
+fun twap_full_history() {
     let mut scenario = test_scenario::begin(ADMIN);
 
     let ctx = scenario.ctx();
@@ -384,7 +381,7 @@ fun test_twap_full_history() {
         // cum at t=1000 = 0 (first obs, elapsed was 0 because last_update_ms was 0).
         // cum at t=11000 = 0 + 100 * (11000 - 1000) = 1_000_000.
         // twap = 1_000_000 / (11000 - 1000) = 100.
-        let twap = price_oracle::get_twap(&oracle, 10_000, 11_000);
+        let twap = price_oracle::twap(&oracle, 10_000, 11_000);
         assert!(twap == 100, twap);
 
         test_scenario::return_shared(oracle);
@@ -395,7 +392,7 @@ fun test_twap_full_history() {
 
 #[test]
 /// TWAP with no observations returns current price.
-fun test_twap_no_observations() {
+fun twap_no_observations() {
     let mut scenario = test_scenario::begin(ADMIN);
 
     let ctx = scenario.ctx();
@@ -408,7 +405,7 @@ fun test_twap_no_observations() {
         let cap = scenario.take_from_sender<price_oracle::AdminCap>();
 
         // Current feed.price is 0 (init default), so TWAP returns 0.
-        let twap = price_oracle::get_twap(&oracle, 5_000, 10_000);
+        let twap = price_oracle::twap(&oracle, 5_000, 10_000);
         assert!(twap == 0, twap);
 
         test_scenario::return_shared(oracle);

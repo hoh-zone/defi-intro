@@ -1,0 +1,8 @@
+[package]
+name = "sui_price_prediction"
+edition = "2024"
+
+# 首次构建需联网拉取 Pyth / Wormhole；若失败可多试几次或使用代理。
+[dependencies]
+pyth = { git = "https://github.com/pyth-network/pyth-crosschain.git", subdir = "target_chains/sui/contracts", rev = "sui-contract-testnet" }
+wormhole = { git = "https://github.com/wormhole-foundation/wormhole.git", subdir = "sui/wormhole", rev = "sui/testnet" }

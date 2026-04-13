@@ -109,7 +109,7 @@ public fun update_source_price(
 
 /// Return the median price across all active sources.
 /// Active = source with a non-zero price.
-public fun get_aggregated_price(aggregator: &Aggregator): u64 {
+public fun aggregated_price(aggregator: &Aggregator): u64 {
     let len = vector::length(&aggregator.sources);
     assert!(len > 0, ENoSources);
 
@@ -129,12 +129,12 @@ public fun get_aggregated_price(aggregator: &Aggregator): u64 {
 }
 
 /// Return the number of registered sources (including inactive ones).
-public fun get_source_count(aggregator: &Aggregator): u64 {
+public fun source_count(aggregator: &Aggregator): u64 {
     vector::length(&aggregator.sources)
 }
 
 /// Return the number of active (non-zero price) sources.
-public fun get_active_source_count(aggregator: &Aggregator): u64 {
+public fun active_source_count(aggregator: &Aggregator): u64 {
     let mut count: u64 = 0;
     let len = vector::length(&aggregator.sources);
     let mut i: u64 = 0;

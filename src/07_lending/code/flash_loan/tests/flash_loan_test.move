@@ -134,11 +134,11 @@ module flash_loan::flash_loan_test {
         flash_loan::deposit<LOANCOIN>(&mut pool, deposit_coin);
 
         // Test various amounts -- all within one take_shared block
-        assert!(flash_loan::get_fee_amount(&pool, 1_000) == 3);
-        assert!(flash_loan::get_fee_amount(&pool, 10_000) == 30);
-        assert!(flash_loan::get_fee_amount(&pool, 1_000_000) == 3_000);
-        assert!(flash_loan::get_fee_amount(&pool, 1_000_000_000) == 3_000_000);
-        assert!(flash_loan::get_fee_amount(&pool, 1_000_000_000_000) == 3_000_000_000);
+        assert!(flash_loan::fee_amount(&pool, 1_000) == 3);
+        assert!(flash_loan::fee_amount(&pool, 10_000) == 30);
+        assert!(flash_loan::fee_amount(&pool, 1_000_000) == 3_000);
+        assert!(flash_loan::fee_amount(&pool, 1_000_000_000) == 3_000_000);
+        assert!(flash_loan::fee_amount(&pool, 1_000_000_000_000) == 3_000_000_000);
         test_scenario::return_shared(pool);
 
         coin::burn(&mut treasury_cap, coins);

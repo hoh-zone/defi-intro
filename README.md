@@ -14,7 +14,7 @@
 
 核心理念：**从入门到警惕**——先理解机制，再识别风险，最终写出经得起审计的代码。
 
-## 全书结构（20 章 + 附录）
+## 全书结构（22 章 + 附录）
 
 ```
 第一篇 认知地基（第 1-3 章）
@@ -29,13 +29,13 @@
   流动性挖矿（累加器 → 衰减 → Boost/VeToken）
   CDP 与稳定币
 
-第四篇 收益与杠杆（第 10-16 章）
+第四篇 收益与杠杆（第 10-17 章）
   LSD · 自动做市（CLMM/网格/Vault/Delta中性）
   衍生品 · 现货杠杆 · 套利 · Launchpad
-  跨链桥与链上保险
+  跨链桥与链上保险 · 预测市场（CTF + LMSR + 结算）
 
-第五篇 警惕（第 17-20 章）
-  攻击模式 · 协议工程化 · 审计准备 · Move 安全实践
+第五篇 警惕（第 18-22 章）
+  攻击模式 · 协议工程化 · 审计准备 · Move 安全实践 · 风险控制全景
 ```
 
 ## 目标读者
@@ -93,10 +93,12 @@ mdbook serve --open
 | 四 | 14 | 套利 | SpreadArb · MEV |
 | 四 | 15 | Launchpad | StateMachine · Vesting |
 | 四 | 16 | 跨链与保险 | Bridge · Insurance · PredictionMarket |
-| 五 | 17 | 攻击模式 | OracleAttack · FlashLoanAttack · GovernanceAttack |
-| 五 | 18 | 协议工程化 | AdminCap · PauseState · FuzzTest |
-| 五 | 19 | 审计准备 | PermissionMatrix · Governance |
-| 五 | 20 | Move 安全实践 | Capability · SafeMath · Multisig · Checklist |
+| 四 | 17 | 预测市场 | CTF · LMSR · Oracle · Claim |
+| 五 | 18 | 攻击模式 | OracleAttack · FlashLoanAttack · GovernanceAttack |
+| 五 | 19 | 协议工程化 | AdminCap · PauseState · FuzzTest |
+| 五 | 20 | 审计准备 | PermissionMatrix · Governance |
+| 五 | 21 | Move 安全实践 | Capability · SafeMath · Multisig · Checklist |
+| 五 | 22 | 风险控制全景 | LTV · 清算 · 挤兑 · 治理 · Launch Checklist |
 
 ## 技术栈
 

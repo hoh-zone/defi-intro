@@ -107,7 +107,7 @@ public fun borrow<T>(
     assert!(amount > 0, EZeroAmount);
     assert!(balance::value(&pool.balance) >= amount, EInsufficientLiquidity);
 
-    let fee_amount = get_fee_amount(pool, amount);
+    let fee_amount = fee_amount(pool, amount);
     let coin = coin::take(&mut pool.balance, amount, ctx);
     let receipt = FlashLoanReceipt<T> {
         loan_amount: amount,
@@ -208,7 +208,7 @@ public fun set_fee_bps<T>(
 
 /// Calculate the fee for a given loan amount.
 /// Fee = amount * fee_bps / 10000
-public fun get_fee_amount<T>(pool: &FlashPool<T>, amount: u64): u64 {
+public fun fee_amount<T>(pool: &FlashPool<T>, amount: u64): u64 {
     amount * pool.fee_bps / 10000
 }
 
@@ -237,5 +237,5 @@ public fun total_loans<T>(pool: &FlashPool<T>): u64 {
 /// Destroy an unused AdminCap (e.g., if governance takes over).
 public fun destroy_admin_cap<T>(cap: AdminCap<T>) {
     let AdminCap { id, pool_id: _ } = cap;
-    object::delete(id);
+    id.delete();
 }

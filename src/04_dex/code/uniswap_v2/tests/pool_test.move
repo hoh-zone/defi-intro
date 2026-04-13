@@ -21,17 +21,17 @@ module uniswap_v2::pool_test {
 
     /// Transfer a coin to sender for cleanup.
     fun discard<T>(c: Coin<T>, ctx: &mut TxContext) {
-        transfer::public_transfer(c, tx_context::sender(ctx));
+        transfer::public_transfer(c, ctx.sender());
     }
 
     /// Transfer an LP token to sender for cleanup.
     fun discard_lp(lp: pool::LP<COINA, COINB>, ctx: &mut TxContext) {
-        transfer::public_transfer(lp, tx_context::sender(ctx));
+        transfer::public_transfer(lp, ctx.sender());
     }
 
     /// Transfer TreasuryCap to sender for cleanup.
     fun cleanup_treasury<T>(treasury: TreasuryCap<T>, ctx: &mut TxContext) {
-        transfer::public_transfer(treasury, tx_context::sender(ctx));
+        transfer::public_transfer(treasury, ctx.sender());
     }
 
     /// Setup: create treasury caps for both test currencies.
@@ -53,7 +53,7 @@ module uniswap_v2::pool_test {
     // ========== Test: Create Pool ==========
 
     #[test]
-    fun test_create_pool() {
+    fun create_pool() {
         use sui::test_scenario;
 
         let mut scenario = test_scenario::begin(@0xA);
@@ -75,7 +75,7 @@ module uniswap_v2::pool_test {
     // ========== Test: Add Liquidity (First LP) ==========
 
     #[test]
-    fun test_add_liquidity_first_lp() {
+    fun add_liquidity_first_lp() {
         use sui::test_scenario;
 
         let mut scenario = test_scenario::begin(@0xA);
@@ -121,7 +121,7 @@ module uniswap_v2::pool_test {
     // ========== Test: Add Liquidity (Subsequent LP) ==========
 
     #[test]
-    fun test_add_liquidity_subsequent() {
+    fun add_liquidity_subsequent() {
         use sui::test_scenario;
 
         let mut scenario = test_scenario::begin(@0xA);
@@ -181,7 +181,7 @@ module uniswap_v2::pool_test {
     // ========== Test: Swap A to B ==========
 
     #[test]
-    fun test_swap_a_to_b() {
+    fun swap_a_to_b() {
         use sui::test_scenario;
 
         let mut scenario = test_scenario::begin(@0xA);
@@ -224,7 +224,7 @@ module uniswap_v2::pool_test {
     // ========== Test: Swap B to A ==========
 
     #[test]
-    fun test_swap_b_to_a() {
+    fun swap_b_to_a() {
         use sui::test_scenario;
 
         let mut scenario = test_scenario::begin(@0xA);
@@ -366,7 +366,7 @@ module uniswap_v2::pool_test {
     #[test]
     fun test_get_amount_out_basic() {
         // Symmetric pool: 1000 A, 1000 B, 0.3% fee (30 bps)
-        let output = pool::get_amount_out(100, 1000, 1000, 30);
+        let output = pool::amount_out(100, 1000, 1000, 30);
         // amount_in_with_fee = 100 * 9970 = 997000
         // numerator = 997000 * 1000 = 997000000
         // denominator = 1000 * 10000 + 997000 = 10997000
@@ -374,7 +374,7 @@ module uniswap_v2::pool_test {
         assert!(output == 90);
 
         // Asymmetric pool: 1000 A, 4000 B
-        let output2 = pool::get_amount_out(100, 1000, 4000, 30);
+        let output2 = pool::amount_out(100, 1000, 4000, 30);
         // amount_in_with_fee = 997000
         // numerator = 997000 * 4000 = 3988000000
         // denominator = 10997000
@@ -384,7 +384,7 @@ module uniswap_v2::pool_test {
 
     #[test]
     fun test_get_amount_out_zero_fee() {
-        let output = pool::get_amount_out(100, 1000, 1000, 0);
+        let output = pool::amount_out(100, 1000, 1000, 0);
         // amount_in_with_fee = 100 * 10000 = 1000000
         // numerator = 1000000 * 1000 = 1000000000
         // denominator = 1000 * 10000 + 1000000 = 11000000
@@ -394,7 +394,7 @@ module uniswap_v2::pool_test {
 
     #[test]
     fun test_get_amount_out_large_swap() {
-        let output = pool::get_amount_out(500000, 1000000, 1000000, 30);
+        let output = pool::amount_out(500000, 1000000, 1000000, 30);
         // amount_in_with_fee = 500000 * 9970 = 4985000000
         // numerator = 4985000000 * 1000000 = 4985000000000000
         // denominator = 1000000 * 10000 + 4985000000 = 5098500000
@@ -451,7 +451,7 @@ module uniswap_v2::pool_test {
         scenario.next_tx(@0xA);
         {
             let pool_obj = test_scenario::take_shared<pool::Pool<COINA, COINB>>(&scenario);
-            let price = pool::get_price(&pool_obj);
+            let price = pool::price(&pool_obj);
             // price = 2000 * 1000000 / 1000 = 2000000
             assert!(price == 2000000);
             test_scenario::return_shared(pool_obj);

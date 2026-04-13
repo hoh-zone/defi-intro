@@ -1,0 +1,5 @@
+[package]
+name = "english_auction"
+edition = "2024"
+
+[dependencies]

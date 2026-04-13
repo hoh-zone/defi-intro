@@ -69,7 +69,7 @@ module reward_accumulator::accumulator;
     /// `reward_coin`  -- the total reward tokens to distribute.
     /// `duration_ms`  -- distribution window in milliseconds.
     /// `current_ms`   -- current timestamp (from `clock.timestamp_ms()`).
-    public entry fun create_pool<StakeCoin, RewardCoin>(
+    entry fun create_pool<StakeCoin, RewardCoin>(
         reward_coin: Coin<RewardCoin>,
         duration_ms: u64,
         current_ms: u64,
@@ -151,7 +151,7 @@ module reward_accumulator::accumulator;
     // ======= Mutating operations =======
 
     /// Stake `coin` into the pool on behalf of `user_addr`.
-    public entry fun stake<StakeCoin, RewardCoin>(
+    entry fun stake<StakeCoin, RewardCoin>(
         pool: &mut RewardPool<StakeCoin, RewardCoin>,
         coin: Coin<StakeCoin>,
         user_addr: address,
@@ -205,7 +205,7 @@ module reward_accumulator::accumulator;
     }
 
     /// Unstake `amount` tokens and return them to the caller.
-    public entry fun unstake<StakeCoin, RewardCoin>(
+    entry fun unstake<StakeCoin, RewardCoin>(
         pool: &mut RewardPool<StakeCoin, RewardCoin>,
         amount: u64,
         user_addr: address,

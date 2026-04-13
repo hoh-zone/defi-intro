@@ -184,7 +184,7 @@ module cdp_stablecoin::cdp;
             system_id: object::id(&system),
         };
         transfer::share_object(system);
-        transfer::public_transfer(gov_cap, tx_context::sender(ctx));
+        transfer::public_transfer(gov_cap, ctx.sender());
     }
 
     // ============================================================
@@ -218,10 +218,10 @@ module cdp_stablecoin::cdp;
 
         // Mint stablecoin to the caller
         let stable_coin = coin::mint(&mut treasury.treasury_cap, mint_amount, ctx);
-        transfer::public_transfer(stable_coin, tx_context::sender(ctx));
+        transfer::public_transfer(stable_coin, ctx.sender());
 
         sui::event::emit(PositionOpened {
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
             collateral_amount,
             mint_amount,
         });
@@ -229,7 +229,7 @@ module cdp_stablecoin::cdp;
         CDPPosition<Collateral> {
             id: object::new(ctx),
             system_id: object::id(system),
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
             collateral_amount,
             debt_amount: mint_amount,
         }
@@ -268,7 +268,7 @@ module cdp_stablecoin::cdp;
         ctx: &TxContext,
     ) {
         assert!(object::id(system) == position.system_id, EPositionMismatch);
-        assert!(position.owner == tx_context::sender(ctx), ENotOwner);
+        assert!(position.owner == ctx.sender(), ENotOwner);
 
         let repay_amount = coin::value(&repayment);
         assert!(repay_amount > 0, EInvalidAmount);
@@ -297,7 +297,7 @@ module cdp_stablecoin::cdp;
         ctx: &mut TxContext,
     ): Coin<Collateral> {
         assert!(object::id(system) == position.system_id, EPositionMismatch);
-        assert!(position.owner == tx_context::sender(ctx), ENotOwner);
+        assert!(position.owner == ctx.sender(), ENotOwner);
 
         let repay_amount = coin::value(&repayment);
         assert!(repay_amount >= position.debt_amount, EInsufficientRepayment);
@@ -319,7 +319,7 @@ module cdp_stablecoin::cdp;
         id.delete();
 
         sui::event::emit(PositionClosed {
-            owner: tx_context::sender(ctx),
+            owner: ctx.sender(),
             collateral_returned,
             debt_repaid,
         });
@@ -537,7 +537,7 @@ module cdp_stablecoin::cdp;
             system_id: object::id(&system),
         };
         transfer::share_object(system);
-        transfer::public_transfer(gov_cap, tx_context::sender(ctx));
+        transfer::public_transfer(gov_cap, ctx.sender());
     }
 
     #[test_only]

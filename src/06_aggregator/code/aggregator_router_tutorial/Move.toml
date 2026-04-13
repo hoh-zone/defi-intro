@@ -1,0 +1,5 @@
+[package]
+name = "aggregator_router_tutorial"
+edition = "2024"
+
+[dependencies]

@@ -17,7 +17,7 @@ module uniswap_v2::pool;
     const EInvalidRatio: u64 = 3;
     const EInsufficientOutput: u64 = 4;
     const EUnauthorized: u64 = 5;
-    const KLastMismatch: u64 = 6;
+    const EKLastMismatch: u64 = 6;
 
     // ========== Structs ==========
 
@@ -95,7 +95,7 @@ module uniswap_v2::pool;
         };
 
         transfer::share_object(pool);
-        transfer::transfer(admin_cap, tx_context::sender(ctx));
+        transfer::transfer(admin_cap, ctx.sender());
     }
 
     // ========== Liquidity Provision ==========
@@ -152,7 +152,7 @@ module uniswap_v2::pool;
             pool_id: object::id(pool),
             shares,
         };
-        transfer::transfer(lp, tx_context::sender(ctx));
+        transfer::transfer(lp, ctx.sender());
     }
 
     /// Remove liquidity from the pool. Burns the LP token and returns
@@ -219,7 +219,7 @@ module uniswap_v2::pool;
         let amount_in = coin::value(&input);
         assert!(amount_in > 0, EInvalidAmount);
 
-        let output_amount = get_amount_out(
+        let output_amount = amount_out(
             amount_in,
             pool.reserve_a,
             pool.reserve_b,
@@ -251,7 +251,7 @@ module uniswap_v2::pool;
         let amount_in = coin::value(&input);
         assert!(amount_in > 0, EInvalidAmount);
 
-        let output_amount = get_amount_out(
+        let output_amount = amount_out(
             amount_in,
             pool.reserve_b,
             pool.reserve_a,
@@ -275,7 +275,7 @@ module uniswap_v2::pool;
 
     /// Calculate the output amount for a swap given input amount and reserves.
     /// Formula: output = (amount_in * (10000 - fee_bps) * reserve_out) / (reserve_in * 10000 + amount_in * (10000 - fee_bps))
-    public fun get_amount_out(
+    public fun amount_out(
         amount_in: u64,
         reserve_in: u64,
         reserve_out: u64,
@@ -311,7 +311,7 @@ module uniswap_v2::pool;
     }
 
     /// Get the current price of A in terms of B (reserve_b / reserve_a).
-    public fun get_price<A, B>(pool: &Pool<A, B>): u64 {
+    public fun price<A, B>(pool: &Pool<A, B>): u64 {
         assert!(pool.reserve_a > 0, EInsufficientLiquidity);
         ((pool.reserve_b as u128) * 1000000 / (pool.reserve_a as u128)) as u64
     }
@@ -347,7 +347,7 @@ module uniswap_v2::pool;
         };
 
         // Sanity check: k_last should always be <= k_current
-        assert!(pool.k_last <= k_current, KLastMismatch);
+        assert!(pool.k_last <= k_current, EKLastMismatch);
 
         // Protocol fee: fraction of the growth in k
         // fee_shares = total_supply * (sqrt(k_current/k_last) - 1) * protocol_fee_bps / 10000

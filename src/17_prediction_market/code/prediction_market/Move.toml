@@ -1,0 +1,5 @@
+[package]
+name = "prediction_market"
+edition = "2024"
+
+[dependencies]

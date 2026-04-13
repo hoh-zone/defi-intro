@@ -12,6 +12,7 @@ module cdp_stablecoin::cdp_test {
     use cdp_stablecoin::cdp;
     use cdp_stablecoin::cdp::{StableTreasury, CDPSystem, CDPPosition, GovernanceCap, create_system_for_testing};
     use cdp_stablecoin::test_coins::MOCK_COLL;
+    use std::unit_test::assert_eq;
 
     const ADMIN: address = @0xA;
     const USER_B: address = @0xB;
@@ -24,7 +25,7 @@ module cdp_stablecoin::cdp_test {
     }
 
     #[test]
-    fun test_init_system() {
+    fun init_system() {
         let mut scenario = test_scenario::begin(ADMIN);
         {
             let ctx = scenario.ctx();
@@ -37,11 +38,11 @@ module cdp_stablecoin::cdp_test {
 
         scenario.next_tx(ADMIN);
         let system = test_scenario::take_shared<CDPSystem<MOCK_COLL>>(&scenario);
-        assert!(cdp::total_debt(&system) == 0);
-        assert!(cdp::collateral_ratio_bps(&system) == 15000);
-        assert!(cdp::liquidation_threshold_bps(&system) == 13000);
-        assert!(cdp::liquidation_penalty_bps(&system) == 1000);
-        assert!(cdp::is_paused(&system) == false);
+        assert_eq!(cdp::total_debt(&system), 0);
+        assert_eq!(cdp::collateral_ratio_bps(&system), 15000);
+        assert_eq!(cdp::liquidation_threshold_bps(&system), 13000);
+        assert_eq!(cdp::liquidation_penalty_bps(&system), 1000);
+        assert_eq!(cdp::is_paused(&system), false);
         test_scenario::return_shared(system);
 
         let gov_cap = test_scenario::take_from_sender<GovernanceCap<MOCK_COLL>>(&scenario);
@@ -51,7 +52,7 @@ module cdp_stablecoin::cdp_test {
     }
 
     #[test]
-    fun test_open_position() {
+    fun open_position() {
         let mut scenario = test_scenario::begin(ADMIN);
         {
             let ctx = scenario.ctx();
@@ -75,10 +76,10 @@ module cdp_stablecoin::cdp_test {
             &mut treasury, &mut system, collateral_coin, 10_000_000_000, MOCK_PRICE, ctx2,
         );
 
-        assert!(cdp::position_collateral(&position) == 10_000_000_000);
-        assert!(cdp::position_debt(&position) == 10_000_000_000);
-        assert!(cdp::total_debt(&system) == 10_000_000_000);
-        assert!(cdp::collateral_balance(&system) == 10_000_000_000);
+        assert_eq!(cdp::position_collateral(&position), 10_000_000_000);
+        assert_eq!(cdp::position_debt(&position), 10_000_000_000);
+        assert_eq!(cdp::total_debt(&system), 10_000_000_000);
+        assert_eq!(cdp::collateral_balance(&system), 10_000_000_000);
 
         test_scenario::return_shared(treasury);
         test_scenario::return_shared(system);
@@ -87,9 +88,8 @@ module cdp_stablecoin::cdp_test {
         scenario.end();
     }
 
-    #[test]
-    #[expected_failure(abort_code = cdp::ECollateralRatioTooLow)]
-    fun test_cannot_open_position_insufficient_collateral() {
+    #[test, expected_failure(abort_code = cdp::ECollateralRatioTooLow)]
+    fun cannot_open_position_insufficient_collateral() {
         let mut scenario = test_scenario::begin(ADMIN);
         {
             let ctx = scenario.ctx();
@@ -121,7 +121,7 @@ module cdp_stablecoin::cdp_test {
     }
 
     #[test]
-    fun test_add_collateral() {
+    fun add_collateral() {
         let mut scenario = test_scenario::begin(ADMIN);
         {
             let ctx = scenario.ctx();
@@ -159,8 +159,8 @@ module cdp_stablecoin::cdp_test {
 
         cdp::add_collateral(&mut system, &mut position, extra_collateral);
 
-        assert!(cdp::position_collateral(&position) == 15_000_000_000);
-        assert!(cdp::collateral_balance(&system) == 15_000_000_000);
+        assert_eq!(cdp::position_collateral(&position), 15_000_000_000);
+        assert_eq!(cdp::collateral_balance(&system), 15_000_000_000);
 
         test_scenario::return_shared(system);
         sui::transfer::public_transfer(position, scenario.sender());
@@ -169,7 +169,7 @@ module cdp_stablecoin::cdp_test {
     }
 
     #[test]
-    fun test_repay_partial() {
+    fun repay_partial() {
         let mut scenario = test_scenario::begin(ADMIN);
         {
             let ctx = scenario.ctx();

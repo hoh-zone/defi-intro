@@ -125,12 +125,12 @@ public fun update_price(
 // ===== Read helpers =====
 
 /// Return the current price feed (price, confidence, timestamp).
-public fun get_price(oracle: &Oracle): PriceFeed {
+public fun price(oracle: &Oracle): PriceFeed {
     oracle.feed
 }
 
 /// Convenience: return just the price.
-public fun get_price_value(oracle: &Oracle): u64 {
+public fun price_value(oracle: &Oracle): u64 {
     oracle.feed.price
 }
 
@@ -142,7 +142,7 @@ public fun get_price_value(oracle: &Oracle): u64 {
 /// Formula:  twap = (cum_end - cum_start) / (ts_end - ts_start)
 ///
 /// If there are no observations in the window, returns the current price.
-public fun get_twap(oracle: &Oracle, period_ms: u64, current_ms: u64): u64 {
+public fun twap(oracle: &Oracle, period_ms: u64, current_ms: u64): u64 {
     let obs = &oracle.observations;
     let len = vector::length(obs);
 
