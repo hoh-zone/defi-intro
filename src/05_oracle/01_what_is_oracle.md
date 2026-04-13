@@ -89,7 +89,7 @@ NFT / 游戏：
 ### 用 Move 表达三种价格
 
 ```move
-module oracle::price_types {
+module oracle::price_types;
     use sui::clock::Clock;
 
     public struct MarketPrice has store {
@@ -122,7 +122,6 @@ module oracle::price_types {
         if (p1 > p2) { (p1 - p2) * 10000 / p2 }
         else { (p2 - p1) * 10000 / p1 }
     }
-}
 ```
 
 ## 预言机的冷启动问题

@@ -17,7 +17,7 @@ $$APY = \left(1 + \frac{r}{n}\right)^n - 1$$
 ### Move 实现
 
 ```move
-module yield_math {
+module yield_math;
     const EPSILON: u64 = 1_000_000;
 
     public fun calculate_apr(
@@ -47,7 +47,6 @@ module yield_math {
         };
         ((result - one) * 100) as u64
     }
-}
 ```
 
 ## 收益的三层构成

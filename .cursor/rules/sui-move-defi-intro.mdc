@@ -1,0 +1,29 @@
+---
+description: Sui Move style for this repo — errors and module layout (aligns with .claude/skills/sui-dev-skills/move)
+globs: "**/*.move,src/**/*.md"
+---
+
+# defi-intro Move 与书中示例
+
+## 错误（abort）
+
+- 使用 **`#[error]`** + **`vector<u8>`** 短英文消息，命名 **`EPascalCase`**。
+- **不要** 新增 `const EFoo: u64 = 0;` 这种纯数字错误码（遗留除外）。
+- 示例：
+
+```move
+#[error]
+const EInsufficientLiquidity: vector<u8> = b"Insufficient liquidity";
+
+assert!(amount > 0, EInsufficientLiquidity);
+```
+
+- 单元测试里 **`#[expected_failure(abort_code = …)]`** 应使用 **模块路径 + 错误常量名**（如 `pool::EInsufficientOutput`），避免写死魔法数字。
+
+## 模块声明
+
+- **单模块文件**：`module package::module;`（**无花括号**），条目顶格或统一缩进均可。
+- **同一文件多个模块**（常见于 `#[test_only]` 测试币 + 测试模块）：每个模块仍用 **`module a::b { ... }` 花括号** — 编译器要求，不可混用无括号多模块。
+- **书中 Markdown**：同一 Move 代码围栏里若展示**多个 module**，须保留花括号；单 module 示例用无花括号。批量脚本见 `scripts/md_module_braceless.py`（仅处理单 module 块）。
+
+详细说明见：`.claude/skills/sui-dev-skills/move/syntax/SKILL.md`、`move/patterns/SKILL.md`。

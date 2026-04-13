@@ -30,18 +30,25 @@ event::emit(LiquidityAdded {
 
 ## 2. Error Handling
 
-Error constants use `EPascalCase` and `u64` values:
+**Book / repo convention (this workspace):** user-facing aborts use **`#[error]` + `vector<u8>` messages**, not numeric `u64` codes. Name constants **`EPascalCase`**.
 
 ```move
-const EInsufficientLiquidity: u64 = 0;
-const EZeroAmount: u64 = 1;
+#[error]
+const EInsufficientLiquidity: vector<u8> = b"Insufficient liquidity in pool";
 
-assert!(amount > 0, EZeroAmount);
+assert!(reserves > 0, EInsufficientLiquidity);
 ```
 
-### Clever errors
+**Do not** add new errors in the legacy style:
 
-Annotating a constant with `#[error]` allows it to carry a human-readable message. The value can be any valid constant type — `vector<u8>` is most common for string messages:
+```move
+// ❌ Legacy — do not use for new code in defi-intro
+const EZeroAmount: u64 = 1;
+```
+
+### Why `#[error]`
+
+Annotating with `#[error]` gives **clever errors**: human-readable strings in explorers and tooling. Use short ASCII messages in `b"..."`.
 
 ```move
 #[error]
@@ -51,13 +58,11 @@ assert!(reserves > 0, EInsufficientLiquidity);
 abort EInsufficientLiquidity
 ```
 
-At runtime, the Sui CLI and GraphQL server automatically decode these into a readable message:
+At runtime, the Sui CLI and GraphQL server can decode these into readable messages.
 
-```
-Error from '0x2::amm::swap' (line 42), abort 'EInsufficientLiquidity': "Insufficient liquidity in pool"
-```
+**Gotcha**: clever error abort codes may be tied to source locations — **do not hardcode numeric abort codes in tests**. Use `#[expected_failure(abort_code = module::EInsufficientLiquidity)]` (constant name), not `abort_code = 0`.
 
-**Gotcha**: clever error abort codes encode the source line number, so their `u64` value can change if the file is reformatted or lines shift. Don't hardcode clever error abort codes in tests or off-chain tooling — match by constant name instead.
+**Tests**: prefer `expected_failure(abort_code = crate::EMyError)` over raw integers.
 
 `**assert!` without an abort code** is also valid and auto-derives a clever abort code from the source line:
 

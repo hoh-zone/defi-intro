@@ -17,14 +17,22 @@ const STATE_ENDED: u8 = 3;
 const STATE_DISTRIBUTED: u8 = 4;
 
 // Errors
-const EWrongState: u64 = 100;
-const ENotWhitelisted: u64 = 101;
-const EBelowMin: u64 = 102;
-const EAboveMax: u64 = 103;
-const EHardCapExceeded: u64 = 104;
-const EAlreadyClaimed: u64 = 105;
-const EUnauthorized: u64 = 106;
-const EInvalidAmount: u64 = 107;
+#[error]
+const EWrongState: vector<u8> = b"Wrong State";
+#[error]
+const ENotWhitelisted: vector<u8> = b"Not Whitelisted";
+#[error]
+const EBelowMin: vector<u8> = b"Below Min";
+#[error]
+const EAboveMax: vector<u8> = b"Above Max";
+#[error]
+const EHardCapExceeded: vector<u8> = b"Hard Cap Exceeded";
+#[error]
+const EAlreadyClaimed: vector<u8> = b"Already Claimed";
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EInvalidAmount: vector<u8> = b"Invalid Amount";
 
 // Sale token type (one-time witness)
 public struct SALE has drop {}

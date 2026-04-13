@@ -43,7 +43,7 @@ VRF 的核心思想：
 Sui 提供了 `sui::random` 模块：
 
 ```move
-module game::simple_random {
+module game::simple_random;
     use sui::random;
     use sui::random::Random;
 
@@ -52,7 +52,6 @@ module game::simple_random {
         random::generate_bytes(rng, &mut buf);
         *buf.borrow(0) % 6 + 1
     }
-}
 ```
 
 **注意**：`sui::random` 由验证者生成，安全性取决于验证者诚实度。对于高价值场景，应使用专门的 VRF 预言机。
@@ -60,7 +59,7 @@ module game::simple_random {
 ## Pyth Entropy（commit-reveal VRF）
 
 ```move
-module game::pyth_entropy {
+module game::pyth_entropy;
     use sui::coin::Coin;
     use sui::sui::SUI;
 
@@ -101,7 +100,6 @@ module game::pyth_entropy {
         };
         result
     }
-}
 ```
 
 ```
@@ -121,7 +119,7 @@ Step 2 - Reveal：
 ## Supra VRF
 
 ```move
-module game::supra_vrf {
+module game::supra_vrf;
     use sui::coin::Coin;
     use sui::sui::SUI;
 
@@ -152,7 +150,6 @@ module game::supra_vrf {
         let randomness = request_random(vrf, seed, reward, ctx);
         randomness % ticket_count
     }
-}
 ```
 
 ## 三家 VRF 对比
@@ -169,7 +166,7 @@ module game::supra_vrf {
 ## 随机数使用的最佳实践
 
 ```move
-module game::random_best_practice {
+module game::random_best_practice;
     use sui::random::Random;
 
     public struct Lottery has key {
@@ -200,7 +197,6 @@ module game::random_best_practice {
         lottery.winner = option::some(val % lottery.ticket_count);
         lottery.phase = PHASE_REVEALED;
     }
-}
 ```
 
 ## 风险分析

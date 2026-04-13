@@ -11,7 +11,7 @@ Sui 的每个对象有明确的归属，这直接影响安全性：
 | Frozen（共享不可变） | 无人可修改 | 只读配置、发布后的包对象 |
 
 ```move
-module defi::ownership_example {
+module defi::ownership_example;
     use sui::object::{Self, UID};
     use sui::transfer;
     use sui::tx_context::TxContext;
@@ -58,7 +58,6 @@ module defi::ownership_example {
         };
         transfer::public_freeze_object(config);
     }
-}
 ```
 
 ### 安全含义
@@ -76,7 +75,7 @@ Capability 是 Move 中最核心的权限设计模式。一个 Capability 对象
 ### 基础 Capability
 
 ```move
-module defi::capability_basic {
+module defi::capability_basic;
     use sui::object::{Self, UID};
     use sui::transfer;
     use sui::tx_context::TxContext;
@@ -115,8 +114,8 @@ module defi::capability_basic {
         protocol.paused = true;
     }
 
-    const EFeeTooHigh: u64 = 0;
-}
+    #[error]
+    const EFeeTooHigh: vector<u8> = b"Fee Too High";
 ```
 
 `set_fee_rate` 和 `pause` 的第一个参数是 `&AdminCap`。没有 `AdminCap` 对象的引用，无法调用这些函数。Sui 运行时在交易验证阶段就会拒绝。
@@ -126,7 +125,7 @@ module defi::capability_basic {
 生产环境不应该用单一 AdminCap——管理员不应该同时拥有暂停和调参权限：
 
 ```move
-module defi::role_capability {
+module defi::role_capability;
     use sui::object::{Self, UID};
     use sui::transfer;
     use sui::tx_context::TxContext;
@@ -193,8 +192,8 @@ module defi::role_capability {
         protocol.emergency_shutdown = true;
     }
 
-    const EInvalidRate: u64 = 0;
-}
+    #[error]
+    const EInvalidRate: vector<u8> = b"Invalid Rate";
 ```
 
 四个独立的 Capability 分配给四个角色。可以各自放入不同的多签钱包。任何一个被攻破，不会影响其他权限。
@@ -204,7 +203,7 @@ module defi::role_capability {
 当协议需要动态创建多个子市场时，Capability 可以作为工厂凭证：
 
 ```move
-module defi::capability_factory {
+module defi::capability_factory;
     use sui::object::{Self, UID};
     use sui::transfer;
     use sui::tx_context::TxContext;
@@ -265,7 +264,6 @@ module defi::capability_factory {
     ) {
         pool.reserve = pool.reserve + amount;
     }
-}
 ```
 
 `PoolCap` 绑定了 `market_id`，确保只有对应市场的池子管理员能操作。创建者获得 `PoolCap`，可以后续存取资金。

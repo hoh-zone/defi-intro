@@ -61,7 +61,7 @@
 ## 完整 Move 实现
 
 ```move
-module yield_strategy::grid_trading {
+module yield_strategy::grid_trading;
     use sui::coin::{Self, Coin};
     use sui::clock::Clock;
     use sui::balance::{Self, Balance};
@@ -69,11 +69,16 @@ module yield_strategy::grid_trading {
     use sui::tx_context::TxContext;
     use sui::event;
 
-    const ENotOwner: u64 = 0;
-    const EInvalidParams: u64 = 1;
-    const EInsufficientBalance: u64 = 2;
-    const EPriceOutOfRange: u64 = 3;
-    const EGridNotTriggered: u64 = 4;
+    #[error]
+    const ENotOwner: vector<u8> = b"Not Owner";
+    #[error]
+    const EInvalidParams: vector<u8> = b"Invalid Params";
+    #[error]
+    const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
+    #[error]
+    const EPriceOutOfRange: vector<u8> = b"Price Out Of Range";
+    #[error]
+    const EGridNotTriggered: vector<u8> = b"Grid Not Triggered";
     const PRECISION: u64 = 1_000_000_000;
 
     public struct GridConfig has store {
@@ -242,7 +247,6 @@ module yield_strategy::grid_trading {
         let quote = coin::take(&mut bot.quote_balance, quote_amount, ctx);
         (base, quote)
     }
-}
 ```
 
 ## 网格交易的收益估算

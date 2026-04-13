@@ -81,8 +81,10 @@ public entry fun swap_with_checks(
     execute_swap(pool, coin_in, ctx)
 }
 
-const EPaused: u64 = 100;
-const ESlippageExceeded: u64 = 101;
+#[error]
+const EPaused: vector<u8> = b"Paused";
+#[error]
+const ESlippageExceeded: vector<u8> = b"Slippage Exceeded";
 ```
 
 `min_out` 参数是用户的滑点保护。如果实际输出低于 `min_out`，交易 abort，状态回滚。Gas 已经消耗，但至少防止了不利的交易执行。

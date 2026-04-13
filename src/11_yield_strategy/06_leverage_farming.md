@@ -54,17 +54,21 @@
 ## 杠杆挖矿的 Move 实现
 
 ```move
-module yield_strategy::leverage_farming {
+module yield_strategy::leverage_farming;
     use sui::coin::{Self, Coin};
     use sui::balance::{Self, Balance};
     use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
     use sui::event;
 
-    const ENotOwner: u64 = 0;
-    const ECollateralRatio: u64 = 1;
-    const EZeroAmount: u64 = 2;
-    const EMaxLeverage: u64 = 3;
+    #[error]
+    const ENotOwner: vector<u8> = b"Not Owner";
+    #[error]
+    const ECollateralRatio: vector<u8> = b"Collateral Ratio";
+    #[error]
+    const EZeroAmount: vector<u8> = b"Zero Amount";
+    #[error]
+    const EMaxLeverage: vector<u8> = b"Max Leverage";
     const PRECISION: u64 = 1_000_000_000;
 
     public struct LeveragedPosition has key {
@@ -185,7 +189,6 @@ module yield_strategy::leverage_farming {
         id.delete();
         base
     }
-}
 ```
 
 ## 杠杆挖矿的不同场景

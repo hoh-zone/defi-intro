@@ -25,7 +25,7 @@
 ### 线性衰减
 
 ```move
-module liquidity_mining::linear_decay {
+module liquidity_mining::linear_decay;
     use sui::clock::Clock;
 
     public struct LinearDecay has store {
@@ -69,13 +69,12 @@ module liquidity_mining::linear_decay {
             if (rate < decay.min_rate) { decay.min_rate } else { rate }
         }
     }
-}
 ```
 
 ### 阶梯衰减（Epoch 式）
 
 ```move
-module liquidity_mining::epoch_decay {
+module liquidity_mining::epoch_decay;
     use sui::clock::Clock;
 
     public struct EpochDecay has store {
@@ -116,7 +115,6 @@ module liquidity_mining::epoch_decay {
         if (now < decay.start_ms) { return 0 };
         (now - decay.start_ms) / decay.epoch_duration_ms
     }
-}
 ```
 
 使用示例：
@@ -131,7 +129,7 @@ let epoch_decay = epoch_decay::new(rates, 30 * 24 * 3600 * 1000, start_ms);
 ### 指数衰减
 
 ```move
-module liquidity_mining::exponential_decay {
+module liquidity_mining::exponential_decay;
     use sui::clock::Clock;
 
     const PRECISION: u64 = 1_000_000_000;
@@ -181,21 +179,22 @@ module liquidity_mining::exponential_decay {
         };
         result
     }
-}
 ```
 
 ## 排放调度器：将衰减器接入挖矿合约
 
 ```move
-module liquidity_mining::emission_scheduler {
+module liquidity_mining::emission_scheduler;
     use sui::coin::{Self, Coin};
     use sui::clock::Clock;
     use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
     use liquidity_mining::epoch_decay::{Self, EpochDecay};
 
-    const EUnauthorized: u64 = 0;
-    const EInsufficientBalance: u64 = 1;
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
+    #[error]
+    const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
 
     public struct EmissionController<phantom RewardCoin> has key {
         id: UID,
@@ -261,7 +260,6 @@ module liquidity_mining::emission_scheduler {
     ): u64 {
         coin::value(&controller.treasury)
     }
-}
 ```
 
 ## 三种衰减对比

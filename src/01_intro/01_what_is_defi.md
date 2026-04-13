@@ -28,7 +28,7 @@ DeFi 向用户承诺了三件事：
 **透明（Transparent）**：所有状态变更都记录在链上。任何人都可以验证协议的总存款、总借贷、清算记录。你不需要信任审计报告——你可以自己验证。
 
 ```move
-module defi_book::permissionless_deposit {
+module defi_book::permissionless_deposit;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
 
@@ -46,7 +46,6 @@ module defi_book::permissionless_deposit {
     public struct DepositEvent has copy, drop {
         amount: u64,
     }
-}
 ```
 
 这段代码展示了一个无许可存款函数：任何拥有 `Coin<SUI>` 的人都可以调用 `deposit`，没有白名单检查。这就是"无许可"的代码表达——不是通过赋予每个人权限，而是通过不设置权限门槛。

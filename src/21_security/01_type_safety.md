@@ -30,7 +30,7 @@ public struct Coin has store { value: u64 }
 ### 没有 copy 和 drop 的安全保证
 
 ```move
-module defi::asset_safety {
+module defi::asset_safety;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
 
@@ -54,9 +54,10 @@ module defi::asset_safety {
         coin::take(&mut vault.balance, amount, ctx)
     }
 
-    const EInvalidAmount: u64 = 0;
-    const EInsufficientBalance: u64 = 1;
-}
+    #[error]
+    const EInvalidAmount: vector<u8> = b"Invalid Amount";
+    #[error]
+    const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
 ```
 
 `Coin<SUI>` 没有 `copy` 和 `drop`。这意味着：
@@ -92,7 +93,7 @@ public fun transfer(coin: Coin<SUI>, recipient: address, ctx: &mut TxContext) {
 ## 结构体可见性的安全效果
 
 ```move
-module defi::internal_state {
+module defi::internal_state;
     use sui::object::{Self, UID};
 
     public struct ProtocolState has key {
@@ -109,7 +110,6 @@ module defi::internal_state {
     public fun total_deposit(state: &ProtocolState): u64 {
         state.total_deposit
     }
-}
 ```
 
 Move 的 struct 字段默认模块私有的。外部模块无法直接读写 `total_debt`，只能通过公开函数访问。这防止了外部合约篡改内部状态——在 EVM 中这需要额外的访问控制。
@@ -119,7 +119,7 @@ Move 的 struct 字段默认模块私有的。外部模块无法直接读写 `to
 利用类型系统编码权限约束，是 Move 安全设计的核心模式：
 
 ```move
-module defi::typed_permissions {
+module defi::typed_permissions;
     use sui::object::{Self, UID};
 
     public struct Level1 has drop {}
@@ -145,8 +145,8 @@ module defi::typed_permissions {
         vault.value = vault.value + amount;
     }
 
-    const EExceedLimit: u64 = 0;
-}
+    #[error]
+    const EExceedLimit: vector<u8> = b"Exceed Limit";
 ```
 
 `Level1`、`Level2`、`Level3` 是只有 `drop` ability 的类型。只有能创建这些类型的模块才能调用对应的函数。编译器在编译时保证权限正确——不需要运行时的 `require` 检查。

@@ -64,15 +64,18 @@ CLMM（Concentrated Liquidity Market Maker）做市只有一个核心决策：**
 当价格穿出区间时，需要将仓位移到新区间。自动再平衡的 Move 实现：
 
 ```move
-module yield_strategy::auto_rebalance {
+module yield_strategy::auto_rebalance;
     use sui::coin::{Self, Coin};
     use sui::clock::Clock;
     use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
 
-    const ENotOwner: u64 = 0;
-    const EOutOfRange: u64 = 1;
-    const EAlreadyInRange: u64 = 2;
+    #[error]
+    const ENotOwner: vector<u8> = b"Not Owner";
+    #[error]
+    const EOutOfRange: vector<u8> = b"Out Of Range";
+    #[error]
+    const EAlreadyInRange: vector<u8> = b"Already In Range";
     const PRECISION: u64 = 1_000_000_000;
 
     public struct RebalanceParams has store {
@@ -155,7 +158,6 @@ module yield_strategy::auto_rebalance {
         vault.params.tick_range_bps = tick_range_bps;
         vault.params.min_liquidity = min_liquidity;
     }
-}
 ```
 
 ## 区间宽度的权衡

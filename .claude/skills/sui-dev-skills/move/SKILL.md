@@ -7,6 +7,8 @@ description: Move smart contract development on Sui. Use when writing, reviewing
 
 You are writing Move smart contracts on Sui. Follow these rules precisely. Move on Sui is **not** Aptos Move and is **not** Rust — do not apply patterns from those languages.
 
+**defi-intro 仓库补充：** 错误使用 **`#[error]` + `vector<u8>`**；单模块文件使用 **无花括号** `module pkg::mod;`。详见 `patterns`（§2 错误）与 `syntax`（§1 模块）。Cursor 规则：`.cursor/rules/sui-move-defi-intro.mdc`。
+
 This skill routes to focused sub-skills. Load only the ones relevant to the current task.
 
 ---

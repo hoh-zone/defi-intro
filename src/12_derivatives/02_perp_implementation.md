@@ -3,19 +3,25 @@
 ## 对象设计
 
 ```move
-module perp {
+module perp;
     use sui::coin::{Self, Coin};
     use sui::balance::{Self, Balance};
     use sui::object::{Self, UID, ID};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
-    const EInsufficientMargin: u64 = 400;
-    const EPositionTooSmall: u64 = 401;
-    const EMarketPaused: u64 = 402;
-    const ENotOwner: u64 = 403;
-    const EMaintenanceMarginBreached: u64 = 404;
-    const ENotLiquidatable: u64 = 405;
+    #[error]
+    const EInsufficientMargin: vector<u8> = b"Insufficient Margin";
+    #[error]
+    const EPositionTooSmall: vector<u8> = b"Position Too Small";
+    #[error]
+    const EMarketPaused: vector<u8> = b"Market Paused";
+    #[error]
+    const ENotOwner: vector<u8> = b"Not Owner";
+    #[error]
+    const EMaintenanceMarginBreached: vector<u8> = b"Maintenance Margin Breached";
+    #[error]
+    const ENotLiquidatable: vector<u8> = b"Not Liquidatable";
 
     public struct PerpMarket<phantom Base, phantom Quote> has key {
         id: UID,
@@ -50,7 +56,6 @@ module perp {
         id: UID,
         market_id: ID,
     }
-}
 ```
 
 ## 开仓

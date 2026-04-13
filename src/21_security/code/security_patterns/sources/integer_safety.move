@@ -1,7 +1,10 @@
 module security_patterns::integer_safety;
-const EOverflow: u64 = 100;
-const EUnderflow: u64 = 101;
-const EDivisionByZero: u64 = 102;
+#[error]
+const EOverflow: vector<u8> = b"Overflow";
+#[error]
+const EUnderflow: vector<u8> = b"Underflow";
+#[error]
+const EDivisionByZero: vector<u8> = b"Division By Zero";
 
 /// Overflow-checked multiplication
 public fun safe_mul(a: u64, b: u64): u64 {

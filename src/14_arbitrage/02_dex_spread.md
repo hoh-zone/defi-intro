@@ -17,13 +17,14 @@ DeepBook: 1 SUI = 2.05 USDC
 ## Move 实现
 
 ```move
-module dex_arbitrage {
+module dex_arbitrage;
     use amm::Pool;
     use orderbook::{Self, OrderBook};
     use sui::coin::{Self, Coin};
     use sui::tx_context::{Self, TxContext};
 
-    const ENoArbitrage: u64 = 1000;
+    #[error]
+    const ENoArbitrage: vector<u8> = b"No Arbitrage";
 
     public fun arbitrage_amm_to_amm<A, B>(
         pool_buy: &mut Pool<A, B>,
@@ -68,7 +69,6 @@ module dex_arbitrage {
         assert!(profit >= min_profit, ENoArbitrage);
         output
     }
-}
 ```
 
 ## PTB 编排

@@ -9,7 +9,7 @@
 ## 完整套利机器人
 
 ```move
-module flash_loan_arbitrage {
+module flash_loan_arbitrage;
     use flash_loan::{Self, FlashLoanPool};
     use amm::Pool;
     use sui::coin::{Self, Coin};
@@ -18,8 +18,10 @@ module flash_loan_arbitrage {
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
-    const EInsufficientProfit: u64 = 2000;
-    const ERepaymentFailed: u64 = 2001;
+    #[error]
+    const EInsufficientProfit: vector<u8> = b"Insufficient Profit";
+    #[error]
+    const ERepaymentFailed: vector<u8> = b"Repayment Failed";
 
     public struct ArbitrageResult has store {
         gross_profit: u64,
@@ -129,7 +131,6 @@ module flash_loan_arbitrage {
         transfer::transfer(stable_from_dex, ctx.sender());
         collateral_out
     }
-}
 ```
 
 ## 利润计算

@@ -77,14 +77,18 @@ public fun get_current_price(feed: &PriceFeed): (u64, u64, u64) {
 ## Pyth 在 Sui 上的集成
 
 ```move
-module lending_oracle {
+module lending_oracle;
     use pyth::price_feed::{Self, PriceFeed};
     use sui::object::{Self, ID};
 
-    const EPriceTooOld: u64 = 100;
-    const EPriceTooLow: u64 = 101;
-    const EConfidenceTooLow: u64 = 102;
-    const EDeviationTooHigh: u64 = 103;
+    #[error]
+    const EPriceTooOld: vector<u8> = b"Price Too Old";
+    #[error]
+    const EPriceTooLow: vector<u8> = b"Price Too Low";
+    #[error]
+    const EConfidenceTooLow: vector<u8> = b"Confidence Too Low";
+    #[error]
+    const EDeviationTooHigh: vector<u8> = b"Deviation Too High";
 
     public struct OracleConfig has key {
         id: UID,
@@ -113,7 +117,6 @@ module lending_oracle {
         assert!(deviation <= config.max_deviation_bps, EDeviationTooHigh);
         price
     }
-}
 ```
 
 这段代码展示了四层防御：

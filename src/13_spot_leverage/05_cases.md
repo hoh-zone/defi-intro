@@ -36,7 +36,7 @@ DeepBook 本身不提供杠杆功能，但用户可以：
 3. DeepBook 的精确限价单对杠杆交易者更有利
 
 ```move
-module leverage_via_deepbook {
+module leverage_via_deepbook;
     use deepbook::{Self, OrderBook};
     use lending::{Self, Market};
     use sui::coin::Coin;
@@ -58,7 +58,6 @@ module leverage_via_deepbook {
         let proceeds = coin::value(&base_coin);
         assert!(proceeds >= borrow_amount * sell_price / 1000000, 999);
     }
-}
 ```
 
 ## 风控清单

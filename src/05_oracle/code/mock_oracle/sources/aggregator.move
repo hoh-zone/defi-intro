@@ -6,11 +6,16 @@ use mock_oracle::price_oracle::aggregate_prices;
 
 // ===== Error codes =====
 
-const EUnauthorized: u64 = 100;
-const ESourceExists: u64 = 101;
-const ENoSources: u64 = 102;
-const ESourceNotFound: u64 = 103;
-const EInvalidPrice: u64 = 104;
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const ESourceExists: vector<u8> = b"Source Exists";
+#[error]
+const ENoSources: vector<u8> = b"No Sources";
+#[error]
+const ESourceNotFound: vector<u8> = b"Source Not Found";
+#[error]
+const EInvalidPrice: vector<u8> = b"Invalid Price";
 
 // ===== Structs =====
 

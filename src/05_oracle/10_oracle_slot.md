@@ -22,15 +22,18 @@ DeFi 协议直接依赖具体预言机实现会导致两个问题：
 Scallop 是 Sui 上的借贷协议，它的预言机设计是一个很好的插槽模式参考：
 
 ```move
-module oracle::slot {
+module oracle::slot;
     use sui::object::{Self, UID, ID};
     use sui::clock::Clock;
     use sui::tx_context::TxContext;
     use sui::event;
 
-    const EUnauthorized: u64 = 0;
-    const EInvalidOracle: u64 = 1;
-    const EOracleNotSet: u64 = 2;
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
+    #[error]
+    const EInvalidOracle: vector<u8> = b"Invalid Oracle";
+    #[error]
+    const EOracleNotSet: vector<u8> = b"Oracle Not Set";
 
     public struct PriceData has store {
         price: u64,
@@ -215,7 +218,6 @@ module oracle::slot {
     public fun has_pending_switch(slot: &OracleSlot): bool {
         option::is_some(&slot.pending_oracle_id)
     }
-}
 ```
 
 ## 插槽设计的核心原则
@@ -241,7 +243,7 @@ module oracle::slot {
 ## 协议如何使用插槽
 
 ```move
-module lending::market {
+module lending::market;
     use oracle::slot::{Self, OracleSlot, PriceData};
 
     public struct Market has key {
@@ -272,7 +274,6 @@ module lending::market {
         let health = calculate_health(market, asset, amount, price);
         assert!(health >= MIN_HEALTH_FACTOR, 0);
     }
-}
 ```
 
 ## 风险分析

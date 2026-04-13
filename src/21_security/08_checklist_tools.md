@@ -114,7 +114,7 @@ echo "=== All checks passed ==="
 Move Prover 是 Move 的形式化验证工具。它可以用逻辑规约（specification）证明代码满足特定性质：
 
 ```move
-module defi::prover_example {
+module defi::prover_example;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
 
@@ -141,7 +141,6 @@ module defi::prover_example {
         let deposit_amount = coin::value(coin);
         ensures coin::value(balance(vault)) == pre_balance + deposit_amount;
     }
-}
 ```
 
 ### 运行 Prover

@@ -43,11 +43,16 @@ use sui::balance::{Self, Balance};
 use sui::object::{Self, UID, ID};
 
 // ===== 错误码 =====
-const EInvalidAmount: u64 = 0;
-const EInsufficientLiquidity: u64 = 1;
-const ERateNotSet: u64 = 2;
-const EInvalidRate: u64 = 3;
-const EWrongPool: u64 = 4;
+#[error]
+const EInvalidAmount: vector<u8> = b"Invalid Amount";
+#[error]
+const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
+#[error]
+const ERateNotSet: vector<u8> = b"Rate Not Set";
+#[error]
+const EInvalidRate: vector<u8> = b"Invalid Rate";
+#[error]
+const EWrongPool: vector<u8> = b"Wrong Pool";
 
 // ===== 常量 =====
 const RATE_PRECISION: u64 = 1_000_000_000; // 汇率精度（1e9）

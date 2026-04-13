@@ -14,7 +14,7 @@
 ## 攻击逻辑
 
 ```move
-module sandwich_attack {
+module sandwich_attack;
     use amm::Pool;
     use sui::coin::{Self, Coin};
     use sui::tx_context::TxContext;
@@ -44,7 +44,6 @@ module sandwich_attack {
         assert!(output_amount >= min_profit, 0);
         output
     }
-}
 ```
 
 ## 数值示例

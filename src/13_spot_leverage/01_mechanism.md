@@ -63,13 +63,15 @@ SUI 跌到 $1.5：
 ## 现货杠杆的 Move 框架
 
 ```move
-module spot_leverage {
+module spot_leverage;
     use sui::coin::{Self, Coin};
     use sui::object::{Self, UID, ID};
     use sui::tx_context::{Self, TxContext};
 
-    const EExceedsMaxLeverage: u64 = 700;
-    const EHealthFactorTooLow: u64 = 701;
+    #[error]
+    const EExceedsMaxLeverage: vector<u8> = b"Exceeds Max Leverage";
+    #[error]
+    const EHealthFactorTooLow: vector<u8> = b"Health Factor Too Low";
 
     public struct LeveragePosition has key, store {
         id: UID,
@@ -119,5 +121,4 @@ module spot_leverage {
             debt_amount * liquidation_threshold_bps / (collateral_amount * 10000)
         }
     }
-}
 ```

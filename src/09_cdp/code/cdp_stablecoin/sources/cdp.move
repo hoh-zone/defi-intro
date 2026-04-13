@@ -18,15 +18,24 @@ module cdp_stablecoin::cdp;
     // ============================================================
     // Error codes
     // ============================================================
-    const ECollateralRatioTooLow: u64 = 300;
-    const EInvalidAmount: u64 = 301;
-    const ENotOwner: u64 = 302;
-    const EPositionNotLiquidatable: u64 = 303;
-    const EDebtCeiling: u64 = 304;
-    const ESystemPaused: u64 = 305;
-    const EPositionMismatch: u64 = 306;
-    const EInsufficientRepayment: u64 = 307;
-    const EInvalidParameters: u64 = 308;
+    #[error]
+    const ECollateralRatioTooLow: vector<u8> = b"Collateral Ratio Too Low";
+    #[error]
+    const EInvalidAmount: vector<u8> = b"Invalid Amount";
+    #[error]
+    const ENotOwner: vector<u8> = b"Not Owner";
+    #[error]
+    const EPositionNotLiquidatable: vector<u8> = b"Position Not Liquidatable";
+    #[error]
+    const EDebtCeiling: vector<u8> = b"Debt Ceiling";
+    #[error]
+    const ESystemPaused: vector<u8> = b"System Paused";
+    #[error]
+    const EPositionMismatch: vector<u8> = b"Position Mismatch";
+    #[error]
+    const EInsufficientRepayment: vector<u8> = b"Insufficient Repayment";
+    #[error]
+    const EInvalidParameters: vector<u8> = b"Invalid Parameters";
 
     // ============================================================
     // Constants

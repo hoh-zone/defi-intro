@@ -16,7 +16,7 @@ DEX 流动性挖矿的核心流程：
 ## 多池权重分发
 
 ```move
-module liquidity_mining::dex_mining {
+module liquidity_mining::dex_mining;
     use sui::coin::{Self, Coin};
     use sui::clock::Clock;
     use sui::bag::{Self, Bag};
@@ -25,10 +25,14 @@ module liquidity_mining::dex_mining {
     use sui::table::{Self, Table};
     use sui::math::max;
 
-    const EZeroAmount: u64 = 0;
-    const EUnauthorized: u64 = 1;
-    const EPoolNotFound: u64 = 2;
-    const EInvalidWeight: u64 = 3;
+    #[error]
+    const EZeroAmount: vector<u8> = b"Zero Amount";
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
+    #[error]
+    const EPoolNotFound: vector<u8> = b"Pool Not Found";
+    #[error]
+    const EInvalidWeight: vector<u8> = b"Invalid Weight";
     const PRECISION: u64 = 1_000_000_000;
 
     public struct MiningMaster<phantom RewardCoin> has key {
@@ -184,7 +188,6 @@ module liquidity_mining::dex_mining {
         master.total_weight = master.total_weight - old_weight + new_weight;
         pool.weight = new_weight;
     }
-}
 ```
 
 ## 权重分发的数学

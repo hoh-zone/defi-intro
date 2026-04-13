@@ -24,12 +24,18 @@ module reward_accumulator::accumulator;
 
     // ======= Error Codes =======
 
-    const ENotPoolOwner: u64 = 0;
-    const EInsufficientStake: u64 = 1;
-    const ENoStakeFound: u64 = 2;
-    const EZeroAmount: u64 = 3;
-    const EZeroDuration: u64 = 4;
-    const EPoolExpired: u64 = 5;
+    #[error]
+    const ENotPoolOwner: vector<u8> = b"Not Pool Owner";
+    #[error]
+    const EInsufficientStake: vector<u8> = b"Insufficient Stake";
+    #[error]
+    const ENoStakeFound: vector<u8> = b"No Stake Found";
+    #[error]
+    const EZeroAmount: vector<u8> = b"Zero Amount";
+    #[error]
+    const EZeroDuration: vector<u8> = b"Zero Duration";
+    #[error]
+    const EPoolExpired: vector<u8> = b"Pool Expired";
 
     // ======= Structs =======
 

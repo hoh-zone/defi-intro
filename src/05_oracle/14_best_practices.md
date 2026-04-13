@@ -46,7 +46,7 @@ Step 5：确定随机数需求
 ## 集成代码模板
 
 ```move
-module defi::oracle_template {
+module defi::oracle_template;
     use sui::object::{Self, UID};
     use sui::clock::Clock;
     use sui::tx_context::TxContext;
@@ -89,7 +89,6 @@ module defi::oracle_template {
     }
 
     public struct PriceRejected has copy, drop { reason: u64 }
-}
 ```
 
 ## 测试策略

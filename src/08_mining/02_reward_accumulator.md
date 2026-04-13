@@ -33,7 +33,7 @@
 ## 完整 Move 实现
 
 ```move
-module liquidity_mining::accumulator {
+module liquidity_mining::accumulator;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
     use sui::tx_context::TxContext;
@@ -41,10 +41,14 @@ module liquidity_mining::accumulator {
     use sui::bag::{Self, Bag};
     use sui::object::{Self, UID};
 
-    const EInsufficientStake: u64 = 0;
-    const EZeroStake: u64 = 1;
-    const EPoolNotStarted: u64 = 2;
-    const ENotStaker: u64 = 3;
+    #[error]
+    const EInsufficientStake: vector<u8> = b"Insufficient Stake";
+    #[error]
+    const EZeroStake: vector<u8> = b"Zero Stake";
+    #[error]
+    const EPoolNotStarted: vector<u8> = b"Pool Not Started";
+    #[error]
+    const ENotStaker: vector<u8> = b"Not Staker";
 
     const PRECISION: u64 = 1_000_000_000;
 
@@ -174,7 +178,6 @@ module liquidity_mining::accumulator {
         let acc = pool.acc_reward_per_share + (pool.reward_rate_per_ms * elapsed * PRECISION / (if (pool.total_stake == 0) { 1 } else { pool.total_stake }));
         user_stake.amount * acc / PRECISION - user_stake.reward_debt
     }
-}
 ```
 
 ## 关键设计决策

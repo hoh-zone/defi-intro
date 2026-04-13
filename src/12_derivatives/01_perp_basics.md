@@ -16,7 +16,7 @@
 ## PnL 计算
 
 ```move
-module perp_math {
+module perp_math;
     public fun calculate_pnl(
         entry_price: u64,
         exit_price: u64,
@@ -44,7 +44,6 @@ module perp_math {
             entry_price * (10000 + maintenance_margin_bps) / effective_leverage
         }
     }
-}
 ```
 
 ## 交易示例

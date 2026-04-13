@@ -5,9 +5,12 @@ use sui::object::{Self, UID, ID};
 use sui::transfer;
 use sui::tx_context::{Self, TxContext};
 
-const EUnauthorized: u64 = 200;
-const EInvariantViolated: u64 = 201;
-const EInsufficientBalance: u64 = 202;
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EInvariantViolated: vector<u8> = b"Invariant Violated";
+#[error]
+const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
 
 public struct SecurePool<phantom T> has key {
     id: UID,

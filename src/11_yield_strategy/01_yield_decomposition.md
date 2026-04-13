@@ -92,7 +92,7 @@ AMM LP 价值 = 2 × √(P/P₀) / (1 + P/P₀) × 初始价值
 ### 用 Move 计算无常损失
 
 ```move
-module yield_strategy::il_calculator {
+module yield_strategy::il_calculator;
     const PRECISION: u64 = 1_000_000_000;
 
     public fun impermanent_loss(price_ratio_scaled: u64): u64 {
@@ -142,7 +142,6 @@ module yield_strategy::il_calculator {
         };
         PRECISION * in_range / range
     }
-}
 ```
 
 ## 收益归因分析

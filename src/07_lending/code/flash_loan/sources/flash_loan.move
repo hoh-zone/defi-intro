@@ -14,11 +14,16 @@ use sui::object::{Self, ID};
 
 // ===== Error Constants =====
 
-const EInsufficientLiquidity: u64 = 0;
-const ERepaymentTooLow: u64 = 1;
-const EFeeBpsTooHigh: u64 = 2;
-const EWrongPool: u64 = 3;
-const EZeroAmount: u64 = 5;
+#[error]
+const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
+#[error]
+const ERepaymentTooLow: vector<u8> = b"Repayment Too Low";
+#[error]
+const EFeeBpsTooHigh: vector<u8> = b"Fee Bps Too High";
+#[error]
+const EWrongPool: vector<u8> = b"Wrong Pool";
+#[error]
+const EZeroAmount: vector<u8> = b"Zero Amount";
 
 /// Maximum fee: 10% (1000 basis points)
 const MAX_FEE_BPS: u64 = 1000;

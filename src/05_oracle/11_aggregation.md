@@ -16,7 +16,7 @@
 ### 策略 1：中位数（Median）
 
 ```move
-module oracle::median_aggregator {
+module oracle::median_aggregator;
     public fun median(prices: vector<u64>): u64 {
         let mut sorted = prices;
         let n = sorted.length();
@@ -40,13 +40,12 @@ module oracle::median_aggregator {
             (*sorted.borrow(n / 2 - 1) + *sorted.borrow(n / 2)) / 2
         }
     }
-}
 ```
 
 ### 策略 2：加权平均（Weighted Average）
 
 ```move
-module oracle::weighted_aggregator {
+module oracle::weighted_aggregator;
     public struct WeightedSource has store {
         source_id: u8,
         weight: u64,
@@ -67,13 +66,12 @@ module oracle::weighted_aggregator {
         assert!(total_weight > 0, 0);
         weighted_sum / total_weight
     }
-}
 ```
 
 ### 策略 3：偏差仲裁（Deviation Arbitration）
 
 ```move
-module oracle::arbitration {
+module oracle::arbitration;
     use sui::clock::Clock;
 
     const MAX_DEVIATION_BPS: u64 = 300;
@@ -143,13 +141,12 @@ module oracle::arbitration {
         };
         *sorted.borrow(n / 2)
     }
-}
 ```
 
 ## 多预言机聚合器完整实现
 
 ```move
-module oracle::multi_source {
+module oracle::multi_source;
     use sui::object::{Self, UID};
     use sui::clock::Clock;
     use sui::tx_context::TxContext;
@@ -236,7 +233,6 @@ module oracle::multi_source {
             i = i + 1;
         };
     }
-}
 ```
 
 ## 聚合策略对比

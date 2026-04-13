@@ -30,18 +30,23 @@ Boost 奖励 = 60%（按 veCRV 量分配）
 ## Boost 累加器的 Move 实现
 
 ```move
-module liquidity_mining::boost_mining {
+module liquidity_mining::boost_mining;
     use sui::coin::{Self, Coin};
     use sui::clock::Clock;
     use sui::bag::{Self, Bag};
     use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
 
-    const EZeroAmount: u64 = 0;
-    const EUnauthorized: u64 = 1;
-    const ENotFound: u64 = 2;
-    const ELockTooShort: u64 = 3;
-    const EAlreadyLocked: u64 = 4;
+    #[error]
+    const EZeroAmount: vector<u8> = b"Zero Amount";
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
+    #[error]
+    const ENotFound: vector<u8> = b"Not Found";
+    #[error]
+    const ELockTooShort: vector<u8> = b"Lock Too Short";
+    #[error]
+    const EAlreadyLocked: vector<u8> = b"Already Locked";
     const PRECISION: u64 = 1_000_000_000;
     const BASE_RATIO: u64 = 400_000_000;
     const BOOST_RATIO: u64 = 600_000_000;
@@ -191,7 +196,6 @@ module liquidity_mining::boost_mining {
         let boost_pending = bw * pool.acc_boost_per_weight / PRECISION - pos.boost_reward_debt;
         base_pending + boost_pending
     }
-}
 ```
 
 ## Gauge 投票：分配权的民主化
@@ -209,7 +213,7 @@ Curve 的另一个创新是 **Gauge Voting**：
 ### Gauge 投票的 Move 实现
 
 ```move
-module liquidity_mining::gauge_voting {
+module liquidity_mining::gauge_voting;
     use sui::coin::{Self, Coin};
     use sui::clock::Clock;
     use sui::bag::{Self, Bag};
@@ -217,9 +221,12 @@ module liquidity_mining::gauge_voting {
     use sui::tx_context::TxContext;
     use sui::table::{Self, Table};
 
-    const EZeroVote: u64 = 0;
-    const ENoPower: u64 = 1;
-    const EUnauthorized: u64 = 2;
+    #[error]
+    const EZeroVote: vector<u8> = b"Zero Vote";
+    #[error]
+    const ENoPower: vector<u8> = b"No Power";
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
 
     public struct VoteEscrow has key {
         id: UID,
@@ -291,7 +298,6 @@ module liquidity_mining::gauge_voting {
         let w = gauge_weight(ve, gauge_id);
         w * 1_000_000_000 / ve.total_power
     }
-}
 ```
 
 ## Boost 效果示例

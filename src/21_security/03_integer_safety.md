@@ -56,7 +56,8 @@ public fun safe_multiply_divide(a: u64, b: u64, denominator: u64): u64 {
     (result as u64)
 }
 
-const EOverflow: u64 = 100;
+#[error]
+const EOverflow: vector<u8> = b"Overflow";
 ```
 
 ### 陷阱 3：精度因子选择不当
@@ -105,10 +106,13 @@ public fun accumulate_precise(
 以下是一个可直接使用的安全算术模块：
 
 ```move
-module defi::safe_math {
-    const EOverflow: u64 = 0;
-    const EUnderflow: u64 = 1;
-    const EDivisionByZero: u64 = 2;
+module defi::safe_math;
+    #[error]
+    const EOverflow: vector<u8> = b"Overflow";
+    #[error]
+    const EUnderflow: vector<u8> = b"Underflow";
+    #[error]
+    const EDivisionByZero: vector<u8> = b"Division By Zero";
 
     public fun safe_mul(a: u64, b: u64): u64 {
         let result = (a as u256) * (b as u256);
@@ -147,7 +151,6 @@ module defi::safe_math {
         assert!(v <= 0xffffffffffffffff, EOverflow);
         (v as u64)
     }
-}
 ```
 
 ## 实战案例：收益分配的精度安全
@@ -155,7 +158,7 @@ module defi::safe_math {
 以下是一个完整的收益分配函数，展示安全算术的实际使用：
 
 ```move
-module defi::yield_distribution {
+module defi::yield_distribution;
     use sui::object::{Self, UID};
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
@@ -211,7 +214,6 @@ module defi::yield_distribution {
         position.pending_reward = position.pending_reward + pending;
         position.reward_debt = (accumulated as u64);
     }
-}
 ```
 
 关键设计决策：

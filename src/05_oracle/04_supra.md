@@ -35,11 +35,13 @@ DORA 流程：
 ## Supra 在 Sui 上的集成方式
 
 ```move
-module defi::supra_integration {
+module defi::supra_integration;
     use sui::clock::Clock;
 
-    const EStale_PRICE: u64 = 100;
-    const EInvalidPair: u64 = 101;
+    #[error]
+    const EStale_PRICE: vector<u8> = b"Stale_PRICE";
+    #[error]
+    const EInvalidPair: vector<u8> = b"Invalid Pair";
 
     const MAX_STALENESS_MS: u64 = 60_000;
 
@@ -68,7 +70,8 @@ module defi::supra_integration {
     }
 
     const SUI_USD_PAIR_INDEX: u64 = 0;
-    const ETH_USD_PAIR_INDEX: u64 = 1;
+    #[error]
+    const ETH_USD_PAIR_INDEX: vector<u8> = b"TH_USD_PAIR_INDEX";
     const BTC_USD_PAIR_INDEX: u64 = 2;
     const USDC_USD_PAIR_INDEX: u64 = 3;
 
@@ -90,7 +93,6 @@ module defi::supra_integration {
     public fun is_fresh(data: &SupraPrice, clock: &Clock): bool {
         clock.timestamp_ms() - data.last_updated_ms < MAX_STALENESS_MS
     }
-}
 ```
 
 ## Supra 的 dSTREAM 自动化流水线
@@ -130,7 +132,7 @@ dSTREAM 模式：
 ## 在同一协议中同时使用 Supra 和 Pyth
 
 ```move
-module defi::multi_oracle {
+module defi::multi_oracle;
     use sui::clock::Clock;
 
     public struct OraclePrice has store {
@@ -159,7 +161,6 @@ module defi::multi_oracle {
         };
         deviation <= max_deviation_bps
     }
-}
 ```
 
 ## 风险分析

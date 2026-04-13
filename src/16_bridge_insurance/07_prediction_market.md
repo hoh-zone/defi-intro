@@ -19,7 +19,7 @@
 ## 预测市场的 Move 实现
 
 ```move
-module insurance::prediction_market {
+module insurance::prediction_market;
     use sui::coin::{Self, Coin, TreasuryCap};
     use sui::balance::{Self, Balance};
     use sui::object::{Self, UID};
@@ -27,12 +27,18 @@ module insurance::prediction_market {
     use sui::clock::Clock;
     use sui::event;
 
-    const EUnauthorized: u64 = 0;
-    const EMarketClosed: u64 = 1;
-    const EAlreadyResolved: u64 = 2;
-    const ENotResolved: u64 = 3;
-    const EZeroAmount: u64 = 4;
-    const EInvalidOutcome: u64 = 5;
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
+    #[error]
+    const EMarketClosed: vector<u8> = b"Market Closed";
+    #[error]
+    const EAlreadyResolved: vector<u8> = b"Already Resolved";
+    #[error]
+    const ENotResolved: vector<u8> = b"Not Resolved";
+    #[error]
+    const EZeroAmount: vector<u8> = b"Zero Amount";
+    #[error]
+    const EInvalidOutcome: vector<u8> = b"Invalid Outcome";
     const PRECISION: u64 = 1_000_000_000;
 
     public struct YES has copy, drop, store {}
@@ -230,7 +236,6 @@ module insurance::prediction_market {
         market.dispute_stake = market.dispute_stake + stake_amount;
         coin::destroy_zero(stake);
     }
-}
 ```
 
 ## 预测市场的价格发现

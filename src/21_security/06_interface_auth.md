@@ -13,7 +13,7 @@ Move 的函数可见性决定了谁能调用：
 | `entry` | 只有 PTB 顶层 | 用户直接调用 |
 
 ```move
-module defi::visibility {
+module defi::visibility;
     use sui::object::{Self, UID};
 
     public struct AdminCap has key, store { id: UID }
@@ -47,8 +47,8 @@ module defi::visibility {
         protocol.paused = true;
     }
 
-    const EPaused: u64 = 0;
-}
+    #[error]
+    const EPaused: vector<u8> = b"Paused";
 ```
 
 ### 可见性选择决策树
@@ -70,7 +70,7 @@ module defi::visibility {
 最基础的鉴权是检查交易发起者：
 
 ```move
-module defi::sender_auth {
+module defi::sender_auth;
     use sui::object::{Self, UID};
     use sui::tx_context;
 
@@ -93,9 +93,10 @@ module defi::sender_auth {
         vault.balance = vault.balance - amount;
     }
 
-    const ENotOwner: u64 = 0;
-    const EInsufficient: u64 = 1;
-}
+    #[error]
+    const ENotOwner: vector<u8> = b"Not Owner";
+    #[error]
+    const EInsufficient: vector<u8> = b"Insufficient";
 ```
 
 但在 Sui 中，owned 对象只有所有者能发起修改交易，所以对于 owned 对象，`sender` 检查是冗余的。`sender` 鉴权主要用于 **shared 对象**。
@@ -105,7 +106,7 @@ module defi::sender_auth {
 更安全的方式是检查传入的对象是否是你期望的对象：
 
 ```move
-module defi::object_id_auth {
+module defi::object_id_auth;
     use sui::object::{Self, ID, UID};
     use sui::transfer;
     use sui::tx_context::TxContext;
@@ -138,8 +139,8 @@ module defi::object_id_auth {
         assert!(authorized, EUnauthorized);
     }
 
-    const EUnauthorized: u64 = 0;
-}
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
 ```
 
 ## Capability 鉴权（最佳实践）
@@ -163,7 +164,7 @@ public fun dangerous_proxy(
 3. 在 Capability 中嵌入过期时间
 
 ```move
-module defi::expiring_cap {
+module defi::expiring_cap;
     use sui::object::{Self, UID};
     use sui::clock::Clock;
 
@@ -179,8 +180,8 @@ module defi::expiring_cap {
         );
     }
 
-    const EExpired: u64 = 0;
-}
+    #[error]
+    const EExpired: vector<u8> = b"Expired";
 ```
 
 ## 拒绝服务防护

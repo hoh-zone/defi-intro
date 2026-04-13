@@ -3,7 +3,7 @@
 ## 参数型保险的完整 Move 实现
 
 ```move
-module insurance::parametric {
+module insurance::parametric;
     use sui::coin::{Self, Coin};
     use sui::balance::{Self, Balance};
     use sui::object::{Self, UID};
@@ -13,13 +13,20 @@ module insurance::parametric {
     use sui::table::{Self, Table};
     use sui::math;
 
-    const EUnauthorized: u64 = 0;
-    const EPolicyExpired: u64 = 1;
-    const ENotTriggered: u64 = 2;
-    const EAlreadyClaimed: u64 = 3;
-    const EInsufficientPool: u64 = 4;
-    const EInvalidAmount: u64 = 5;
-    const EPolicyActive: u64 = 6;
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
+    #[error]
+    const EPolicyExpired: vector<u8> = b"Policy Expired";
+    #[error]
+    const ENotTriggered: vector<u8> = b"Not Triggered";
+    #[error]
+    const EAlreadyClaimed: vector<u8> = b"Already Claimed";
+    #[error]
+    const EInsufficientPool: vector<u8> = b"Insufficient Pool";
+    #[error]
+    const EInvalidAmount: vector<u8> = b"Invalid Amount";
+    #[error]
+    const EPolicyActive: vector<u8> = b"Policy Active";
 
     public struct InsurancePool<phantom PayoutCoin> has key {
         id: UID,
@@ -226,7 +233,6 @@ module insurance::parametric {
         let daily_premium = annual_expected_loss / 365;
         daily_premium * duration_days * risk_multiplier_bps / 10000
     }
-}
 ```
 
 ## 保费定价的数学

@@ -7,10 +7,14 @@ use sui::object::{Self, UID};
 use sui::transfer;
 use sui::tx_context::{Self, TxContext};
 
-const EInsufficientLiquidity: u64 = 100;
-const EInvalidAmount: u64 = 101;
-const EPoolPaused: u64 = 102;
-const EPriceDeviation: u64 = 103;
+#[error]
+const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
+#[error]
+const EInvalidAmount: vector<u8> = b"Invalid Amount";
+#[error]
+const EPoolPaused: vector<u8> = b"Pool Paused";
+#[error]
+const EPriceDeviation: vector<u8> = b"Price Deviation";
 
 public struct Observation has copy, drop, store {
     timestamp: u64,

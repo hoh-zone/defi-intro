@@ -352,14 +352,25 @@ public fun unpause<Token>(_cap: &AdminCap, pool: &mut InsurancePool<Token>) {
 
 // ===== Error constants =====
 
-const EZeroAmount: u64 = 0;
-const EZeroDuration: u64 = 1;
-const EInvalidRate: u64 = 2;
-const EExceedsMaxCoverage: u64 = 3;
-const EInsufficientPremium: u64 = 4;
-const EInsufficientCoverage: u64 = 5;
-const EInsufficientPremiums: u64 = 6;
-const EPolicyNotActive: u64 = 7;
-const EClaimExceedsCoverage: u64 = 8;
-const EPolicyNotExpired: u64 = 9;
-const EPoolPaused: u64 = 10;
+#[error]
+const EZeroAmount: vector<u8> = b"Zero Amount";
+#[error]
+const EZeroDuration: vector<u8> = b"Zero Duration";
+#[error]
+const EInvalidRate: vector<u8> = b"Invalid Rate";
+#[error]
+const EExceedsMaxCoverage: vector<u8> = b"Exceeds Max Coverage";
+#[error]
+const EInsufficientPremium: vector<u8> = b"Insufficient Premium";
+#[error]
+const EInsufficientCoverage: vector<u8> = b"Insufficient Coverage";
+#[error]
+const EInsufficientPremiums: vector<u8> = b"Insufficient Premiums";
+#[error]
+const EPolicyNotActive: vector<u8> = b"Policy Not Active";
+#[error]
+const EClaimExceedsCoverage: vector<u8> = b"Claim Exceeds Coverage";
+#[error]
+const EPolicyNotExpired: vector<u8> = b"Policy Not Expired";
+#[error]
+const EPoolPaused: vector<u8> = b"Pool Paused";

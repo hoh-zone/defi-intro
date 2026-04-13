@@ -42,7 +42,7 @@ sui keytool multiaddr \
 | 紧急响应 | 2-of-3 | EmergencyCap | 紧急关停 |
 
 ```move
-module defi::governance_setup {
+module defi::governance_setup;
     use sui::object::{Self, UID};
     use sui::transfer;
     use sui::tx_context::TxContext;
@@ -71,7 +71,6 @@ module defi::governance_setup {
             emergency_multisig,
         );
     }
-}
 ```
 
 `init` 函数接收多个多签地址，将 Capability 分配到对应的多签钱包。部署时通过 PTB 传入参数。
@@ -81,7 +80,7 @@ module defi::governance_setup {
 关键治理操作应该加入延迟执行期，给社区留出审查时间：
 
 ```move
-module defi::timelock {
+module defi::timelock;
     use sui::object::{Self, ID, UID};
     use sui::event;
     use sui::clock::Clock;
@@ -163,18 +162,22 @@ module defi::timelock {
         event::emit(OperationCancelled { op_id: object::id(op) });
     }
 
-    const EDelayTooShort: u64 = 0;
-    const EDelayTooLong: u64 = 1;
-    const EAlreadyExecuted: u64 = 2;
-    const ECancelled: u64 = 3;
-    const ETooEarly: u64 = 4;
-}
+    #[error]
+    const EDelayTooShort: vector<u8> = b"Delay Too Short";
+    #[error]
+    const EDelayTooLong: vector<u8> = b"Delay Too Long";
+    #[error]
+    const EAlreadyExecuted: vector<u8> = b"Already Executed";
+    #[error]
+    const ECancelled: vector<u8> = b"Cancelled";
+    #[error]
+    const ETooEarly: vector<u8> = b"Too Early";
 ```
 
 ### 带时间锁的参数更新
 
 ```move
-module defi::timelocked_params {
+module defi::timelocked_params;
     use defi::timelock::{Self, Timelock};
     use sui::object::{Self, UID};
 
@@ -200,7 +203,6 @@ module defi::timelocked_params {
             ctx,
         );
     }
-}
 ```
 
 关键治理操作（费率调整、清算阈值修改）必须经过 24 小时的时间锁。社区可以在延迟期内审查并取消恶意提案。
@@ -210,7 +212,7 @@ module defi::timelocked_params {
 多签参与者的密钥应该定期轮换：
 
 ```move
-module defi::key_rotation {
+module defi::key_rotation;
     use sui::object::{Self, UID};
     use sui::event;
 
@@ -256,8 +258,8 @@ module defi::key_rotation {
         });
     }
 
-    const EMemberNotFound: u64 = 0;
-}
+    #[error]
+    const EMemberNotFound: vector<u8> = b"Member Not Found";
 ```
 
 ## 多签 + 时间锁的治理架构

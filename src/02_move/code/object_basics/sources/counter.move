@@ -14,10 +14,12 @@ module object_basics::counter;
     // ========== Error codes ==========
 
     /// Raised when a non-admin tries to call a restricted function
-    const EUnauthorized: u64 = 0;
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
 
     /// Raised when incrementing would overflow the counter value
-    const EOverflow: u64 = 1;
+    #[error]
+    const EOverflow: vector<u8> = b"Overflow";
 
     /// Maximum value for u64
     const MAX_U64: u64 = 18446744073709551615;

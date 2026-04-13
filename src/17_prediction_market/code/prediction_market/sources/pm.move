@@ -32,7 +32,8 @@ const OUTCOME_NO: u8 = 2;
 // Errors
 // ---------------------------------------------------------------------------
 
-const ENotResolved: u64 = 3;
+#[error]
+const ENotResolved: vector<u8> = b"Not Resolved";
 
 // ---------------------------------------------------------------------------
 // Objects

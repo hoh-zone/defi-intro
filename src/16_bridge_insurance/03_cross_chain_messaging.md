@@ -30,18 +30,23 @@
 ## 跨链消息的 Move 实现
 
 ```move
-module bridge::cross_chain_messaging {
+module bridge::cross_chain_messaging;
     use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
     use sui::event;
     use sui::clock::Clock;
     use sui::table::{Self, Table};
 
-    const EUnauthorized: u64 = 0;
-    const EInvalidProof: u64 = 1;
-    const EAlreadyExecuted: u64 = 2;
-    const ENotPending: u64 = 3;
-    const ETimeoutNotReached: u64 = 4;
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
+    #[error]
+    const EInvalidProof: vector<u8> = b"Invalid Proof";
+    #[error]
+    const EAlreadyExecuted: vector<u8> = b"Already Executed";
+    #[error]
+    const ENotPending: vector<u8> = b"Not Pending";
+    #[error]
+    const ETimeoutNotReached: vector<u8> = b"Timeout Not Reached";
 
     public struct MessageId has copy, drop, store {
         source_chain: u64,
@@ -183,7 +188,6 @@ module bridge::cross_chain_messaging {
             3
         }
     }
-}
 ```
 
 ## 跨链组合调用

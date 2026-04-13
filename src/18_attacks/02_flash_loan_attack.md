@@ -36,7 +36,7 @@
 ### 场景 1：三明治攻击（Sandwich Attack）
 
 ```move
-module sandwich {
+module sandwich;
     public fun attack(
         pool: &mut Pool<TokenA, TokenB>,
         victim_amount: u64,
@@ -46,7 +46,6 @@ module sandwich {
         let victim_tx = swap_a_to_b(pool, victim_amount, ctx);
         let back_run = swap_b_to_a(pool, front_run_amount, ctx);
     }
-}
 ```
 
 攻击者在 victim 交易前买入（推高价格），victim 以更高价格成交，攻击者再卖出获利。

@@ -135,7 +135,7 @@ fun test_bidding_and_winner() {
 }
 
 #[test]
-#[expected_failure(abort_code = 102)]
+#[expected_failure(abort_code = english_auction::EBidTooLow)]
 fun test_bid_below_reserve() {
     let mut scenario = test_scenario::begin(ADMIN);
     let ctx = scenario.ctx();
@@ -165,7 +165,7 @@ fun test_bid_below_reserve() {
 }
 
 #[test]
-#[expected_failure(abort_code = 107)]
+#[expected_failure(abort_code = english_auction::ECannotOutbidSelf)]
 fun test_cannot_outbid_self() {
     let mut scenario = test_scenario::begin(ADMIN);
     let ctx = scenario.ctx();

@@ -102,7 +102,7 @@
 ### 用 Move 实现攻击模拟
 
 ```move
-module oracle::attack_simulation {
+module oracle::attack_simulation;
     public struct AttackVector has store {
         attack_type: u8,
         profit_potential: u64,
@@ -152,7 +152,6 @@ module oracle::attack_simulation {
         };
         risks
     }
-}
 ```
 
 ## 攻击成本估算

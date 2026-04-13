@@ -16,14 +16,22 @@ const STATE_ENDED: u8 = 2;
 const STATE_CANCELLED: u8 = 3;
 
 // Errors
-const EWrongState: u64 = 100;
-const EUnauthorized: u64 = 101;
-const EBidTooLow: u64 = 102;
-const ENoBidPlaced: u64 = 104;
-const ENotWinner: u64 = 105;
-const EAlreadyClaimed: u64 = 106;
-const ECannotOutbidSelf: u64 = 107;
-const EInvalidParams: u64 = 108;
+#[error]
+const EWrongState: vector<u8> = b"Wrong State";
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EBidTooLow: vector<u8> = b"Bid Too Low";
+#[error]
+const ENoBidPlaced: vector<u8> = b"No Bid Placed";
+#[error]
+const ENotWinner: vector<u8> = b"Not Winner";
+#[error]
+const EAlreadyClaimed: vector<u8> = b"Already Claimed";
+#[error]
+const ECannotOutbidSelf: vector<u8> = b"Cannot Outbid Self";
+#[error]
+const EInvalidParams: vector<u8> = b"Invalid Params";
 
 // One-time witness
 public struct ENGLISH_AUCTION has drop {}

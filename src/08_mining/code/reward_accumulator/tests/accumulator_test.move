@@ -19,9 +19,6 @@ module reward_accumulator::accumulator_test {
     use reward_accumulator::test_stake_coin::STAKE;
     use reward_accumulator::test_reward_coin::REWARD;
 
-    // ========== Error codes (mirrored from accumulator) ==========
-    const EZeroDuration: u64 = 4;
-
     // ========== Helpers ==========
 
     fun setup_treasuries(ctx: &mut sui::tx_context::TxContext): (

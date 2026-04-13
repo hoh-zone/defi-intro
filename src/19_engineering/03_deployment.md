@@ -37,7 +37,7 @@
 Sui 支持合约升级。升级策略：
 
 ```move
-module protocol::upgrade {
+module protocol::upgrade;
     public struct PackageCap has key {
         id: UID,
         package_id: ID,
@@ -54,7 +54,6 @@ module protocol::upgrade {
         proposed_at: u64,
         signers: vector<address>,
     }
-}
 ```
 
 ### 升级兼容性规则
@@ -70,7 +69,7 @@ module protocol::upgrade {
 ## 紧急暂停机制
 
 ```move
-module protocol::pause {
+module protocol::pause;
     public struct PauseState has store {
         deposits_paused: bool,
         withdrawals_paused: bool,
@@ -101,7 +100,6 @@ module protocol::pause {
             false
         }
     }
-}
 ```
 
 细粒度暂停：可以只暂停存款而不影响取款。确保用户在紧急情况下仍能退出。

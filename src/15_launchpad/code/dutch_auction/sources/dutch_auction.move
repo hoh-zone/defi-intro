@@ -16,16 +16,26 @@ const STATE_SETTLED: u8 = 2;
 const STATE_CANCELLED: u8 = 3;
 
 // Errors
-const EWrongState: u64 = 100;
-const EUnauthorized: u64 = 101;
-const EAuctionNotActive: u64 = 102;
-const EBelowFloorPrice: u64 = 103;
-const EInsufficientPayment: u64 = 104;
-const ENoTokensToClaim: u64 = 105;
-const EAlreadyClaimed: u64 = 106;
-const EInvalidPrice: u64 = 107;
-const EInvalidDuration: u64 = 108;
-const ESoldOut: u64 = 109;
+#[error]
+const EWrongState: vector<u8> = b"Wrong State";
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EAuctionNotActive: vector<u8> = b"Auction Not Active";
+#[error]
+const EBelowFloorPrice: vector<u8> = b"Below Floor Price";
+#[error]
+const EInsufficientPayment: vector<u8> = b"Insufficient Payment";
+#[error]
+const ENoTokensToClaim: vector<u8> = b"No Tokens To Claim";
+#[error]
+const EAlreadyClaimed: vector<u8> = b"Already Claimed";
+#[error]
+const EInvalidPrice: vector<u8> = b"Invalid Price";
+#[error]
+const EInvalidDuration: vector<u8> = b"Invalid Duration";
+#[error]
+const ESoldOut: vector<u8> = b"Sold Out";
 
 // One-time witness for sale token
 public struct DUTCH_AUCTION has drop {}

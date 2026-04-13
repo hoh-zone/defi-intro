@@ -38,19 +38,32 @@ const SUI_USD_PRICE_ID: vector<u8> =
 // Errors
 // ---------------------------------------------------------------------------
 
-const E_BAD_SEED: u64 = 1;
-const E_BETTING_CLOSED: u64 = 2;
-const E_ALREADY_SETTLED: u64 = 3;
-const E_ZERO_BET: u64 = 4;
-const E_INVALID_FEED: u64 = 5;
-const E_NEGATIVE_PRICE: u64 = 6;
-const E_EXPO_MISMATCH: u64 = 7;
-const E_NOTHING_TO_CLAIM: u64 = 8;
-const E_NOT_SETTLED: u64 = 9;
-const E_TOO_SHORT: u64 = 10;
-const E_TOO_LONG: u64 = 11;
-const E_NOT_WINNER: u64 = 12;
-const E_BAD_OUTCOME: u64 = 13;
+#[error]
+const E_BAD_SEED: vector<u8> = b"_BAD_SEED";
+#[error]
+const E_BETTING_CLOSED: vector<u8> = b"_BETTING_CLOSED";
+#[error]
+const E_ALREADY_SETTLED: vector<u8> = b"_ALREADY_SETTLED";
+#[error]
+const E_ZERO_BET: vector<u8> = b"_ZERO_BET";
+#[error]
+const E_INVALID_FEED: vector<u8> = b"_INVALID_FEED";
+#[error]
+const E_NEGATIVE_PRICE: vector<u8> = b"_NEGATIVE_PRICE";
+#[error]
+const E_EXPO_MISMATCH: vector<u8> = b"_EXPO_MISMATCH";
+#[error]
+const E_NOTHING_TO_CLAIM: vector<u8> = b"_NOTHING_TO_CLAIM";
+#[error]
+const E_NOT_SETTLED: vector<u8> = b"_NOT_SETTLED";
+#[error]
+const E_TOO_SHORT: vector<u8> = b"_TOO_SHORT";
+#[error]
+const E_TOO_LONG: vector<u8> = b"_TOO_LONG";
+#[error]
+const E_NOT_WINNER: vector<u8> = b"_NOT_WINNER";
+#[error]
+const E_BAD_OUTCOME: vector<u8> = b"_BAD_OUTCOME";
 
 // ---------------------------------------------------------------------------
 // Outcome

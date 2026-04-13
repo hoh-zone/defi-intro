@@ -8,9 +8,12 @@ use sui::object::{Self, UID};
 use sui::transfer;
 use sui::tx_context::{Self, TxContext};
 
-const EInsufficientLiquidity: u64 = 0;
-const EInvalidAmount: u64 = 1;
-const EPoolPaused: u64 = 2;
+#[error]
+const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
+#[error]
+const EInvalidAmount: vector<u8> = b"Invalid Amount";
+#[error]
+const EPoolPaused: vector<u8> = b"Pool Paused";
 
 public struct Pool<phantom A, phantom B> has key {
     id: UID,

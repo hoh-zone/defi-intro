@@ -21,7 +21,7 @@ $$\text{攻击利润} = \text{操纵成本} < \text{从协议中提取的价值}
 ## 攻击代码演示（教学用）
 
 ```move
-module attack_oracle_manipulation {
+module attack_oracle_manipulation;
     use amm::Pool;
     use lending::Market;
     use flash_loan::FlashLoanPool;
@@ -55,7 +55,6 @@ module attack_oracle_manipulation {
 
         flash_loan::repay(flash_pool, recovery_a, due);
     }
-}
 ```
 
 **这段代码仅作教学演示，展示攻击路径。实际使用需要更多细节处理。**

@@ -67,7 +67,7 @@ DEX LP 收益: 15% APY
 ## Move 实现：跨协议套利框架
 
 ```move
-module cross_protocol_arbitrage {
+module cross_protocol_arbitrage;
     use sui::coin::{Self, Coin};
     use sui::tx_context::{Self, TxContext};
 
@@ -126,7 +126,6 @@ module cross_protocol_arbitrage {
             _ => abort 0,
         }
     }
-}
 ```
 
 ## 跨协议套利的风险放大

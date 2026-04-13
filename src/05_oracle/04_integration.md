@@ -27,17 +27,23 @@ public struct OracleConfig has key {
 ## 完整的安全价格读取函数
 
 ```move
-module defi_oracle {
+module defi_oracle;
     use sui::object::{Self, UID};
     use sui::tx_context::{Self, TxContext};
     use pyth::price_feed::{Self, PriceFeed};
 
-    const EPriceStale: u64 = 0;
-    const EPriceZero: u64 = 1;
-    const EPriceNegative: u64 = 2;
-    const EConfTooWide: u64 = 3;
-    const EDevTooHigh: u64 = 4;
-    const ENotAdmin: u64 = 5;
+    #[error]
+    const EPriceStale: vector<u8> = b"Price Stale";
+    #[error]
+    const EPriceZero: vector<u8> = b"Price Zero";
+    #[error]
+    const EPriceNegative: vector<u8> = b"Price Negative";
+    #[error]
+    const EConfTooWide: vector<u8> = b"Conf Too Wide";
+    #[error]
+    const EDevTooHigh: vector<u8> = b"Dev Too High";
+    #[error]
+    const ENotAdmin: vector<u8> = b"Not Admin";
 
     public struct PriceGuardConfig has key {
         id: UID,
@@ -102,7 +108,6 @@ module defi_oracle {
         if (dt == 0) { return snapshot.last_valid_price };
         ((snapshot.twap_sum / (dt as u128)) as u64)
     }
-}
 ```
 
 ## 四层防御总结

@@ -15,16 +15,20 @@
 ## 完整四层防御的 Move 实现
 
 ```move
-module oracle::safe_reader {
+module oracle::safe_reader;
     use sui::clock::Clock;
     use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
     use sui::event;
 
-    const EStale_PRICE: u64 = 0;
-    const EPriceDeviation: u64 = 1;
-    const ELowConfidence: u64 = 2;
-    const EEmergencyPause: u64 = 3;
+    #[error]
+    const EStale_PRICE: vector<u8> = b"Stale_PRICE";
+    #[error]
+    const EPriceDeviation: vector<u8> = b"Price Deviation";
+    #[error]
+    const ELowConfidence: vector<u8> = b"Low Confidence";
+    #[error]
+    const EEmergencyPause: vector<u8> = b"Emergency Pause";
 
     public struct SafeOracleConfig has store {
         max_staleness_ms: u64,
@@ -153,7 +157,6 @@ module oracle::safe_reader {
     public fun get_last_good_price(reader: &SafePriceReader): u64 {
         reader.config.last_good_price
     }
-}
 ```
 
 ## 四层防御的逻辑流

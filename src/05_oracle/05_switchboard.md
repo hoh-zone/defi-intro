@@ -46,11 +46,13 @@ Switchboard 模型：
 ## 在 Sui 上使用 Switchboard
 
 ```move
-module defi::switchboard_integration {
+module defi::switchboard_integration;
     use sui::clock::Clock;
 
-    const EStale_PRICE: u64 = 200;
-    const EInvalidAggregator: u64 = 201;
+    #[error]
+    const EStale_PRICE: vector<u8> = b"Stale_PRICE";
+    #[error]
+    const EInvalidAggregator: vector<u8> = b"Invalid Aggregator";
     const MAX_STALENESS_MS: u64 = 120_000;
 
     public struct SwitchboardPrice has store {
@@ -80,7 +82,6 @@ module defi::switchboard_integration {
     public fun is_fresh(data: &SwitchboardPrice, clock: &Clock): bool {
         clock.timestamp_ms() - data.timestamp_ms < MAX_STALENESS_MS
     }
-}
 ```
 
 ## 自定义数据 Feed
@@ -102,7 +103,7 @@ Oracle 队列：10 个节点竞争提供数据
 ### 创建聚合器的 Move 代码
 
 ```move
-module defi::custom_feed {
+module defi::custom_feed;
     use sui::coin::Coin;
     use sui::sui::SUI;
 
@@ -130,13 +131,12 @@ module defi::custom_feed {
     fun create_job(url: String, selector: String): Job {
         Job { url, selector }
     }
-}
 ```
 
 ## Switchboard VRF（可验证随机函数）
 
 ```move
-module defi::switchboard_vrf {
+module defi::switchboard_vrf;
     use sui::coin::Coin;
     use sui::sui::SUI;
 
@@ -177,7 +177,6 @@ module defi::switchboard_vrf {
     public fun random_in_range(random: u64, min: u64, max: u64): u64 {
         min + random % (max - min + 1)
     }
-}
 ```
 
 ## 三大预言机集成复杂度对比

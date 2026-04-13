@@ -19,11 +19,16 @@ module liquid_staking::liquid_staking;
 
     const PRECISION: u64 = 1_000_000_000;
 
-    const EPoolPaused: u64 = 0;
-    const EPoolNotPaused: u64 = 1;
-    const EInsufficientPoolBalance: u64 = 2;
-    const EStakeAmountZero: u64 = 4;
-    const EUnstakeAmountZero: u64 = 5;
+    #[error]
+    const EPoolPaused: vector<u8> = b"Pool Paused";
+    #[error]
+    const EPoolNotPaused: vector<u8> = b"Pool Not Paused";
+    #[error]
+    const EInsufficientPoolBalance: vector<u8> = b"Insufficient Pool Balance";
+    #[error]
+    const EStakeAmountZero: vector<u8> = b"Stake Amount Zero";
+    #[error]
+    const EUnstakeAmountZero: vector<u8> = b"Unstake Amount Zero";
 
     public struct LIQUID_STAKING has drop {}
 

@@ -26,7 +26,7 @@ DEX 挖矿激励用户**提供流动性**（质押 LP Token）。借贷挖矿同
 ## 完整 Move 实现
 
 ```move
-module liquidity_mining::lending_mining {
+module liquidity_mining::lending_mining;
     use sui::coin::{Self, Coin};
     use sui::clock::Clock;
     use sui::bag::{Self, Bag};
@@ -35,9 +35,12 @@ module liquidity_mining::lending_mining {
     use sui::table::{Self, Table};
     use sui::math;
 
-    const EUnauthorized: u64 = 0;
-    const EZeroAmount: u64 = 1;
-    const ENotFound: u64 = 2;
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
+    #[error]
+    const EZeroAmount: vector<u8> = b"Zero Amount";
+    #[error]
+    const ENotFound: vector<u8> = b"Not Found";
     const PRECISION: u64 = 1_000_000_000;
 
     public struct LendingMiningMaster<phantom RewardCoin> has key {
@@ -274,7 +277,6 @@ module liquidity_mining::lending_mining {
         };
         coin::take(&mut master.reward_balance, total_pending, ctx)
     }
-}
 ```
 
 ## 借贷挖矿的关键设计

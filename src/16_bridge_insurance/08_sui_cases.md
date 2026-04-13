@@ -65,7 +65,7 @@ Wormhole 在 Sui 上的集成架构：
 ### 在 Sui Move 中接收 Wormhole 消息
 
 ```move
-module my_app::cross_chain {
+module my_app::cross_chain;
     use wormhole::vaa;
     use wormhole::state;
 
@@ -95,7 +95,6 @@ module my_app::cross_chain {
 
     fun handle_transfer(_payload: vector<u8>) {}
     fun handle_message(_payload: vector<u8>) {}
-}
 ```
 
 ## Sui 上的保险协议现状
@@ -124,14 +123,15 @@ Sui 生态的链上保险仍在早期阶段：
 ### 协议内置保险基金
 
 ```move
-module protocol::safety_fund {
+module protocol::safety_fund;
     use sui::coin::{Self, Coin};
     use sui::balance::{Self, Balance};
     use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
     use sui::clock::Clock;
 
-    const EUnauthorized: u64 = 0;
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
 
     public struct SafetyFund<phantom CoinType> has key {
         id: UID,
@@ -182,7 +182,6 @@ module protocol::safety_fund {
     public fun fund_balance<CoinType>(fund: &SafetyFund<CoinType>): u64 {
         balance::value(&fund.balance)
     }
-}
 ```
 
 ## 跨链 + 保险的组合风险

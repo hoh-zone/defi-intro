@@ -42,7 +42,7 @@ $$L_{max} = \frac{1}{1 - LTV}$$
 ## Move 实现：杠杆螺旋计算器
 
 ```move
-module leverage_calculator {
+module leverage_calculator;
     public fun calculate_loop_leverage(
         initial_capital: u64,
         ltv_bps: u64,
@@ -89,7 +89,6 @@ module leverage_calculator {
         let borrow_cost = ((leverage_bps - 10000) as i128) * (borrow_apr_bps as i128) / 10000;
         gross_yield - borrow_cost
     }
-}
 ```
 
 ## 杠杆螺旋的风险

@@ -7,7 +7,7 @@
 事件设计不是事后补充——它是协议公共接口的一部分，应该在设计阶段就考虑清楚。
 
 ```move
-module defi_book::events_demo {
+module defi_book::events_demo;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
 
@@ -56,7 +56,7 @@ module defi_book::events_demo {
             timestamp_ms: tx_context::timestamp_ms(ctx),
         });
     }
-}
+
 ```
 
 一个好的事件设计包含：
@@ -64,25 +64,35 @@ module defi_book::events_demo {
 - **操作后的状态**（`new_total`）——避免前端再发一笔读取请求
 - **时间戳**（`timestamp_ms`）——便于排序和时间序列分析
 
-### 错误码体系
+### 错误：`#[error]` 与可读 abort
 
-Move 中用 `u64` 常量定义错误码。错误码的编号应该有系统，方便定位。
+推荐用 **`#[error]`** 标注 **`vector<u8>`** 常量（短英文消息），在浏览器与 CLI 中更易读；`assert!(cond, EName)` 与 `abort EName` 均使用该常量。**不要**再为新代码引入仅数字的 `u64` 错误码。
 
 ```move
-module defi_book::error_demo {
+module defi_book::error_demo;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
 
-    const EPoolPaused: u64 = 0;
-    const EInsufficientLiquidity: u64 = 1;
-    const ESlippageExceeded: u64 = 2;
-    const EInvalidAmount: u64 = 3;
-    const EUnauthorized: u64 = 4;
-    const EDuplicatePosition: u64 = 5;
-    const EPositionNotFound: u64 = 6;
-    const EInsufficientCollateral: u64 = 7;
-    const EBorrowLimitExceeded: u64 = 8;
-    const ELiquidationThresholdBreached: u64 = 9;
+    #[error]
+    const EPoolPaused: vector<u8> = b"Pool Paused";
+    #[error]
+    const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
+    #[error]
+    const ESlippageExceeded: vector<u8> = b"Slippage Exceeded";
+    #[error]
+    const EInvalidAmount: vector<u8> = b"Invalid Amount";
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
+    #[error]
+    const EDuplicatePosition: vector<u8> = b"Duplicate Position";
+    #[error]
+    const EPositionNotFound: vector<u8> = b"Position Not Found";
+    #[error]
+    const EInsufficientCollateral: vector<u8> = b"Insufficient Collateral";
+    #[error]
+    const EBorrowLimitExceeded: vector<u8> = b"Borrow Limit Exceeded";
+    #[error]
+    const ELiquidationThresholdBreached: vector<u8> = b"Liquidation Threshold Breached";
 
     public struct Pool has key {
         id: UID,
@@ -113,15 +123,10 @@ module defi_book::error_demo {
     }
 
     fun execute_swap(_pool: &mut Pool, _coin: Coin<SUI>, _ctx: &mut TxContext) {}
-}
+
 ```
 
-错误码编号建议：
-- 0-9：通用错误（暂停、未授权、无效输入）
-- 10-19：流动性相关错误
-- 20-29：价格/滑点相关错误
-- 30-39：清算相关错误
-- 100+：协议特定错误
+命名建议：错误常量 **`EPascalCase`**，消息与常量含义一致；测试中 `expected_failure` 使用 **`abort_code = module::E…`**，避免魔法数字。
 
 ### 链上可观测性
 

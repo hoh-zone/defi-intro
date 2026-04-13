@@ -88,7 +88,7 @@ public fun safe_create(amount: u64, ctx: &mut TxContext): Coin<SUI> {
 `Balance` 是 `Coin` 的底层原语，没有对象包装。适合协议内部记账：
 
 ```move
-module defi::balance_safety {
+module defi::balance_safety;
     use sui::balance::{Self, Balance};
     use sui::coin::{Self, Coin, TreasuryCap};
     use sui::sui::SUI;
@@ -122,9 +122,10 @@ module defi::balance_safety {
         balance::join(&mut vault.pending, split);
     }
 
-    const EZeroDeposit: u64 = 0;
-    const EInsufficient: u64 = 1;
-}
+    #[error]
+    const EZeroDeposit: vector<u8> = b"Zero Deposit";
+    #[error]
+    const EInsufficient: vector<u8> = b"Insufficient";
 ```
 
 ### Balance vs Coin 的选择
@@ -143,7 +144,7 @@ module defi::balance_safety {
 以下是一个完整的入金/出金函数，展示每个安全检查点：
 
 ```move
-module defi::fund_safety {
+module defi::fund_safety;
     use sui::object::{Self, UID};
     use sui::coin::{Self, Coin, TreasuryCap};
     use sui::balance::{Self, Balance};
@@ -232,14 +233,20 @@ module defi::fund_safety {
 
     const MIN_DEPOSIT: u64 = 100000000;
     const MAX_DEPOSIT: u64 = 100000000000000;
-    const EProtocolPaused: u64 = 0;
-    const EBelowMinDeposit: u64 = 1;
-    const EAboveMaxDeposit: u64 = 2;
-    const EZeroShares: u64 = 3;
-    const EZeroWithdraw: u64 = 4;
-    const EExceedsTotalShares: u64 = 5;
-    const EExceedsBalance: u64 = 6;
-}
+    #[error]
+    const EProtocolPaused: vector<u8> = b"Protocol Paused";
+    #[error]
+    const EBelowMinDeposit: vector<u8> = b"Below Min Deposit";
+    #[error]
+    const EAboveMaxDeposit: vector<u8> = b"Above Max Deposit";
+    #[error]
+    const EZeroShares: vector<u8> = b"Zero Shares";
+    #[error]
+    const EZeroWithdraw: vector<u8> = b"Zero Withdraw";
+    #[error]
+    const EExceedsTotalShares: vector<u8> = b"Exceeds Total Shares";
+    #[error]
+    const EExceedsBalance: vector<u8> = b"Exceeds Balance";
 ```
 
 关键检查点：

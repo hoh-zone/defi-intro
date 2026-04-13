@@ -31,18 +31,23 @@ Vault Token（份额代币）：
 ## 完整 Move 实现
 
 ```move
-module yield_strategy::yield_vault {
+module yield_strategy::yield_vault;
     use sui::coin::{Self, Coin};
     use sui::balance::{Self, Balance};
     use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
     use sui::event;
 
-    const ENotOwner: u64 = 0;
-    const EZeroDeposit: u64 = 1;
-    const EZeroWithdraw: u64 = 2;
-    const EInsufficientShares: u64 = 3;
-    const EStrategyFailed: u64 = 4;
+    #[error]
+    const ENotOwner: vector<u8> = b"Not Owner";
+    #[error]
+    const EZeroDeposit: vector<u8> = b"Zero Deposit";
+    #[error]
+    const EZeroWithdraw: vector<u8> = b"Zero Withdraw";
+    #[error]
+    const EInsufficientShares: vector<u8> = b"Insufficient Shares";
+    #[error]
+    const EStrategyFailed: vector<u8> = b"Strategy Failed";
     const PRECISION: u64 = 1_000_000_000;
 
     public struct Vault<phantom Asset> has key {
@@ -189,7 +194,6 @@ module yield_strategy::yield_vault {
         let amount = balance::value(&vault.fees_collected);
         coin::take(&mut vault.fees_collected, amount, ctx)
     }
-}
 ```
 
 ## Vault 的收益来源链

@@ -30,7 +30,7 @@ TWAP 计算：
 ## 完整 Move 实现
 
 ```move
-module oracle::twap {
+module oracle::twap;
     use sui::object::{Self, UID};
     use sui::clock::Clock;
     use sui::coin::{Self, Coin};
@@ -38,8 +38,10 @@ module oracle::twap {
     use sui::tx_context::TxContext;
     use sui::event;
 
-    const EZeroTime: u64 = 0;
-    const EInsufficientHistory: u64 = 1;
+    #[error]
+    const EZeroTime: vector<u8> = b"Zero Time";
+    #[error]
+    const EInsufficientHistory: vector<u8> = b"Insufficient History";
 
     public struct TwapPool has key {
         id: UID,
@@ -148,7 +150,6 @@ module oracle::twap {
     public fun twap_price(result: &TwapResult): u64 {
         result.twap_price
     }
-}
 ```
 
 ## TWAP 作为预言机补充

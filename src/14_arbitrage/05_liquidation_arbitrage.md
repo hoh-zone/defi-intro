@@ -22,15 +22,17 @@ SUI 跌到 $1.4:
 ## 清算机器人实现
 
 ```move
-module liquidation_bot {
+module liquidation_bot;
     use lending::{Self, Market, BorrowPosition, DepositPosition};
     use amm::Pool;
     use flash_loan::FlashLoanPool;
     use sui::coin::{Self, Coin};
     use sui::tx_context::{Self, TxContext};
 
-    const ENotLiquidatable: u64 = 3000;
-    const EInsufficientProfit: u64 = 3001;
+    #[error]
+    const ENotLiquidatable: vector<u8> = b"Not Liquidatable";
+    #[error]
+    const EInsufficientProfit: vector<u8> = b"Insufficient Profit";
 
     /// 方式 1: 自有资金清算
     /// 清算者持有还款代币，直接执行清算
@@ -109,7 +111,6 @@ module liquidation_bot {
         };
         liquidatable
     }
-}
 ```
 
 ## 清算的经济学

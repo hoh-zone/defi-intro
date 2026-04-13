@@ -11,8 +11,10 @@ use sui::object::{Self, UID};
 use sui::tx_context::TxContext;
 
 // === 错误码（与书中 6.x 讲解对照） ===
-const EMaxInExceeded: u64 = 601;
-const EBelowMinOut: u64 = 602;
+#[error]
+const EMaxInExceeded: vector<u8> = b"Max In Exceeded";
+#[error]
+const EBelowMinOut: vector<u8> = b"Below Min Out";
 
 /// 一笔多跳 swap 在链上的「上下文」：记住报价 id、最小输出、输入余额与已累积输出。
 /// 真实系统里还会带协议费接收方、期望输出等字段；此处压缩为教学核心。

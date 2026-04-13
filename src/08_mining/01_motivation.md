@@ -48,15 +48,18 @@
 在我们深入每一节的实现之前，先定义最核心的类型：
 
 ```move
-module liquidity_mining::core {
+module liquidity_mining::core;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
     use sui::tx_context::TxContext;
     use sui::clock::Clock;
 
-    const EInsufficientStake: u64 = 0;
-    const ENotAuthorized: u64 = 1;
-    const EPoolExpired: u64 = 2;
+    #[error]
+    const EInsufficientStake: vector<u8> = b"Insufficient Stake";
+    #[error]
+    const ENotAuthorized: vector<u8> = b"Not Authorized";
+    #[error]
+    const EPoolExpired: vector<u8> = b"Pool Expired";
 
     public struct StakeInfo has store, drop {
         amount: u64,
@@ -81,7 +84,6 @@ module liquidity_mining::core {
         reward_debt: u64,
         pending_reward: u64,
     }
-}
 ```
 
 ### 关键字段解释

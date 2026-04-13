@@ -23,7 +23,7 @@
 ## 架构分离的 Move 实现
 
 ```move
-module defi::separated_architecture {
+module defi::separated_architecture;
     use sui::object::{Self, UID, ID};
     use sui::clock::Clock;
     use sui::tx_context::TxContext;
@@ -133,7 +133,6 @@ module defi::separated_architecture {
         assert!(ctx.sender() == market.admin, 0);
         market.paused = true;
     }
-}
 ```
 
 ## 紧急切换流程

@@ -42,7 +42,7 @@
 ### Move 视角的防护
 
 ```move
-module bridge::security_guard {
+module bridge::security_guard;
     use sui::clock::Clock;
 
     public struct WithdrawalLimit has store {
@@ -76,7 +76,6 @@ module bridge::security_guard {
         };
         daily_total + amount <= limit.daily_limit
     }
-}
 ```
 
 ## Wormhole — $326M（2022 年 2 月）
@@ -112,7 +111,7 @@ module bridge::security_guard {
 Sui Move 的类型安全可以防止类似漏洞：
 
 ```move
-module bridge::secure_verification {
+module bridge::secure_verification;
     use sui::object::ID;
 
     public struct GuardianSignature has store {
@@ -152,7 +151,6 @@ module bridge::secure_verification {
     ): bool {
         sig.signature.length() >= 64
     }
-}
 ```
 
 Sui Move 的优势：`VerifiedProof` 是一个类型化的对象，只有通过 `verify_quorum` 函数才能创建。后续代码只需要检查 `VerifiedProof` 是否存在，不需要重新验证签名——**通过类型系统保证验证不被绕过**。

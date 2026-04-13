@@ -7,7 +7,7 @@
 Sui 使用对象模型。每个独立的状态单元是一个**对象（Object）**，拥有全局唯一的 ID。对象之间的依赖关系由交易显式声明，运行时可以据此判断哪些交易能并行执行。
 
 ```move
-module defi_book::demo_pool {
+module defi_book::demo_pool;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
 
@@ -30,7 +30,6 @@ module defi_book::demo_pool {
         id: UID,
         pool_id: ID,
     }
-}
 ```
 
 这段代码展示了 Sui 上 DeFi 协议的典型对象设计：

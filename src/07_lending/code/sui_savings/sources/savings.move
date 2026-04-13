@@ -6,10 +6,14 @@ use sui::transfer;
 use sui::tx_context::{Self, TxContext};
 
 // Error codes
-const EInsufficientBalance: u64 = 0;
-const EUnauthorized: u64 = 1;
-const EPoolPaused: u64 = 2;
-const EInvalidAmount: u64 = 3;
+#[error]
+const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EPoolPaused: vector<u8> = b"Pool Paused";
+#[error]
+const EInvalidAmount: vector<u8> = b"Invalid Amount";
 
 // Events
 public struct DepositEvent has copy, drop {

@@ -149,7 +149,7 @@ module flash_loan::flash_loan_test {
     // ===== Test 5: Repay Less Than Required Should Fail =====
 
     #[test]
-    #[expected_failure(abort_code = 1)]
+    #[expected_failure(abort_code = flash_loan::ERepaymentTooLow)]
     fun test_repay_insufficient_fails() {
         let mut scenario = test_scenario::begin(@0xA);
         let ctx = scenario.ctx();
@@ -269,7 +269,7 @@ module flash_loan::flash_loan_test {
     // ===== Test 8: Fee BPS Too High Should Fail =====
 
     #[test]
-    #[expected_failure(abort_code = 2)]
+    #[expected_failure(abort_code = flash_loan::EFeeBpsTooHigh)]
     fun test_fee_too_high_fails() {
         let mut scenario = test_scenario::begin(@0xA);
         let ctx = scenario.ctx();
@@ -287,7 +287,7 @@ module flash_loan::flash_loan_test {
     // ===== Test 9: Borrow More Than Pool Has Should Fail =====
 
     #[test]
-    #[expected_failure(abort_code = 0)]
+    #[expected_failure(abort_code = flash_loan::EInsufficientLiquidity)]
     fun test_borrow_more_than_pool_fails() {
         let mut scenario = test_scenario::begin(@0xA);
         let ctx = scenario.ctx();

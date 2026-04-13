@@ -5,15 +5,24 @@ use sui::balance::{Self, Balance};
 // ============================================================
 // Error codes
 // ============================================================
-const EInvalidAmount: u64 = 0;
-const EInsufficientLiquidity: u64 = 1;
-const EHealthFactorTooLow: u64 = 2;
-const ENotLiquidatable: u64 = 3;
-const EReceiptMismatch: u64 = 4;
-const EUnauthorized: u64 = 5;
-const EInvalidCollateralFactor: u64 = 6;
-const EInvalidThreshold: u64 = 7;
-const EInsufficientCollateral: u64 = 8;
+#[error]
+const EInvalidAmount: vector<u8> = b"Invalid Amount";
+#[error]
+const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
+#[error]
+const EHealthFactorTooLow: vector<u8> = b"Health Factor Too Low";
+#[error]
+const ENotLiquidatable: vector<u8> = b"Not Liquidatable";
+#[error]
+const EReceiptMismatch: vector<u8> = b"Receipt Mismatch";
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EInvalidCollateralFactor: vector<u8> = b"Invalid Collateral Factor";
+#[error]
+const EInvalidThreshold: vector<u8> = b"Invalid Threshold";
+#[error]
+const EInsufficientCollateral: vector<u8> = b"Insufficient Collateral";
 
 // ============================================================
 // Constants

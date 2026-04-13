@@ -19,14 +19,16 @@
 ## Move 实现
 
 ```move
-module deepbook_leverage_mm {
+module deepbook_leverage_mm;
     use deepbook::{Self, OrderBook, Order};
     use lending::{Self, Market, DepositReceipt, BorrowReceipt};
     use sui::coin::{Self, Coin};
     use sui::tx_context::{Self, TxContext};
 
-    const EInsufficientSpread: u64 = 900;
-    const EHealthFactorTooLow: u64 = 901;
+    #[error]
+    const EInsufficientSpread: vector<u8> = b"Insufficient Spread";
+    #[error]
+    const EHealthFactorTooLow: vector<u8> = b"Health Factor Too Low";
 
     public struct LeverageMMPosition has key, store {
         id: UID,
@@ -130,7 +132,6 @@ module deepbook_leverage_mm {
 
         position.delete();
     }
-}
 ```
 
 ## 做市策略的风险

@@ -49,16 +49,19 @@ Spread % = (Ask - Bid) / Mid Price
 ## DeepBook 双边做市的 Move 实现
 
 ```move
-module yield_strategy::orderbook_mm {
+module yield_strategy::orderbook_mm;
     use sui::coin::{Self, Coin};
     use sui::clock::Clock;
     use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
     use sui::balance::{Self, Balance};
 
-    const ENotOwner: u64 = 0;
-    const EInvalidSpread: u64 = 1;
-    const EInsufficientInventory: u64 = 2;
+    #[error]
+    const ENotOwner: vector<u8> = b"Not Owner";
+    #[error]
+    const EInvalidSpread: vector<u8> = b"Invalid Spread";
+    #[error]
+    const EInsufficientInventory: vector<u8> = b"Insufficient Inventory";
     const PRECISION: u64 = 1_000_000_000;
 
     public struct MarketMaker has key {
@@ -176,7 +179,6 @@ module yield_strategy::orderbook_mm {
         let quote_val = mm.quote_balance.value();
         base_val + quote_val
     }
-}
 ```
 
 ## 库存管理策略

@@ -11,13 +11,20 @@ module uniswap_v2::pool;
 
     // ========== Error Codes ==========
 
-    const EInsufficientLiquidity: u64 = 0;
-    const EInvalidAmount: u64 = 1;
-    const EPoolPaused: u64 = 2;
-    const EInvalidRatio: u64 = 3;
-    const EInsufficientOutput: u64 = 4;
-    const EUnauthorized: u64 = 5;
-    const EKLastMismatch: u64 = 6;
+    #[error]
+    const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
+    #[error]
+    const EInvalidAmount: vector<u8> = b"Invalid Amount";
+    #[error]
+    const EPoolPaused: vector<u8> = b"Pool Paused";
+    #[error]
+    const EInvalidRatio: vector<u8> = b"Invalid Ratio";
+    #[error]
+    const EInsufficientOutput: vector<u8> = b"Insufficient Output";
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
+    #[error]
+    const EKLastMismatch: vector<u8> = b"K Last Mismatch";
 
     // ========== Structs ==========
 

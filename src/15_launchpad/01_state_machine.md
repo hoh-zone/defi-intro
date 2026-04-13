@@ -20,20 +20,27 @@ Draft → WhitelistOpen → SaleOpen → ClaimOpen → Closed
 ## Move 实现
 
 ```move
-module launchpad {
+module launchpad;
     use sui::coin::{Self, Coin, TreasuryCap};
     use sui::balance::{Self, Balance};
     use sui::object::{Self, UID, ID};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
-    const EInvalidState: u64 = 500;
-    const ENotWhitelisted: u64 = 501;
-    const EExceedsAllocation: u64 = 502;
-    const ESaleNotEnded: u64 = 503;
-    const ENothingToClaim: u64 = 504;
-    const EUnauthorized: u64 = 505;
-    const EAlreadyWhitelisted: u64 = 506;
+    #[error]
+    const EInvalidState: vector<u8> = b"Invalid State";
+    #[error]
+    const ENotWhitelisted: vector<u8> = b"Not Whitelisted";
+    #[error]
+    const EExceedsAllocation: vector<u8> = b"Exceeds Allocation";
+    #[error]
+    const ESaleNotEnded: vector<u8> = b"Sale Not Ended";
+    #[error]
+    const ENothingToClaim: vector<u8> = b"Nothing To Claim";
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
+    #[error]
+    const EAlreadyWhitelisted: vector<u8> = b"Already Whitelisted";
 
     const STATE_DRAFT: u8 = 0;
     const STATE_WHITELIST_OPEN: u8 = 1;
@@ -236,7 +243,6 @@ module launchpad {
         };
         if (vested > sub.claimed) { vested - sub.claimed } else { 0 }
     }
-}
 ```
 
 ## 关键设计决策

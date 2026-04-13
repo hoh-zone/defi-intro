@@ -30,7 +30,7 @@
 以 DEX 为例：
 
 ```move
-module defi_book::amm_example {
+module defi_book::amm_example;
     use sui::coin::{Self, Coin};
 
     public struct Pool<phantom A, phantom B> has key {
@@ -61,7 +61,6 @@ module defi_book::amm_example {
             shares,
         }
     }
-}
 ```
 
 对这段代码的四步分析：

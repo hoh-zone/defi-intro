@@ -5,8 +5,10 @@ use sui::object::{Self, UID, ID};
 use sui::transfer;
 use sui::tx_context::{Self, TxContext};
 
-const EUnauthorized: u64 = 0;
-const EInsufficientBalance: u64 = 1;
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
 
 public struct ProtectedVault<phantom T> has key {
     id: UID,

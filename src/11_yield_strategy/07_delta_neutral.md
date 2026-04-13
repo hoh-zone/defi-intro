@@ -73,17 +73,21 @@ Delta 分析：
 ## Delta 中性做市的 Move 实现
 
 ```move
-module yield_strategy::delta_neutral {
+module yield_strategy::delta_neutral;
     use sui::coin::{Self, Coin};
     use sui::balance::{Self, Balance};
     use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
     use sui::event;
 
-    const ENotOwner: u64 = 0;
-    const EZeroAmount: u64 = 1;
-    const EDeltaExceeded: u64 = 2;
-    const EInsufficientBalance: u64 = 3;
+    #[error]
+    const ENotOwner: vector<u8> = b"Not Owner";
+    #[error]
+    const EZeroAmount: vector<u8> = b"Zero Amount";
+    #[error]
+    const EDeltaExceeded: vector<u8> = b"Delta Exceeded";
+    #[error]
+    const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
     const PRECISION: u64 = 1_000_000_000;
 
     public struct DeltaNeutralPosition has key {
@@ -221,7 +225,6 @@ module yield_strategy::delta_neutral {
         id.delete();
         base
     }
-}
 ```
 
 ## Delta 中性的实际成本

@@ -63,16 +63,20 @@ Pull 模式（Pyth 风格）：
 ## 完整 Move 集成代码
 
 ```move
-module defi::pyth_integration {
+module defi::pyth_integration;
     use sui::coin::Coin;
     use sui::sui::SUI;
     use sui::clock::Clock;
     use pyth::price_feed::{Self, PriceFeed};
 
-    const EStale_PRICE: u64 = 0;
-    const EPriceTooLow: u64 = 1;
-    const EConfidenceTooWide: u64 = 2;
-    const ENegativePrice: u64 = 3;
+    #[error]
+    const EStale_PRICE: vector<u8> = b"Stale_PRICE";
+    #[error]
+    const EPriceTooLow: vector<u8> = b"Price Too Low";
+    #[error]
+    const EConfidenceTooWide: vector<u8> = b"Confidence Too Wide";
+    #[error]
+    const ENegativePrice: vector<u8> = b"Negative Price";
 
     const MAX_STALENESS_MS: u64 = 60_000;
     const MAX_CONFIDENCE_RATIO_BPS: u64 = 500;
@@ -127,7 +131,6 @@ module defi::pyth_integration {
     public fun is_price_fresh(data: &PriceData, clock: &Clock): bool {
         clock.timestamp_ms() - data.publish_time_ms < MAX_STALENESS_MS
     }
-}
 ```
 
 ## PTB 中的使用方式

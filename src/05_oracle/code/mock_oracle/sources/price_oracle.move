@@ -6,13 +6,17 @@ module mock_oracle::price_oracle;
 // ===== Error codes =====
 
 /// The stored price is older than the caller's maximum allowed staleness.
-const EStalePrice: u64 = 0;
+#[error]
+const EStalePrice: vector<u8> = b"Stale Price";
 /// The price deviates from the reference by more than the allowed basis points.
-const EPriceDeviation: u64 = 1;
+#[error]
+const EPriceDeviation: vector<u8> = b"Price Deviation";
 /// Caller does not hold the required AdminCap.
-const EUnauthorized: u64 = 2;
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
 /// The provided price or confidence is zero.
-const EInvalidPrice: u64 = 3;
+#[error]
+const EInvalidPrice: vector<u8> = b"Invalid Price";
 
 // ===== Constants =====
 

@@ -37,7 +37,7 @@
 ## Step 3：实现预言机插槽
 
 ```move
-module lending::oracle_integration {
+module lending::oracle_integration;
     use sui::object::{Self, UID, ID};
     use sui::clock::Clock;
     use sui::coin::Coin;
@@ -45,10 +45,14 @@ module lending::oracle_integration {
     use sui::tx_context::TxContext;
     use sui::event;
 
-    const EStale: u64 = 100;
-    const EDeviation: u64 = 101;
-    const EPaused: u64 = 102;
-    const EUnauthorized: u64 = 103;
+    #[error]
+    const EStale: vector<u8> = b"Stale";
+    #[error]
+    const EDeviation: vector<u8> = b"Deviation";
+    #[error]
+    const EPaused: vector<u8> = b"Paused";
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
 
     public struct AssetOracle has store {
         asset_type: String,
@@ -215,7 +219,6 @@ module lending::oracle_integration {
     public fun get_last_price(oracle: &LendingOracle, asset_index: u64): u64 {
         *oracle.last_prices.borrow(asset_index)
     }
-}
 ```
 
 ## Step 4：测试

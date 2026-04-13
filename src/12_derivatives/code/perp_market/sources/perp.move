@@ -9,14 +9,22 @@ use sui::tx_context::{Self, TxContext};
 // ============================================================
 // Error codes
 // ============================================================
-const EInvalidAmount: u64 = 0;
-const EInsufficientMargin: u64 = 1;
-const ENotLiquidatable: u64 = 2;
-const EUnauthorized: u64 = 3;
-const EMktPaused: u64 = 4;
-const EPositionMismatch: u64 = 5;
-const EInsufficientReserve: u64 = 6;
-const EInvalidPrice: u64 = 7;
+#[error]
+const EInvalidAmount: vector<u8> = b"Invalid Amount";
+#[error]
+const EInsufficientMargin: vector<u8> = b"Insufficient Margin";
+#[error]
+const ENotLiquidatable: vector<u8> = b"Not Liquidatable";
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EMktPaused: vector<u8> = b"Mkt Paused";
+#[error]
+const EPositionMismatch: vector<u8> = b"Position Mismatch";
+#[error]
+const EInsufficientReserve: vector<u8> = b"Insufficient Reserve";
+#[error]
+const EInvalidPrice: vector<u8> = b"Invalid Price";
 
 // ============================================================
 // Constants

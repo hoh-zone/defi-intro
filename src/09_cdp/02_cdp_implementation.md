@@ -3,19 +3,25 @@
 ## 对象设计
 
 ```move
-module cdp {
+module cdp;
     use sui::coin::{Self, Coin, TreasuryCap};
     use sui::balance::{Self, Balance};
     use sui::object::{Self, UID, ID};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
-    const ECollateralRatioTooLow: u64 = 300;
-    const EInvalidAmount: u64 = 301;
-    const ENotOwner: u64 = 302;
-    const EPositionNotLiquidatable: u64 = 303;
-    const EDebtCeiling: u64 = 304;
-    const ESystemPaused: u64 = 305;
+    #[error]
+    const ECollateralRatioTooLow: vector<u8> = b"Collateral Ratio Too Low";
+    #[error]
+    const EInvalidAmount: vector<u8> = b"Invalid Amount";
+    #[error]
+    const ENotOwner: vector<u8> = b"Not Owner";
+    #[error]
+    const EPositionNotLiquidatable: vector<u8> = b"Position Not Liquidatable";
+    #[error]
+    const EDebtCeiling: vector<u8> = b"Debt Ceiling";
+    #[error]
+    const ESystemPaused: vector<u8> = b"System Paused";
 
     public struct STABLE has copy, drop {}
 
@@ -45,7 +51,6 @@ module cdp {
         id: UID,
         system_id: ID,
     }
-}
 ```
 
 三个核心对象：

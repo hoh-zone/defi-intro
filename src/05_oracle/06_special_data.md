@@ -42,7 +42,7 @@ Pyth 不只提供加密货币价格：
 ### 读取非加密货币价格的 Move 代码
 
 ```move
-module defi::commodity_oracle {
+module defi::commodity_oracle;
     use sui::clock::Clock;
     use pyth::price_feed::PriceFeed;
 
@@ -72,7 +72,6 @@ module defi::commodity_oracle {
         assert!(clock.timestamp_ms() - ts < 300_000, 0);
         price
     }
-}
 ```
 
 ## 天气预言机
@@ -98,7 +97,7 @@ module defi::commodity_oracle {
 ```
 
 ```move
-module insurance::weather {
+module insurance::weather;
     use sui::clock::Clock;
 
     public struct WeatherData has store {
@@ -128,7 +127,6 @@ module insurance::weather {
         };
         policy.triggered
     }
-}
 ```
 
 ## 体育与事件预言机

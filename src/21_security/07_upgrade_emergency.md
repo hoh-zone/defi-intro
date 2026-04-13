@@ -24,7 +24,7 @@ sui client upgrade --upgrade-capability <UPGRADE_CAP_ID> \
 ### UpgradeCap 的生命周期管理
 
 ```move
-module defi::upgrade_management {
+module defi::upgrade_management;
     use sui::package::{Self, UpgradeCap};
     use sui::object::{Self, UID};
     use sui::transfer;
@@ -40,7 +40,6 @@ module defi::upgrade_management {
         let cap_uid = package::upgrade_caps_to_uid(cap);
         cap_uid.delete();
     }
-}
 ```
 
 等等——上面的代码把 `UpgradeCap` 的 UID 删除了，这实际上是销毁 UpgradeCap，使包永久不可升级。这对于确定不再需要升级的协议是正确的做法。
@@ -88,7 +87,7 @@ defi = "0x0"
 - 删除模块
 
 ```move
-module defi::version_control {
+module defi::version_control;
     use sui::object::{Self, UID};
 
     public struct Protocol has key {
@@ -118,8 +117,8 @@ module defi::version_control {
         });
     }
 
-    const EVersionTooOld: u64 = 0;
-}
+    #[error]
+    const EVersionTooOld: vector<u8> = b"Version Too Old";
 ```
 
 ## 紧急暂停
@@ -131,7 +130,7 @@ module defi::version_control {
 3. **恢复门槛更高**：取消暂停应该比暂停更难
 
 ```move
-module defi::emergency_pause {
+module defi::emergency_pause;
     use sui::object::{Self, UID};
     use sui::event;
     use sui::clock::Clock;
@@ -227,8 +226,8 @@ module defi::emergency_pause {
     const OP_WITHDRAW: u8 = 2;
     const OP_BORROW: u8 = 3;
     const OP_LIQUIDATE: u8 = 4;
-    const EOperationPaused: u64 = 0;
-}
+    #[error]
+    const EOperationPaused: vector<u8> = b"Operation Paused";
 ```
 
 关键设计：
@@ -241,7 +240,7 @@ module defi::emergency_pause {
 ### 预案模板
 
 ```move
-module defi::emergency_plan {
+module defi::emergency_plan;
     public struct Plan has store {
         level: u8,
         actions: vector<u8>,
@@ -259,7 +258,6 @@ module defi::emergency_plan {
     const ACTION_FREEZE_PROTOCOL: u8 = 3;
     const ACTION_NOTIFY_AUDITORS: u8 = 4;
     const ACTION_PUBLIC_ANNOUNCEMENT: u8 = 5;
-}
 ```
 
 ### 响应流程

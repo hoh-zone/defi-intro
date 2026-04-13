@@ -37,7 +37,7 @@ module my_package::my_test {
 Standard section order within a module:
 
 1. `use` imports
-2. Constants (`const`)
+2. Constants: **errors first** — each user-facing abort as `#[error] const E…: vector<u8> = b"...";`, then other `const` (thresholds, caps, etc.)
 3. Structs / Enums
 4. `fun init` (if needed)
 5. Public functions

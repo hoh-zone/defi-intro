@@ -283,7 +283,11 @@ public fun is_paused<Native>(vault: &BridgeVault<Native>): bool {
 
 // ===== Error constants =====
 
-const EBridgePaused: u64 = 0;
-const EZeroAmount: u64 = 1;
-const EInsufficientLocked: u64 = 2;
-const EInsufficientWrapped: u64 = 3;
+#[error]
+const EBridgePaused: vector<u8> = b"Bridge Paused";
+#[error]
+const EZeroAmount: vector<u8> = b"Zero Amount";
+#[error]
+const EInsufficientLocked: vector<u8> = b"Insufficient Locked";
+#[error]
+const EInsufficientWrapped: vector<u8> = b"Insufficient Wrapped";

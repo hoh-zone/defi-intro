@@ -22,7 +22,7 @@ veCETUS 锁仓：
 ### Cetus LP 激励的 Move 伪代码结构
 
 ```move
-module cetus::incentive {
+module cetus::incentive;
     public struct IncentivePool has key {
         reward_funds: Bag,
         stake_positions: Table<ID, PositionStake>,
@@ -47,7 +47,6 @@ module cetus::incentive {
         let rewards = collect_rewards(pool, position, clock);
         (fees, rewards)
     }
-}
 ```
 
 **关键点**：Cetus 的 LP 仓位是 NFT（包含价格区间信息），挖矿奖励按区间内的 `liquidity` 大小分配，不是按 NFT 数量。这与传统 Uniswap V2 风格的 LP Token 质押完全不同。

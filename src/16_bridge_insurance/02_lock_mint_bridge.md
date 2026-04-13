@@ -27,7 +27,7 @@
 ## 完整 Move 实现
 
 ```move
-module bridge::lock_mint {
+module bridge::lock_mint;
     use sui::coin::{Self, Coin, TreasuryCap};
     use sui::balance::{Self, Balance};
     use sui::object::{Self, UID, ID};
@@ -37,11 +37,16 @@ module bridge::lock_mint {
     use sui::table::{Self, Table};
     use sui::vec_set::{Self, VecSet};
 
-    const EUnauthorized: u64 = 0;
-    const EInvalidProof: u64 = 1;
-    const EAlreadyProcessed: u64 = 2;
-    const EInsufficientLiquidity: u64 = 3;
-    const EAmountMismatch: u64 = 4;
+    #[error]
+    const EUnauthorized: vector<u8> = b"Unauthorized";
+    #[error]
+    const EInvalidProof: vector<u8> = b"Invalid Proof";
+    #[error]
+    const EAlreadyProcessed: vector<u8> = b"Already Processed";
+    #[error]
+    const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
+    #[error]
+    const EAmountMismatch: vector<u8> = b"Amount Mismatch";
 
     public struct BridgeAdmin has key {
         id: UID,
@@ -214,7 +219,6 @@ module bridge::lock_mint {
     public fun vault_balance<CoinType>(vault: &SourceVault<CoinType>): u64 {
         balance::value(&vault.balance)
     }
-}
 ```
 
 ## 关键安全设计

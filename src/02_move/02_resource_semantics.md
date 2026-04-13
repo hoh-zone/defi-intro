@@ -5,7 +5,7 @@
 Move 的每个 struct 可以拥有零到四种 ability：`key`、`store`、`drop`、`copy`。这四种 ability 的组合直接决定了 struct 实例的生命周期约束——在 DeFi 中，这等同于资产的约束。
 
 ```move
-module defi_book::ability_demo {
+module defi_book::ability_demo;
     use sui::coin::Coin;
     use sui::sui::SUI;
 
@@ -27,7 +27,6 @@ module defi_book::ability_demo {
         id: UID,
         module_name: String,
     }
-}
 ```
 
 逐一分析：
@@ -66,7 +65,7 @@ fun exploit(bad: &BadCoin): BadCoin {
 在 Sui 上，权限管理通过 Capability 对象实现。AdminCap 是一个只有管理员持有的对象，管理函数要求调用者提供这个对象作为参数。
 
 ```move
-module defi_book::admin_cap_demo {
+module defi_book::admin_cap_demo;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
 
@@ -124,8 +123,8 @@ module defi_book::admin_cap_demo {
         coin_out
     }
 
-    const EPaused: u64 = 1;
-}
+    #[error]
+    const EPaused: vector<u8> = b"Paused";
 ```
 
 `set_fee` 和 `set_paused` 都要求传入 `&PoolAdminCap`。没有这个对象，任何人都无法调用这两个函数。`swap` 不需要 AdminCap——它是公开函数。这就是 Sui 上的权限模型：**权限即对象**，而不是访问控制列表。
@@ -135,6 +134,7 @@ module defi_book::admin_cap_demo {
 Move 的模块系统提供了强封装。struct 的字段只能在定义它的模块内访问。这意味着：
 
 ```move
+// 同一 .move 文件内若声明多个 module，编译器要求使用花括号形式（见本书技能：move/syntax）
 module defi_book::pool_module {
     public struct Pool has key {
         id: UID,
