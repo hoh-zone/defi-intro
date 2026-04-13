@@ -1,0 +1,5 @@
+[package]
+name = "algorithmic_stablecoin_sketch"
+edition = "2024"
+
+[dependencies]

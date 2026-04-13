@@ -56,12 +56,13 @@
 | 衰减调度器 | 第 8 章 8.5 | 线性/阶梯/指数衰减 |
 | Boost + VeToken | 第 8 章 8.6 | 锁仓 boost + gauge 投票 |
 
-### CDP / 稳定币
+### 稳定币（法币 / CDP / 算法）
 
 | 示例 | 位置 | 描述 |
 |------|------|------|
-| CDP 完整实现 | 第 9 章 9.2 | open_position/add_collateral/repay/liquidate |
-| 治理参数更新 | 第 9 章 9.2 | update_parameters with AdminCap |
+| 法币抵押链上角色（IssuerCap 铸销） | 第 9 章 9.2、`fiat_stablecoin_sketch` | `fiat` 模块最小铸销模型 |
+| CDP 完整实现 | 第 9 章 9.5、`cdp_stablecoin` | `CDPSystem` / `CDPPosition`、开仓、清算 |
+| 算法供给调节示意 | 第 9 章 9.6、`algorithmic_stablecoin_sketch` | `algo::AlgoEngine` 名义供给与扩张/收缩 |
 
 ### LSD
 

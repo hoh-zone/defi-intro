@@ -1,0 +1,5 @@
+[package]
+name = "fiat_stablecoin_sketch"
+edition = "2024"
+
+[dependencies]

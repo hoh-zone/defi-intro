@@ -27,7 +27,7 @@
 第三篇 信用与货币（第 7-9 章）
   借贷（储蓄池 → Aave/Compound → Navi/Scallop）
   流动性挖矿（累加器 → 衰减 → Boost/VeToken）
-  CDP 与稳定币
+  稳定币（法币抵押 · CDP · 算法）
 
 第四篇 收益与杠杆（第 10-17 章）
   LSD · 自动做市（CLMM/网格/Vault/Delta中性）
@@ -85,7 +85,7 @@ mdbook serve --open
 | 二 | 6 | DEX 聚合器 | Router · SplitOrder |
 | 三 | 7 | 借贷 | Savings · Lending · FlashLoan |
 | 三 | 8 | 流动性挖矿 | RewardAccumulator · Decay · VeToken |
-| 三 | 9 | CDP 与稳定币 | CDP · Peg |
+| 三 | 9 | 稳定币 | Fiat · CDP · Algo |
 | 四 | 10 | LSD | StakedSUI · LST |
 | 四 | 11 | 自动做市 | GridBot · YieldVault · DeltaNeutral |
 | 四 | 12 | 衍生品 | PerpMarket · Margin |
