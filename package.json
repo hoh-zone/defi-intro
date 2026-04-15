@@ -1,0 +1,30 @@
+{
+  "name": "defi-intro",
+  "version": "1.0.0",
+  "description": "> 面向开发者的 Sui DeFi 技术书——理解机制 · 编写代码 · 识别风险 · 构建可信赖协议",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build:highlight": "esbuild scripts/mdbook-sui-bridge.js --bundle --platform=browser --format=iife --outfile=theme/highlight-sui-move.bundle.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hoh-zone/defi-intro.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/hoh-zone/defi-intro/issues"
+  },
+  "homepage": "https://github.com/hoh-zone/defi-intro#readme",
+  "devDependencies": {
+    "esbuild": "^0.28.0",
+    "highlight.js": "^11.11.1",
+    "highlightjs-sui": "github:hoh-zone/highlightjs-sui"
+  }
+}

@@ -73,6 +73,8 @@ mdbook build
 mdbook serve --open
 ```
 
+代码块中的 **Move / Sui Move** 语法高亮使用 [highlightjs-sui](https://github.com/hoh-zone/highlightjs-sui)。预构建脚本已提交在 `theme/highlight-sui-move.bundle.js`，一般无需安装 Node。若你升级了 `highlightjs-sui` 或修改了 `scripts/mdbook-sui-bridge.js`，请在仓库根目录执行 `npm install && npm run build:highlight` 再 `mdbook build`。
+
 ## 章节速查
 
 | 篇 | 章 | 主题 | 核心代码 |
