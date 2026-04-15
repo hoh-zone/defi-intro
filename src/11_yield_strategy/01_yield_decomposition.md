@@ -124,9 +124,9 @@ fun sqrt_scaled(n: u64): u64 {
 }
 
 public fun clmm_concentration_factor(
-    tick_lower: int32,
-    tick_upper: int32,
-    current_tick: int32,
+    tick_lower: u32,
+    tick_upper: u32,
+    current_tick: u32,
 ): u64 {
     let range = (tick_upper - tick_lower) as u64;
     if (range == 0) { return PRECISION };

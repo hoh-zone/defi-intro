@@ -6,6 +6,8 @@ src = "src"
 title = "Sui DeFi：从入门到警惕"
 
 [output.html]
+# Move 类型标注（name / : / type）额外样式，见 scripts/sui-move-grammar.js
+additional-css = ["theme/move-syntax-extra.css"]
 # Mermaid：```mermaid / graph LR 等由 theme/mermaid.min.js + theme/mermaid-mdbook.js 在浏览器渲染
 # Sui Move 语法高亮（highlightjs-sui），见 scripts/mdbook-sui-bridge.js 与 npm run build:highlight
 additional-js = [

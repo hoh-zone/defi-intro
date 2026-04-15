@@ -106,12 +106,11 @@ LP-C:              [tick 6925 ═ tick 6935]         窄
 ```move
 public struct TickState has store, copy, drop {
     liquidity_gross: u128,   // 总流动性
-    liquidity_net: i128,     // 净变化 (+/-)
+    liquidity_net: u128,     // 净变化量级（示意；链上若需表示正负常用偏移、双计数器或模块封装）
     fee_growth_outside_a: u128,
     fee_growth_outside_b: u128,
 }
-// liquidity_net > 0: 价格上升穿过时添加流动性 (tick_lower)
-// liquidity_net < 0: 价格上升穿过时移除流动性 (tick_upper)
+// 与 Uniswap v3 类似，穿过 tick 时净流动性增减方向由算法分支决定，不依赖不存在的 i128 原生类型。
 ```
 
 Sui 中用 dynamic_field 稀疏存储：只存有流动性的 Tick，跳过空 Tick。

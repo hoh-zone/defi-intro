@@ -7,7 +7,7 @@
  * runs highlightBlock before this script registers languages; relying on a second highlightBlock
  * can be fragile across hljs versions/browsers, so we re-highlight Move fences explicitly.
  */
-const suiMove = require('highlightjs-sui');
+const suiMove = require('./sui-move-grammar');
 
 const PRIMARY = 'sui-move';
 const ALIASES = ['move-sui', 'sui', 'move2024', 'move'];

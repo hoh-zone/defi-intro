@@ -15,6 +15,8 @@
 
 ## PnL 计算
 
+Move 仅有 **无符号** 整数（`u8`…`u256`），没有 `i32`/`i128` 等原生有符号类型。下面用 `u128` 表示盈亏的**非负绝对值**（quote 计价），多空与涨跌方向用 `if` 分支拆开，避免无符号相减下溢。
+
 ```move
 module perp_math;
     public fun calculate_pnl(
@@ -22,11 +24,19 @@ module perp_math;
         exit_price: u64,
         size: u64,
         is_long: bool,
-    ): i128 {
+    ): u128 {
         if (is_long) {
-            ((exit_price as i128) - (entry_price as i128)) * (size as i128) / (entry_price as i128)
+            if (exit_price >= entry_price) {
+                ((exit_price - entry_price) as u128) * (size as u128) / (entry_price as u128)
+            } else {
+                ((entry_price - exit_price) as u128) * (size as u128) / (entry_price as u128)
+            }
         } else {
-            ((entry_price as i128) - (exit_price as i128)) * (size as i128) / (entry_price as i128)
+            if (entry_price >= exit_price) {
+                ((entry_price - exit_price) as u128) * (size as u128) / (entry_price as u128)
+            } else {
+                ((exit_price - entry_price) as u128) * (size as u128) / (entry_price as u128)
+            }
         }
     }
 

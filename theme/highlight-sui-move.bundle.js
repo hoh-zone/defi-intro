@@ -598,10 +598,65 @@
     }
   });
 
+  // scripts/sui-move-grammar.js
+  var require_sui_move_grammar = __commonJS({
+    "scripts/sui-move-grammar.js"(exports, module) {
+      var upstream = require_sui_move();
+      function stripFakeSignedPrimitives(keywords) {
+        if (!keywords || keywords.type === void 0) return;
+        const t = keywords.type;
+        const drop = (x) => !/^(i8|i16|i32|i64|i128|i256)$/.test(x);
+        if (Array.isArray(t)) {
+          keywords.type = t.filter(drop);
+        } else if (typeof t === "string") {
+          keywords.type = t.split(/\s+/).filter(drop).join(" ");
+        }
+      }
+      function extraContainsV10(hljs) {
+        return [
+          {
+            className: "property",
+            relevance: 10,
+            begin: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*:[^:])/
+          },
+          {
+            className: "punctuation",
+            relevance: 9,
+            begin: /:\s*(?!:)/
+          }
+        ];
+      }
+      function extraContainsV11() {
+        return [
+          {
+            scope: "property",
+            match: /\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*:[^:])/,
+            relevance: 10
+          },
+          {
+            scope: "punctuation",
+            match: /:\s*(?!:)/,
+            relevance: 9
+          }
+        ];
+      }
+      var INSERT_EXTRA_AFTER_INDEX = 8;
+      module.exports = function suiMoveWithTypeAnnotations(hljs) {
+        const base = upstream(hljs);
+        stripFakeSignedPrimitives(base.keywords);
+        const v11 = hljs.regex != null;
+        const extra = v11 ? extraContainsV11() : extraContainsV10(hljs);
+        const c = base.contains;
+        base.contains = c.slice(0, INSERT_EXTRA_AFTER_INDEX).concat(extra).concat(c.slice(INSERT_EXTRA_AFTER_INDEX));
+        return base;
+      };
+    }
+  });
+
   // scripts/mdbook-sui-bridge.js
   var require_mdbook_sui_bridge = __commonJS({
     "scripts/mdbook-sui-bridge.js"() {
-      var suiMove = require_sui_move();
+      var suiMove = require_sui_move_grammar();
       var PRIMARY = "sui-move";
       var ALIASES = ["move-sui", "sui", "move2024", "move"];
       var TARGET_LANG = { "sui-move": true, "move-sui": true, sui: true, move2024: true, move: true };

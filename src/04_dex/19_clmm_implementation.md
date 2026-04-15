@@ -50,7 +50,7 @@ public struct Pool<phantom A, phantom B> has key {
 
 public struct TickState has store, copy, drop {
     liquidity_gross: u128,
-    liquidity_net: i128,
+    liquidity_net: u128,
     fee_growth_outside_a: u128,
     fee_growth_outside_b: u128,
 }

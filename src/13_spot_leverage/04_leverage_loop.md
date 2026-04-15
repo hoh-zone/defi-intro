@@ -84,10 +84,18 @@ module leverage_calculator;
         leverage_bps: u64,
         asset_apy_bps: u64,
         borrow_apr_bps: u64,
-    ): i128 {
-        let gross_yield = (leverage_bps as i128) * (asset_apy_bps as i128) / 10000;
-        let borrow_cost = ((leverage_bps - 10000) as i128) * (borrow_apr_bps as i128) / 10000;
-        gross_yield - borrow_cost
+    ): u128 {
+        let gross_yield = (leverage_bps as u128) * (asset_apy_bps as u128) / 10000;
+        let borrow_cost = if (leverage_bps > 10000) {
+            ((leverage_bps - 10000) as u128) * (borrow_apr_bps as u128) / 10000
+        } else {
+            0u128
+        };
+        if (gross_yield >= borrow_cost) {
+            gross_yield - borrow_cost
+        } else {
+            0u128
+        }
     }
 ```
 

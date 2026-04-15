@@ -146,6 +146,8 @@ module deepbook_leverage_mm;
 
 ## 做市收益计算
 
+Move 无 `i128` 等有符号原生类型；下式用 `u128` 并在「毛利 ≥ 总成本」时返回净利，否则返回 `0`（亏损需另行记账或拆字段）。
+
 ```move
 public fun calculate_mm_profit(
     filled_bid_quantity: u64,
@@ -155,12 +157,16 @@ public fun calculate_mm_profit(
     borrow_base_cost: u64,
     borrow_quote_cost: u64,
     taker_fees_paid: u64,
-): i128 {
-    let gross_profit = (filled_bid_quantity as i128)
-        * ((ask_price - bid_price) as i128)
-        / (bid_price as i128);
-    let total_cost = (borrow_base_cost + borrow_quote_cost + taker_fees_paid) as i128;
-    gross_profit - total_cost
+): u128 {
+    let gross_profit = (filled_bid_quantity as u128)
+        * ((ask_price - bid_price) as u128)
+        / (bid_price as u128);
+    let total_cost = (borrow_base_cost + borrow_quote_cost + taker_fees_paid) as u128;
+    if (gross_profit >= total_cost) {
+        gross_profit - total_cost
+    } else {
+        0u128
+    }
 }
 ```
 

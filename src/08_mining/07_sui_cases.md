@@ -32,8 +32,8 @@ public struct IncentivePool has key {
 
 public struct PositionStake has store {
     liquidity: u128,
-    tick_lower: int32,
-    tick_upper: int32,
+    tick_lower: u32,
+    tick_upper: u32,
     reward_debts: Bag,
 }
 

@@ -1,5 +1,7 @@
 # 12.2 永续合约完整实现
 
+本节示例与 [12.1](./01_perp_basics.md) 一致：**Move 只有无符号整数**（`u8`…`u256`），盈亏与资金费率用 `u128`/`u64` 与分支表达；若需链上「有符号」语义，应使用协议或预言机提供的封装类型（例如 `pyth::price::Price`），而非臆造 `i64`/`i128` 关键字。
+
 ## 对象设计
 
 ```move
@@ -32,7 +34,7 @@ module perp;
         total_short_size: u64,
         index_price: u64,
         mark_price: u64,
-        funding_rate_bps: i64,
+        funding_rate_bps: u64,
         last_funding_time: u64,
         funding_interval_ms: u64,
         maintenance_margin_bps: u64,
@@ -49,7 +51,7 @@ module perp;
         margin: u64,
         is_long: bool,
         last_funding_payment: u64,
-        unrealized_pnl: i128,
+        unrealized_pnl: u128,
     }
 
     public struct AdminCap has key, store {
@@ -132,10 +134,15 @@ public fun reduce_position<Base, Quote>(
     update_funding(market);
     let pnl = calculate_pnl(position.entry_price, market.mark_price, reduce_size, position.is_long);
     let margin_delta = ((reduce_size as u128) * (position.margin as u128) / (position.size as u128)) as u64;
-    let release_amount = if (pnl >= 0) {
+    let profitable = if (position.is_long) {
+        market.mark_price >= position.entry_price
+    } else {
+        position.entry_price >= market.mark_price
+    };
+    let release_amount = if (profitable) {
         margin_delta + (pnl as u64)
     } else {
-        let loss = (-pnl) as u64;
+        let loss = (pnl as u64);
         if (loss >= margin_delta) { 0 } else { margin_delta - loss }
     };
 
@@ -167,10 +174,15 @@ public fun liquidate<Base, Quote>(
         position.size,
         position.is_long,
     );
-    let margin_after_pnl = if (pnl >= 0) {
+    let profitable = if (position.is_long) {
+        market.mark_price >= position.entry_price
+    } else {
+        position.entry_price >= market.mark_price
+    };
+    let margin_after_pnl = if (profitable) {
         position.margin + (pnl as u64)
     } else {
-        let loss = (-pnl) as u64;
+        let loss = (pnl as u64);
         if (loss >= position.margin) { 0 } else { position.margin - loss }
     };
     let effective_margin = (margin_after_pnl as u128) * 10000 / (position.size as u128);
@@ -200,9 +212,13 @@ fun update_funding<Base, Quote>(market: &mut PerpMarket<Base, Quote>) {
     let now = sui::clock::timestamp_ms(sui::clock::create_for_testing());
     if (now - market.last_funding_time < market.funding_interval_ms) { return };
 
-    let premium = (market.mark_price as i128) - (market.index_price as i128);
-    let new_rate = premium * 1000 / (market.index_price as i128);
-    market.funding_rate_bps = new_rate as i64;
+    let premium_abs = if (market.mark_price >= market.index_price) {
+        market.mark_price - market.index_price
+    } else {
+        market.index_price - market.mark_price
+    };
+    let new_rate = (premium_abs as u128) * 1000 / (market.index_price as u128);
+    market.funding_rate_bps = (new_rate as u64);
     market.last_funding_time = now;
 }
 ```

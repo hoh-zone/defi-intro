@@ -1,0 +1,45 @@
+/*
+ * Extra contrast for Move type annotations (hljs-property / hljs-punctuation / hljs-type).
+ * Works with mdBook default + tomorrow-night + ayu-highlight.
+ */
+
+/* Field / parameter / const name before ":" */
+.hljs-property {
+  color: #8abeb7;
+}
+
+/* Single ":" in `name: Type` (not "::") */
+.hljs-punctuation {
+  color: #969896;
+  font-weight: normal;
+}
+
+/* Types (u64, u32, Option, …) — distinct from property name and `:` */
+code.language-move .hljs-type,
+pre code.language-move .hljs-type {
+  color: #de935f;
+}
+
+/* Light theme */
+.light .hljs-property {
+  color: #0b7285;
+}
+.light .hljs-punctuation {
+  color: #5c6370;
+}
+.light code.language-move .hljs-type,
+.light pre code.language-move .hljs-type {
+  color: #c18401;
+}
+
+/* Ayu */
+.ayu .hljs-property {
+  color: #aad94c;
+}
+.ayu .hljs-punctuation {
+  color: #acb7c4;
+}
+.ayu code.language-move .hljs-type,
+.ayu pre code.language-move .hljs-type {
+  color: #ffb454;
+}

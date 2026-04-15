@@ -73,7 +73,7 @@ mdbook build
 mdbook serve --open
 ```
 
-代码块中的 **Move / Sui Move** 语法高亮使用 [highlightjs-sui](https://github.com/hoh-zone/highlightjs-sui)。预构建脚本已提交在 `theme/highlight-sui-move.bundle.js`，一般无需安装 Node。若你升级了 `highlightjs-sui` 或修改了 `scripts/mdbook-sui-bridge.js`，请在仓库根目录执行 `npm install && npm run build:highlight` 再 `mdbook build`。
+代码块中的 **Move / Sui Move** 语法高亮使用 [highlightjs-sui](https://github.com/hoh-zone/highlightjs-sui)，并由 `scripts/sui-move-grammar.js` 增强字段/参数名、冒号与类型的区分；样式见 `theme/move-syntax-extra.css`。预构建脚本已提交在 `theme/highlight-sui-move.bundle.js`，一般无需安装 Node。若你升级了 `highlightjs-sui` 或修改了 `scripts/mdbook-sui-bridge.js` / `scripts/sui-move-grammar.js`，请在仓库根目录执行 `npm install && npm run build:highlight` 再 `mdbook build`。
 
 **Mermaid**（` ```mermaid `、`graph LR` 等）由已提交的 `theme/mermaid.min.js` 与 `theme/mermaid-mdbook.js` 在浏览器端渲染；GitHub Actions 仅需 `mdbook build`，无需额外安装 `mdbook-mermaid`。
 

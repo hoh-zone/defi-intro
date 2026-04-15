@@ -88,8 +88,8 @@ public struct RebalanceParams has store {
 public struct AutoRebalanceVault has key {
     id: UID,
     position_id: UID,
-    current_tick_lower: int32,
-    current_tick_upper: int32,
+    current_tick_lower: u32,
+    current_tick_upper: u32,
     params: RebalanceParams,
     rebalance_count: u64,
     last_rebalance_ms: u64,
@@ -116,7 +116,7 @@ public fun create_vault(position_id: UID, tick_range_bps: u64, ctx: &mut TxConte
     transfer::transfer(vault, ctx.sender());
 }
 
-public fun should_rebalance(vault: &AutoRebalanceVault, current_tick: int32): bool {
+public fun should_rebalance(vault: &AutoRebalanceVault, current_tick: u32): bool {
     let in_range =
         current_tick >= vault.current_tick_lower
             && current_tick <= vault.current_tick_upper;
@@ -131,7 +131,7 @@ public fun should_rebalance(vault: &AutoRebalanceVault, current_tick: int32): bo
     distance > margin
 }
 
-public fun compute_new_range(vault: &AutoRebalanceVault, current_tick: int32): (int32, int32) {
+public fun compute_new_range(vault: &AutoRebalanceVault, current_tick: u32): (u32, u32) {
     let half_range = ((vault.current_tick_upper - vault.current_tick_lower) / 2);
     let tick_spacing = 10;
     let aligned_tick = (current_tick / tick_spacing) * tick_spacing;
