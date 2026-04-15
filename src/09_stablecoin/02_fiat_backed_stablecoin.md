@@ -23,7 +23,7 @@
 
 ## 链上最小模型：受控铸销
 
-在 Sui 上，法币抵押型资产通常表现为标准 `Coin<T>`，由发行方控制的 `TreasuryCap` 铸造与销毁。本书在 `src/09_cdp/code/fiat_stablecoin_sketch/` 提供**极简教学包**：
+在 Sui 上，法币抵押型资产通常表现为标准 `Coin<T>`，由发行方控制的 `TreasuryCap` 铸造与销毁。本书在 `src/09_stablecoin/code/fiat_stablecoin_sketch/` 提供**极简教学包**：
 
 - 模块 **`fiat_stablecoin_sketch::fiat`**
 - **`FiatTreasury`**：共享对象，内含 `TreasuryCap<FIAT>`

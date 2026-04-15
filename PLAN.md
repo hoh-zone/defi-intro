@@ -34,16 +34,15 @@
 - 文件：`tests/lending_move_test.rs` 或 `Move.toml` 中的测试
 - 覆盖：正常流程、边界条件（利率极端值）、清算触发、闪电贷成功/失败
 
-### 第 7 章 CDP 与稳定币
-#### 7.2 CDP 完整实现
-- 文件：`src/07_cdp/cdp_implementation.move`
-- 核心对象：CDPPosition<T>, StabilityPool, SystemConfig
-- 功能：open(), draw(), repay(), redeem(), liquidate()
-- 特色：多种抵押资产支持、稳定池机制
-- 风险参数：可治理的抵押率、清算阈值、稳定费
+### 第 9 章 稳定币（法币 / CDP / 算法）
+#### CDP 完整实现
+- 文件：`src/09_stablecoin/code/cdp_stablecoin/sources/cdp.move`
+- 核心对象：`StableTreasury`, `CDPSystem<Collateral>`, `CDPPosition<Collateral>`
+- 功能：open_position, add_collateral, repay, liquidate 等
+- 另见：`src/09_stablecoin/code/fiat_stablecoin_sketch/`、`algorithmic_stablecoin_sketch/` 教学包
 
 #### 攻击演示代码（注释掉的危险示例）
-- 文件：`src/07_cdp/attack_examples.move`（仅作说明，不编译）
+- 文件：（规划中）或见第 18 章攻击篇（仅作说明，不编译）
 - 举例：不当的清算奖励计算导致的恶意清算
 - 举例：预言机更新前的闪电贷攻击路径
 
@@ -89,9 +88,8 @@ src/
 │   ├── lending_market.move     # 生产级参考
 │   ├── flash_loan.move         # 闪电贷模块
 │   └── attack_examples.move    # 仅作说明
-├── 07_cdp/
-│   ├── cdp_implementation.move # 完整CDP实现
-│   └── attack_examples.move    # 攻击演示
+├── 09_stablecoin/
+│   └── code/                   # fiat_sketch / cdp_stablecoin / algorithmic_sketch
 ├── 09_derivatives/
 │   └── perp_implementation.move# 永续合约实现
 ├── 10_launchpad/

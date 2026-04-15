@@ -4,7 +4,7 @@
 
 完整可编译示例位于：
 
-`src/09_cdp/code/cdp_stablecoin/`
+`src/09_stablecoin/code/cdp_stablecoin/`
 
 核心模块：**`cdp_stablecoin::cdp`**
 

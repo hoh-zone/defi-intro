@@ -24,7 +24,7 @@
 
 ## 教学包：`algorithmic_stablecoin_sketch`
 
-路径：`src/09_cdp/code/algorithmic_stablecoin_sketch/`
+路径：`src/09_stablecoin/code/algorithmic_stablecoin_sketch/`
 
 模块 **`algorithmic_stablecoin_sketch::algo`**（一次性见证 **`ALGO`**）包含：
 
