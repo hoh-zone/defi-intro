@@ -44,29 +44,29 @@ function parseRouterResponse(data: any, byAmountIn: boolean): RouterDataV3 {
 
 **集成时请记住：**
 
-- **`quoteID`** 必须原样喂给 `new_swap_context` 的 `quote_id` 参数（与链上校验联动）；  
-- **`packages`** 决定 **`getAggregatorPublishedAt`** 解析出的 **`publishedAt`**，影响 **所有** `router::*` 调用的包地址；  
+- **`quoteID`** 必须原样喂给 `new_swap_context` 的 `quote_id` 参数（与链上校验联动）；
+- **`packages`** 决定 **`getAggregatorPublishedAt`** 解析出的 **`publishedAt`**，影响 **所有** `router::*` 调用的包地址；
 - **`publishedAt`（每跳）** 决定 **该跳 DEX 包装模块** 的包地址，与 `packages` 里的聚合器包 **不是同一个概念**。
 
 ---
 
 ## 从询价到签名的推荐顺序
 
-1. **POST 询价** → 检查业务字段（流动性不足、偏差过大则直接 return）；  
-2. **`new Transaction()`** → `newSwapContext` / `newSwapContextV2`；  
-3. **按 `paths` 顺序** 调各 `DexRouter.swap`（或引擎提供的统一 `build` 函数）；  
-4. **`confirmSwap`** →（可选）`transferOrDestroyCoin`；  
+1. **POST 询价** → 检查业务字段（流动性不足、偏差过大则直接 return）；
+2. **`new Transaction()`** → `newSwapContext` / `newSwapContextV2`；
+3. **按 `paths` 顺序** 调各 `DexRouter.swap`（或引擎提供的统一 `build` 函数）；
+4. **`confirmSwap`** →（可选）`transferOrDestroyCoin`；
 5. **钱包 `signAndExecuteTransaction`**。
 
 ---
 
 ## 本书仓库里的代码放在哪
 
-| 内容 | 路径 |
-|------|------|
+| 内容                              | 路径                                                 |
+| --------------------------------- | ---------------------------------------------------- |
 | **可编译的 SwapContext 教学模块** | `src/06_aggregator/code/aggregator_router_tutorial/` |
-| 旧版 TS 小示例（可能过时） | `src/06_aggregator/code/aggregator_ts/` |
-| **完整生产级 SDK** | 以你克隆的 Cetus `aggregator` 开源仓库为准 |
+| 旧版 TS 小示例（可能过时）        | `src/06_aggregator/code/aggregator_ts/`              |
+| **完整生产级 SDK**                | 以你克隆的 Cetus `aggregator` 开源仓库为准           |
 
 ```bash
 # 教学 Move 包

@@ -1,40 +1,45 @@
 #[test_only]
 module reward_accumulator::test_stake_coin {
     public struct STAKE has drop {}
-
 }
 #[test_only]
 module reward_accumulator::test_reward_coin {
     public struct REWARD has drop {}
-
 }
 #[test_only]
 module reward_accumulator::accumulator_test {
+    use reward_accumulator::accumulator::{Self, RewardPool};
+    use reward_accumulator::test_reward_coin::REWARD;
+    use reward_accumulator::test_stake_coin::STAKE;
     use sui::coin::{Self, TreasuryCap};
     use sui::test_scenario;
     use sui::transfer;
     use sui::tx_context;
-    use reward_accumulator::accumulator;
-    use reward_accumulator::accumulator::{RewardPool};
-    use reward_accumulator::test_stake_coin::STAKE;
-    use reward_accumulator::test_reward_coin::REWARD;
 
     // ========== Helpers ==========
 
-    fun setup_treasuries(ctx: &mut sui::tx_context::TxContext): (
-        TreasuryCap<STAKE>, TreasuryCap<REWARD>,
-    ) {
+    fun setup_treasuries(
+        ctx: &mut sui::tx_context::TxContext,
+    ): (TreasuryCap<STAKE>, TreasuryCap<REWARD>) {
         (
             coin::create_treasury_cap_for_testing<STAKE>(ctx),
             coin::create_treasury_cap_for_testing<REWARD>(ctx),
         )
     }
 
-    fun mint_stake(cap: &mut TreasuryCap<STAKE>, amount: u64, ctx: &mut sui::tx_context::TxContext): coin::Coin<STAKE> {
+    fun mint_stake(
+        cap: &mut TreasuryCap<STAKE>,
+        amount: u64,
+        ctx: &mut sui::tx_context::TxContext,
+    ): coin::Coin<STAKE> {
         coin::mint(cap, amount, ctx)
     }
 
-    fun mint_reward(cap: &mut TreasuryCap<REWARD>, amount: u64, ctx: &mut sui::tx_context::TxContext): coin::Coin<REWARD> {
+    fun mint_reward(
+        cap: &mut TreasuryCap<REWARD>,
+        amount: u64,
+        ctx: &mut sui::tx_context::TxContext,
+    ): coin::Coin<REWARD> {
         coin::mint(cap, amount, ctx)
     }
 
@@ -51,9 +56,7 @@ module reward_accumulator::accumulator_test {
         cleanup_treasury(treasury_reward, ctx);
     }
 
-    fun destroy_empty_pool<StakeCoin, RewardCoin>(
-        pool: RewardPool<StakeCoin, RewardCoin>,
-    ) {
+    fun destroy_empty_pool<StakeCoin, RewardCoin>(pool: RewardPool<StakeCoin, RewardCoin>) {
         accumulator::destroy_pool(pool);
     }
 
@@ -133,7 +136,9 @@ module reward_accumulator::accumulator_test {
             assert!(amount == 5000);
             assert!(reward_debt == 0);
 
-            let (total_stake, _rate, _last_update, _end_ms, remaining) = accumulator::pool_info(&pool);
+            let (total_stake, _rate, _last_update, _end_ms, remaining) = accumulator::pool_info(
+                &pool,
+            );
             assert!(total_stake == 5000);
             assert!(remaining == 10000);
             test_scenario::return_shared(pool);
@@ -214,7 +219,9 @@ module reward_accumulator::accumulator_test {
             let (amount, _reward_debt) = accumulator::user_stake_info(&pool, @0xA);
             assert!(amount == 6000);
 
-            let (total_stake, _rate, _last_update, _end_ms, _remaining) = accumulator::pool_info(&pool);
+            let (total_stake, _rate, _last_update, _end_ms, _remaining) = accumulator::pool_info(
+                &pool,
+            );
             assert!(total_stake == 6000);
             test_scenario::return_shared(pool);
         };
@@ -379,7 +386,9 @@ module reward_accumulator::accumulator_test {
         scenario.next_tx(@0xA);
         {
             let pool = test_scenario::take_shared<RewardPool<STAKE, REWARD>>(&scenario);
-            let (_total_stake, _rate, _last_update, _end_ms, remaining) = accumulator::pool_info(&pool);
+            let (_total_stake, _rate, _last_update, _end_ms, remaining) = accumulator::pool_info(
+                &pool,
+            );
             assert!(remaining == 9000);
             let pending = accumulator::pending_reward(&pool, @0xA, 100);
             assert!(pending == 0);
@@ -768,5 +777,4 @@ module reward_accumulator::accumulator_test {
 
         scenario.end();
     }
-
 }

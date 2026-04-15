@@ -34,150 +34,155 @@
 
 ```move
 module liquidity_mining::accumulator;
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
-    use sui::tx_context::TxContext;
-    use sui::clock::Clock;
-    use sui::bag::{Self, Bag};
-    use sui::object::{Self, UID};
 
-    #[error]
-    const EInsufficientStake: vector<u8> = b"Insufficient Stake";
-    #[error]
-    const EZeroStake: vector<u8> = b"Zero Stake";
-    #[error]
-    const EPoolNotStarted: vector<u8> = b"Pool Not Started";
-    #[error]
-    const ENotStaker: vector<u8> = b"Not Staker";
+use sui::bag::{Self, Bag};
+use sui::clock::Clock;
+use sui::coin::{Self, Coin};
+use sui::object::{Self, UID};
+use sui::sui::SUI;
+use sui::tx_context::TxContext;
 
-    const PRECISION: u64 = 1_000_000_000;
+#[error]
+const EInsufficientStake: vector<u8> = b"Insufficient Stake";
+#[error]
+const EZeroStake: vector<u8> = b"Zero Stake";
+#[error]
+const EPoolNotStarted: vector<u8> = b"Pool Not Started";
+#[error]
+const ENotStaker: vector<u8> = b"Not Staker";
 
-    public struct RewardPool<phantom StakeCoin, phantom RewardCoin> has key {
-        id: UID,
-        total_stake: u64,
-        acc_reward_per_share: u64,
-        reward_rate_per_ms: u64,
-        last_update_ms: u64,
-        period_finish_ms: u64,
-        reward_coins: Coin<RewardCoin>,
-        stakes: Bag,
-    }
+const PRECISION: u64 = 1_000_000_000;
 
-    public struct UserStake has store {
-        amount: u64,
-        reward_debt: u64,
-    }
+public struct RewardPool<phantom StakeCoin, phantom RewardCoin> has key {
+    id: UID,
+    total_stake: u64,
+    acc_reward_per_share: u64,
+    reward_rate_per_ms: u64,
+    last_update_ms: u64,
+    period_finish_ms: u64,
+    reward_coins: Coin<RewardCoin>,
+    stakes: Bag,
+}
 
-    public fun create_pool<StakeCoin, RewardCoin>(
-        reward_amount: Coin<RewardCoin>,
-        duration_ms: u64,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ) {
-        let reward_value = coin::value(&reward_amount);
-        let rate = reward_value / duration_ms;
-        let pool = RewardPool<StakeCoin, RewardCoin> {
-            id: object::new(ctx),
-            total_stake: 0,
-            acc_reward_per_share: 0,
-            reward_rate_per_ms: rate,
-            last_update_ms: clock.timestamp_ms(),
-            period_finish_ms: clock.timestamp_ms() + duration_ms,
-            reward_coins: reward_amount,
-            stakes: bag::new(ctx),
-        };
-        transfer::share_object(pool);
-    }
+public struct UserStake has store {
+    amount: u64,
+    reward_debt: u64,
+}
 
-    fun update_reward<StakeCoin, RewardCoin>(
-        pool: &mut RewardPool<StakeCoin, RewardCoin>,
-        clock: &Clock,
-    ) {
-        let now = clock.timestamp_ms();
-        if (now <= pool.last_update_ms) { return };
-        if (pool.total_stake == 0) {
-            pool.last_update_ms = now;
-            return;
-        };
-        let end = if (now < pool.period_finish_ms) { now } else { pool.period_finish_ms };
-        let elapsed = end - pool.last_update_ms;
-        let reward = pool.reward_rate_per_ms * elapsed;
-        pool.acc_reward_per_share = pool.acc_reward_per_share + (reward * PRECISION / pool.total_stake);
-        pool.last_update_ms = if (now < pool.period_finish_ms) { now } else { pool.period_finish_ms };
-    }
+public fun create_pool<StakeCoin, RewardCoin>(
+    reward_amount: Coin<RewardCoin>,
+    duration_ms: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    let reward_value = coin::value(&reward_amount);
+    let rate = reward_value / duration_ms;
+    let pool = RewardPool<StakeCoin, RewardCoin> {
+        id: object::new(ctx),
+        total_stake: 0,
+        acc_reward_per_share: 0,
+        reward_rate_per_ms: rate,
+        last_update_ms: clock.timestamp_ms(),
+        period_finish_ms: clock.timestamp_ms() + duration_ms,
+        reward_coins: reward_amount,
+        stakes: bag::new(ctx),
+    };
+    transfer::share_object(pool);
+}
 
-    public fun stake<StakeCoin, RewardCoin>(
-        pool: &mut RewardPool<StakeCoin, RewardCoin>,
-        coin: Coin<StakeCoin>,
-        user: address,
-        clock: &Clock,
-    ) {
-        update_reward<StakeCoin, RewardCoin>(pool, clock);
-        let amount = coin::value(&coin);
-        assert!(amount > 0, EZeroStake);
+fun update_reward<StakeCoin, RewardCoin>(
+    pool: &mut RewardPool<StakeCoin, RewardCoin>,
+    clock: &Clock,
+) {
+    let now = clock.timestamp_ms();
+    if (now <= pool.last_update_ms) { return };
+    if (pool.total_stake == 0) {
+        pool.last_update_ms = now;
+        return;
+    };
+    let end = if (now < pool.period_finish_ms) { now } else { pool.period_finish_ms };
+    let elapsed = end - pool.last_update_ms;
+    let reward = pool.reward_rate_per_ms * elapsed;
+    pool.acc_reward_per_share = pool.acc_reward_per_share + (reward * PRECISION / pool.total_stake);
+    pool.last_update_ms = if (now < pool.period_finish_ms) { now } else { pool.period_finish_ms };
+}
 
-        if (bag::contains(&pool.stakes, user)) {
-            let user_stake = bag::borrow_mut<UserStake>(&mut pool.stakes, user);
-            let pending = user_stake.amount * pool.acc_reward_per_share / PRECISION - user_stake.reward_debt;
-            user_stake.reward_debt = (user_stake.amount + amount) * pool.acc_reward_per_share / PRECISION;
-            user_stake.amount = user_stake.amount + amount;
-        } else {
-            let user_stake = UserStake {
-                amount,
-                reward_debt: amount * pool.acc_reward_per_share / PRECISION,
-            };
-            bag::add(&mut pool.stakes, user, user_stake);
-        };
+public fun stake<StakeCoin, RewardCoin>(
+    pool: &mut RewardPool<StakeCoin, RewardCoin>,
+    coin: Coin<StakeCoin>,
+    user: address,
+    clock: &Clock,
+) {
+    update_reward<StakeCoin, RewardCoin>(pool, clock);
+    let amount = coin::value(&coin);
+    assert!(amount > 0, EZeroStake);
 
-        coin::put(&mut pool.reward_coins, coin);
-        pool.total_stake = pool.total_stake + amount;
-    }
-
-    public fun unstake<StakeCoin, RewardCoin>(
-        pool: &mut RewardPool<StakeCoin, RewardCoin>,
-        amount: u64,
-        user: address,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ): Coin<StakeCoin> {
-        update_reward<StakeCoin, RewardCoin>(pool, clock);
-        assert!(bag::contains(&pool.stakes, user), ENotStaker);
+    if (bag::contains(&pool.stakes, user)) {
         let user_stake = bag::borrow_mut<UserStake>(&mut pool.stakes, user);
-        assert!(user_stake.amount >= amount, EInsufficientStake);
-        user_stake.amount = user_stake.amount - amount;
-        user_stake.reward_debt = user_stake.amount * pool.acc_reward_per_share / PRECISION;
+        let pending =
+            user_stake.amount * pool.acc_reward_per_share / PRECISION - user_stake.reward_debt;
+        user_stake.reward_debt =
+            (user_stake.amount + amount) * pool.acc_reward_per_share / PRECISION;
+        user_stake.amount = user_stake.amount + amount;
+    } else {
+        let user_stake = UserStake {
+            amount,
+            reward_debt: amount * pool.acc_reward_per_share / PRECISION,
+        };
+        bag::add(&mut pool.stakes, user, user_stake);
+    };
 
-        pool.total_stake = pool.total_stake - amount;
-        coin::take(&mut pool.reward_coins, amount, ctx)
-    }
+    coin::put(&mut pool.reward_coins, coin);
+    pool.total_stake = pool.total_stake + amount;
+}
 
-    public fun claim<StakeCoin, RewardCoin>(
-        pool: &mut RewardPool<StakeCoin, RewardCoin>,
-        user: address,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ): Coin<RewardCoin> {
-        update_reward<StakeCoin, RewardCoin>(pool, clock);
-        assert!(bag::contains(&pool.stakes, user), ENotStaker);
-        let user_stake = bag::borrow_mut<UserStake>(&mut pool.stakes, user);
-        let pending = user_stake.amount * pool.acc_reward_per_share / PRECISION - user_stake.reward_debt;
-        user_stake.reward_debt = user_stake.amount * pool.acc_reward_per_share / PRECISION;
-        coin::take(&mut pool.reward_coins, pending, ctx)
-    }
+public fun unstake<StakeCoin, RewardCoin>(
+    pool: &mut RewardPool<StakeCoin, RewardCoin>,
+    amount: u64,
+    user: address,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): Coin<StakeCoin> {
+    update_reward<StakeCoin, RewardCoin>(pool, clock);
+    assert!(bag::contains(&pool.stakes, user), ENotStaker);
+    let user_stake = bag::borrow_mut<UserStake>(&mut pool.stakes, user);
+    assert!(user_stake.amount >= amount, EInsufficientStake);
+    user_stake.amount = user_stake.amount - amount;
+    user_stake.reward_debt = user_stake.amount * pool.acc_reward_per_share / PRECISION;
 
-    public fun pending_reward<StakeCoin, RewardCoin>(
-        pool: &RewardPool<StakeCoin, RewardCoin>,
-        user: address,
-        clock: &Clock,
-    ): u64 {
-        if (!bag::contains(&pool.stakes, user)) { return 0 };
-        let user_stake = bag::borrow<UserStake>(&pool.stakes, user);
-        let now = clock.timestamp_ms();
-        let end = if (now < pool.period_finish_ms) { now } else { pool.period_finish_ms };
-        let elapsed = if (end > pool.last_update_ms) { end - pool.last_update_ms } else { 0 };
-        let acc = pool.acc_reward_per_share + (pool.reward_rate_per_ms * elapsed * PRECISION / (if (pool.total_stake == 0) { 1 } else { pool.total_stake }));
-        user_stake.amount * acc / PRECISION - user_stake.reward_debt
-    }
+    pool.total_stake = pool.total_stake - amount;
+    coin::take(&mut pool.reward_coins, amount, ctx)
+}
+
+public fun claim<StakeCoin, RewardCoin>(
+    pool: &mut RewardPool<StakeCoin, RewardCoin>,
+    user: address,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): Coin<RewardCoin> {
+    update_reward<StakeCoin, RewardCoin>(pool, clock);
+    assert!(bag::contains(&pool.stakes, user), ENotStaker);
+    let user_stake = bag::borrow_mut<UserStake>(&mut pool.stakes, user);
+    let pending =
+        user_stake.amount * pool.acc_reward_per_share / PRECISION - user_stake.reward_debt;
+    user_stake.reward_debt = user_stake.amount * pool.acc_reward_per_share / PRECISION;
+    coin::take(&mut pool.reward_coins, pending, ctx)
+}
+
+public fun pending_reward<StakeCoin, RewardCoin>(
+    pool: &RewardPool<StakeCoin, RewardCoin>,
+    user: address,
+    clock: &Clock,
+): u64 {
+    if (!bag::contains(&pool.stakes, user)) { return 0 };
+    let user_stake = bag::borrow<UserStake>(&pool.stakes, user);
+    let now = clock.timestamp_ms();
+    let end = if (now < pool.period_finish_ms) { now } else { pool.period_finish_ms };
+    let elapsed = if (end > pool.last_update_ms) { end - pool.last_update_ms } else { 0 };
+    let acc =
+        pool.acc_reward_per_share + (pool.reward_rate_per_ms * elapsed * PRECISION / (if (pool.total_stake == 0) { 1 } else { pool.total_stake }));
+    user_stake.amount * acc / PRECISION - user_stake.reward_debt
+}
 ```
 
 ## 关键设计决策
@@ -195,6 +200,7 @@ Move 使用整数运算，没有浮点数。`reward_per_share` 可能非常小�
 ### reward_debt 更新时机
 
 每次用户交互（stake/unstake/claim）都更新 `reward_debt`：
+
 - 先结算已积累的奖励
 - 再按新的份额数重置 debt
 
@@ -215,9 +221,9 @@ if (pool.total_stake == 0) {
 
 ## 风险分析
 
-| 风险 | 描述 | 防护 |
-|---|---|---|
-| 精度丢失 | 整数除法截断可能导致小份额用户的奖励为 0 | PRECISION 足够大，且只在 claim 时实际分发 |
-| 奖励耗尽 | `coin::take` 可能因余额不足而 abort | 需要在 `reward_rate` 设置时确保总奖励足够覆盖整个周期 |
-| reentrancy | Sui Move 的对象模型天然防止重入 | — |
-| 空池奖励丢失 | total_stake=0 期间的奖励无法被任何人领取 | 如上所述，这是设计选择 |
+| 风险         | 描述                                     | 防护                                                  |
+| ------------ | ---------------------------------------- | ----------------------------------------------------- |
+| 精度丢失     | 整数除法截断可能导致小份额用户的奖励为 0 | PRECISION 足够大，且只在 claim 时实际分发             |
+| 奖励耗尽     | `coin::take` 可能因余额不足而 abort      | 需要在 `reward_rate` 设置时确保总奖励足够覆盖整个周期 |
+| reentrancy   | Sui Move 的对象模型天然防止重入          | —                                                     |
+| 空池奖励丢失 | total_stake=0 期间的奖励无法被任何人领取 | 如上所述，这是设计选择                                |

@@ -13,50 +13,50 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { SuiGrpcClient } from "@mysten/sui/grpc";
 
 async function flashLoanArbitrage(
-  keypair: Ed25519Keypair,
-  lendingPoolId: string,
-  dexPoolAId: string,
-  dexPoolBId: string,
-  amount: number,
+    keypair: Ed25519Keypair,
+    lendingPoolId: string,
+    dexPoolAId: string,
+    dexPoolBId: string,
+    amount: number,
 ) {
-  const client = new SuiGrpcClient({ network: 'mainnet' });
-  const tx = new Transaction();
+    const client = new SuiGrpcClient({ network: "mainnet" });
+    const tx = new Transaction();
 
-  // 步骤1：从借贷池闪电贷借出 SUI
-  const loanCoin = tx.moveCall({
-    target: "0xLENDING::lending::flash_borrow",
-    arguments: [tx.object(lendingPoolId), tx.pure.u64(amount)],
-  });
+    // 步骤1：从借贷池闪电贷借出 SUI
+    const loanCoin = tx.moveCall({
+        target: "0xLENDING::lending::flash_borrow",
+        arguments: [tx.object(lendingPoolId), tx.pure.u64(amount)],
+    });
 
-  // 步骤2：在 DEX A 上将 SUI 换成 USDC
-  const usdcCoin = tx.moveCall({
-    target: "0xDEX_A::pool::swap_sui_to_usdc",
-    arguments: [tx.object(dexPoolAId), loanCoin],
-  });
+    // 步骤2：在 DEX A 上将 SUI 换成 USDC
+    const usdcCoin = tx.moveCall({
+        target: "0xDEX_A::pool::swap_sui_to_usdc",
+        arguments: [tx.object(dexPoolAId), loanCoin],
+    });
 
-  // 步骤3：在 DEX B 上将 USDC 换回 SUI（利用价差）
-  const repaidCoin = tx.moveCall({
-    target: "0xDEX_B::pool::swap_usdc_to_sui",
-    arguments: [tx.object(dexPoolBId), usdcCoin],
-  });
+    // 步骤3：在 DEX B 上将 USDC 换回 SUI（利用价差）
+    const repaidCoin = tx.moveCall({
+        target: "0xDEX_B::pool::swap_usdc_to_sui",
+        arguments: [tx.object(dexPoolBId), usdcCoin],
+    });
 
-  // 步骤4：还款
-  tx.moveCall({
-    target: "0xLENDING::lending::flash_repay",
-    arguments: [tx.object(lendingPoolId), repaidCoin],
-  });
+    // 步骤4：还款
+    tx.moveCall({
+        target: "0xLENDING::lending::flash_repay",
+        arguments: [tx.object(lendingPoolId), repaidCoin],
+    });
 
-  // 所有步骤要么全部成功，要么全部回滚
-  const result = await client.signAndExecuteTransaction({
-    signer: keypair,
-    transaction: tx,
-  });
+    // 所有步骤要么全部成功，要么全部回滚
+    const result = await client.signAndExecuteTransaction({
+        signer: keypair,
+        transaction: tx,
+    });
 
-  if (result.$kind === 'FailedTransaction') {
-    throw new Error(`Transaction failed: ${result.FailedTransaction.status.error?.message}`);
-  }
+    if (result.$kind === "FailedTransaction") {
+        throw new Error(`Transaction failed: ${result.FailedTransaction.status.error?.message}`);
+    }
 
-  return result;
+    return result;
 }
 ```
 

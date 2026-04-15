@@ -1,13 +1,13 @@
 module dutch_auction::dutch_auction;
 
-use sui::coin::{Self, Coin, TreasuryCap};
+use std::option;
 use sui::balance::{Self, Balance};
+use sui::clock::{Self, Clock};
+use sui::coin::{Self, Coin, TreasuryCap};
+use sui::event;
 use sui::object::{Self, UID, ID};
 use sui::transfer;
-use sui::event;
 use sui::tx_context::TxContext;
-use sui::clock::{Self, Clock};
-use std::option;
 
 // States
 const STATE_CREATED: u8 = 0;
@@ -45,19 +45,19 @@ public struct DutchAuctionRound has key {
     treasury_cap: TreasuryCap<DUTCH_AUCTION>,
     payment_collected: Balance<sui::sui::SUI>,
     state: u8,
-    start_price: u64,       // price per token at start (in MIST)
-    end_price: u64,         // floor price per token (in MIST)
-    start_time: u64,        // auction start timestamp_ms
-    duration_ms: u64,       // auction duration in milliseconds
-    total_supply: u64,      // total tokens for sale
-    remaining: u64,         // tokens remaining
+    start_price: u64, // price per token at start (in MIST)
+    end_price: u64, // floor price per token (in MIST)
+    start_time: u64, // auction start timestamp_ms
+    duration_ms: u64, // auction duration in milliseconds
+    total_supply: u64, // total tokens for sale
+    remaining: u64, // tokens remaining
     // Per-buyer records: address -> PurchaseRecord
     purchases: sui::table::Table<address, PurchaseRecord>,
 }
 
 public struct PurchaseRecord has store {
     token_amount: u64,
-    total_payment: u64,     // total SUI paid
+    total_payment: u64, // total SUI paid
     claimed: bool,
 }
 
@@ -67,8 +67,18 @@ public struct AdminCap has key, store {
 }
 
 // Events
-public struct AuctionStarted has copy, drop { auction_id: ID, start_price: u64, end_price: u64, duration_ms: u64 }
-public struct Purchased has copy, drop { buyer: address, price_per_token: u64, token_amount: u64, payment: u64 }
+public struct AuctionStarted has copy, drop {
+    auction_id: ID,
+    start_price: u64,
+    end_price: u64,
+    duration_ms: u64,
+}
+public struct Purchased has copy, drop {
+    buyer: address,
+    price_per_token: u64,
+    token_amount: u64,
+    payment: u64,
+}
 public struct Claimed has copy, drop { buyer: address, token_amount: u64 }
 public struct AuctionSettled has copy, drop { auction_id: ID, total_sold: u64, total_payment: u64 }
 
@@ -87,11 +97,11 @@ fun init(witness: DUTCH_AUCTION, ctx: &mut TxContext) {
         treasury_cap,
         payment_collected: balance::zero(),
         state: STATE_CREATED,
-        start_price: 10_000_000_000,     // 10 SUI per token
-        end_price: 2_000_000_000,        // 2 SUI per token
+        start_price: 10_000_000_000, // 10 SUI per token
+        end_price: 2_000_000_000, // 2 SUI per token
         start_time: 0,
-        duration_ms: 3_600_000,          // 1 hour
-        total_supply: 1_000_000_000_000,  // 1M tokens
+        duration_ms: 3_600_000, // 1 hour
+        total_supply: 1_000_000_000_000, // 1M tokens
         remaining: 1_000_000_000_000,
         purchases: sui::table::new(ctx),
     };
@@ -175,11 +185,16 @@ public fun buy(
         record.token_amount = record.token_amount + token_amount;
         record.total_payment = record.total_payment + payment_amount;
     } else {
-        auction.purchases.add(buyer, PurchaseRecord {
-            token_amount,
-            total_payment: payment_amount,
-            claimed: false,
-        });
+        auction
+            .purchases
+            .add(
+                buyer,
+                PurchaseRecord {
+                    token_amount,
+                    total_payment: payment_amount,
+                    claimed: false,
+                },
+            );
     };
 
     auction.remaining = auction.remaining - token_amount;
@@ -276,10 +291,15 @@ public fun withdraw_payments(
 // --- View helpers ---
 
 public fun state(auction: &DutchAuctionRound): u8 { auction.state }
+
 public fun remaining(auction: &DutchAuctionRound): u64 { auction.remaining }
+
 public fun total_supply(auction: &DutchAuctionRound): u64 { auction.total_supply }
+
 public fun start_price(auction: &DutchAuctionRound): u64 { auction.start_price }
+
 public fun end_price(auction: &DutchAuctionRound): u64 { auction.end_price }
+
 public fun duration_ms(auction: &DutchAuctionRound): u64 { auction.duration_ms }
 
 public fun has_purchased(auction: &DutchAuctionRound, addr: address): bool {

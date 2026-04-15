@@ -19,6 +19,7 @@ public struct Pool<phantom T> has key {
 ```
 
 关键设计点：
+
 - `balance` 用 `Balance<T>` 而不是 `u64`，确保类型安全
 - `total_shares` 记录所有 LP 持有的份额总和
 - `paused` 是紧急暂停开关
@@ -40,6 +41,7 @@ public struct Position<phantom T> has key, store {
 ```
 
 关键设计点：
+
 - `pool_id` 关联到对应的池子
 - `shares` 代表持有份额（不是代币数量）
 - `store` ability 允许这个对象被转移或嵌入其他对象
@@ -48,6 +50,7 @@ public struct Position<phantom T> has key, store {
 ## 价格（Price）
 
 价格是协议运行的输入信号。它决定了：
+
 - 借贷协议中抵押品价值多少
 - 清算是否应该触发
 - AMM 中 swap 的执行价格
@@ -72,11 +75,11 @@ public struct PriceInfo has copy, drop, store {
 
 收益是用户参与协议的回报。它分为三类：
 
-| 类型 | 来源 | 可持续性 | 例子 |
-|------|------|----------|------|
-| 手续费收益 | 真实交易行为 | 高 | DEX swap 手续费 |
-| 激励收益 | 代币排放 | 中 | 流动性挖矿奖励 |
-| 补贴收益 | 项目方预算 | 低 | "前30天双倍收益" |
+| 类型       | 来源         | 可持续性 | 例子             |
+| ---------- | ------------ | -------- | ---------------- |
+| 手续费收益 | 真实交易行为 | 高       | DEX swap 手续费  |
+| 激励收益   | 代币排放     | 中       | 流动性挖矿奖励   |
+| 补贴收益   | 项目方预算   | 低       | "前30天双倍收益" |
 
 ```move
 public struct YieldAccumulator has store {
@@ -106,9 +109,9 @@ graph TD
 
 ## Sui 上的对象模式总结
 
-| 抽象 | 对象类型 | ability | 原因 |
-|------|----------|---------|------|
-| Pool | Shared Object | `key` | 任何人都能交互 |
-| Position | Owned Object | `key, store` | 只有持有者能操作 |
-| Price | 非对象（数据结构） | `copy, drop, store` | 临时数据，用完即弃 |
-| Yield | 嵌入 Position | `store` | 随 Position 一起存在 |
+| 抽象     | 对象类型           | ability             | 原因                 |
+| -------- | ------------------ | ------------------- | -------------------- |
+| Pool     | Shared Object      | `key`               | 任何人都能交互       |
+| Position | Owned Object       | `key, store`        | 只有持有者能操作     |
+| Price    | 非对象（数据结构） | `copy, drop, store` | 临时数据，用完即弃   |
+| Yield    | 嵌入 Position      | `store`             | 随 Position 一起存在 |

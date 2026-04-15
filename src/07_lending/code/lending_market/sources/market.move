@@ -1,6 +1,7 @@
 module lending_market::market;
-use sui::coin::{Self, Coin};
+
 use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin};
 
 // ============================================================
 // Error codes
@@ -385,9 +386,7 @@ public fun liquidate<Collateral, Borrow>(
 /// if utilization > kink: rate = base_rate + kink * multiplier + (utilization - kink) * multiplier * jump_multiplier
 ///
 /// Returns rate in basis points.
-public fun calculate_interest_rate<Collateral, Borrow>(
-    market: &Market<Collateral, Borrow>,
-): u64 {
+public fun calculate_interest_rate<Collateral, Borrow>(market: &Market<Collateral, Borrow>): u64 {
     let total_supply = balance::value(&market.collateral_vault);
     if (total_supply == 0) {
         return market.base_rate_bps
@@ -403,9 +402,11 @@ public fun calculate_interest_rate<Collateral, Borrow>(
     } else {
         // rate = base_rate + (kink * multiplier) / BPS_BASE
         //      + ((utilization - kink) * multiplier * jump_multiplier) / (BPS_BASE * BPS_BASE)
-        let rate_at_kink = market.base_rate_bps + (market.kink_bps * market.multiplier_bps) / BPS_BASE;
+        let rate_at_kink =
+            market.base_rate_bps + (market.kink_bps * market.multiplier_bps) / BPS_BASE;
         let excess_utilization = utilization_bps - market.kink_bps;
-        let jump_rate = excess_utilization * market.multiplier_bps * market.jump_multiplier_bps / (BPS_BASE * BPS_BASE);
+        let jump_rate =
+            excess_utilization * market.multiplier_bps * market.jump_multiplier_bps / (BPS_BASE * BPS_BASE);
         rate_at_kink + jump_rate
     }
 }
@@ -421,11 +422,7 @@ public fun calculate_interest_rate<Collateral, Borrow>(
 ///
 /// Uses 1:1 price assumption (both assets priced equally).
 /// hf > 10000 => healthy, hf < 10000 => liquidatable.
-public fun health_factor(
-    collateral_value: u64,
-    debt_value: u64,
-    factor_bps: u64,
-): HealthFactor {
+public fun health_factor(collateral_value: u64, debt_value: u64, factor_bps: u64): HealthFactor {
     if (debt_value == 0) {
         return HealthFactor { value_bps: 0xFFFFFFFFFFFFFFFF }
     };
@@ -538,7 +535,9 @@ public fun destroy_market<Collateral, Borrow>(market: Market<Collateral, Borrow>
 }
 
 #[test_only]
-public fun destroy_deposit_receipt<Collateral, Borrow>(receipt: DepositReceipt<Collateral, Borrow>) {
+public fun destroy_deposit_receipt<Collateral, Borrow>(
+    receipt: DepositReceipt<Collateral, Borrow>,
+) {
     let DepositReceipt { id, market_id: _, collateral_amount: _ } = receipt;
     id.delete();
 }

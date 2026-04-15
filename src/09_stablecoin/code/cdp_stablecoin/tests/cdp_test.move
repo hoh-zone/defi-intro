@@ -2,25 +2,27 @@
 module cdp_stablecoin::test_coins {
     /// A mock collateral token type used exclusively in tests.
     public struct MOCK_COLL has copy, drop, store {}
-
 }
 #[test_only]
 module cdp_stablecoin::cdp_test {
-    use sui::coin;
-    use sui::coin::{TreasuryCap, Coin};
-    use sui::test_scenario;
-    use cdp_stablecoin::cdp;
-    use cdp_stablecoin::cdp::{StableTreasury, CDPSystem, CDPPosition, GovernanceCap, create_system_for_testing};
+    use cdp_stablecoin::cdp::{
+        Self,
+        StableTreasury,
+        CDPSystem,
+        CDPPosition,
+        GovernanceCap,
+        create_system_for_testing
+    };
     use cdp_stablecoin::test_coins::MOCK_COLL;
     use std::unit_test::assert_eq;
+    use sui::coin::{Self, TreasuryCap, Coin};
+    use sui::test_scenario;
 
     const ADMIN: address = @0xA;
     const USER_B: address = @0xB;
     const MOCK_PRICE: u64 = 2_000_000_000;
 
-    fun setup_collateral(
-        ctx: &mut sui::tx_context::TxContext,
-    ): TreasuryCap<MOCK_COLL> {
+    fun setup_collateral(ctx: &mut sui::tx_context::TxContext): TreasuryCap<MOCK_COLL> {
         coin::create_treasury_cap_for_testing<MOCK_COLL>(ctx)
     }
 
@@ -30,7 +32,11 @@ module cdp_stablecoin::cdp_test {
         {
             let ctx = scenario.ctx();
             create_system_for_testing<MOCK_COLL>(
-                100_000_000_000000, 15000, 13000, 1000, ctx,
+                100_000_000_000000,
+                15000,
+                13000,
+                1000,
+                ctx,
             );
             let coll_cap = setup_collateral(ctx);
             sui::transfer::public_transfer(coll_cap, scenario.sender());
@@ -57,7 +63,11 @@ module cdp_stablecoin::cdp_test {
         {
             let ctx = scenario.ctx();
             create_system_for_testing<MOCK_COLL>(
-                100_000_000_000000, 15000, 13000, 1000, ctx,
+                100_000_000_000000,
+                15000,
+                13000,
+                1000,
+                ctx,
             );
             let coll_cap = setup_collateral(ctx);
             sui::transfer::public_transfer(coll_cap, scenario.sender());
@@ -73,7 +83,12 @@ module cdp_stablecoin::cdp_test {
         let mut system = test_scenario::take_shared<CDPSystem<MOCK_COLL>>(&scenario);
         let ctx2 = scenario.ctx();
         let position = cdp::open_position<MOCK_COLL>(
-            &mut treasury, &mut system, collateral_coin, 10_000_000_000, MOCK_PRICE, ctx2,
+            &mut treasury,
+            &mut system,
+            collateral_coin,
+            10_000_000_000,
+            MOCK_PRICE,
+            ctx2,
         );
 
         assert_eq!(cdp::position_collateral(&position), 10_000_000_000);
@@ -94,7 +109,11 @@ module cdp_stablecoin::cdp_test {
         {
             let ctx = scenario.ctx();
             create_system_for_testing<MOCK_COLL>(
-                100_000_000_000000, 15000, 13000, 1000, ctx,
+                100_000_000_000000,
+                15000,
+                13000,
+                1000,
+                ctx,
             );
             let coll_cap = setup_collateral(ctx);
             sui::transfer::public_transfer(coll_cap, scenario.sender());
@@ -110,7 +129,12 @@ module cdp_stablecoin::cdp_test {
         let mut system = test_scenario::take_shared<CDPSystem<MOCK_COLL>>(&scenario);
         let ctx2 = scenario.ctx();
         let position = cdp::open_position<MOCK_COLL>(
-            &mut treasury, &mut system, collateral_coin, 40_000_000_000, MOCK_PRICE, ctx2,
+            &mut treasury,
+            &mut system,
+            collateral_coin,
+            40_000_000_000,
+            MOCK_PRICE,
+            ctx2,
         );
 
         test_scenario::return_shared(treasury);
@@ -126,7 +150,11 @@ module cdp_stablecoin::cdp_test {
         {
             let ctx = scenario.ctx();
             create_system_for_testing<MOCK_COLL>(
-                100_000_000_000000, 15000, 13000, 1000, ctx,
+                100_000_000_000000,
+                15000,
+                13000,
+                1000,
+                ctx,
             );
             let coll_cap = setup_collateral(ctx);
             sui::transfer::public_transfer(coll_cap, scenario.sender());
@@ -142,7 +170,12 @@ module cdp_stablecoin::cdp_test {
         let mut system = test_scenario::take_shared<CDPSystem<MOCK_COLL>>(&scenario);
         let ctx2 = scenario.ctx();
         let position = cdp::open_position<MOCK_COLL>(
-            &mut treasury, &mut system, collateral_coin, 5_000_000_000, MOCK_PRICE, ctx2,
+            &mut treasury,
+            &mut system,
+            collateral_coin,
+            5_000_000_000,
+            MOCK_PRICE,
+            ctx2,
         );
         test_scenario::return_shared(treasury);
         test_scenario::return_shared(system);
@@ -174,7 +207,11 @@ module cdp_stablecoin::cdp_test {
         {
             let ctx = scenario.ctx();
             create_system_for_testing<MOCK_COLL>(
-                100_000_000_000000, 15000, 13000, 1000, ctx,
+                100_000_000_000000,
+                15000,
+                13000,
+                1000,
+                ctx,
             );
             let coll_cap = setup_collateral(ctx);
             sui::transfer::public_transfer(coll_cap, scenario.sender());
@@ -190,7 +227,12 @@ module cdp_stablecoin::cdp_test {
         let mut system = test_scenario::take_shared<CDPSystem<MOCK_COLL>>(&scenario);
         let ctx2 = scenario.ctx();
         let position = cdp::open_position<MOCK_COLL>(
-            &mut treasury, &mut system, collateral_coin, 10_000_000_000, MOCK_PRICE, ctx2,
+            &mut treasury,
+            &mut system,
+            collateral_coin,
+            10_000_000_000,
+            MOCK_PRICE,
+            ctx2,
         );
         test_scenario::return_shared(treasury);
         test_scenario::return_shared(system);
@@ -224,7 +266,11 @@ module cdp_stablecoin::cdp_test {
         {
             let ctx = scenario.ctx();
             create_system_for_testing<MOCK_COLL>(
-                100_000_000_000000, 15000, 13000, 1000, ctx,
+                100_000_000_000000,
+                15000,
+                13000,
+                1000,
+                ctx,
             );
             let coll_cap = setup_collateral(ctx);
             sui::transfer::public_transfer(coll_cap, scenario.sender());
@@ -240,7 +286,12 @@ module cdp_stablecoin::cdp_test {
         let mut system = test_scenario::take_shared<CDPSystem<MOCK_COLL>>(&scenario);
         let ctx2 = scenario.ctx();
         let position = cdp::open_position<MOCK_COLL>(
-            &mut treasury, &mut system, collateral_coin, 5_000_000_000, MOCK_PRICE, ctx2,
+            &mut treasury,
+            &mut system,
+            collateral_coin,
+            5_000_000_000,
+            MOCK_PRICE,
+            ctx2,
         );
         test_scenario::return_shared(treasury);
         test_scenario::return_shared(system);
@@ -254,7 +305,11 @@ module cdp_stablecoin::cdp_test {
 
         let ctx = scenario.ctx();
         let returned_collateral = cdp::repay_and_close<MOCK_COLL>(
-            &mut treasury, &mut system, position, repayment, ctx,
+            &mut treasury,
+            &mut system,
+            position,
+            repayment,
+            ctx,
         );
 
         assert!(coin::value(&returned_collateral) == 10_000_000_000);
@@ -275,7 +330,11 @@ module cdp_stablecoin::cdp_test {
         {
             let ctx = scenario.ctx();
             create_system_for_testing<MOCK_COLL>(
-                100_000_000_000000, 15000, 13000, 1000, ctx,
+                100_000_000_000000,
+                15000,
+                13000,
+                1000,
+                ctx,
             );
             let coll_cap = setup_collateral(ctx);
             sui::transfer::public_transfer(coll_cap, scenario.sender());
@@ -299,7 +358,12 @@ module cdp_stablecoin::cdp_test {
         let mut system = test_scenario::take_shared<CDPSystem<MOCK_COLL>>(&scenario);
         let ctx2 = scenario.ctx();
         let position = cdp::open_position<MOCK_COLL>(
-            &mut treasury, &mut system, collateral_coin, 14_000_000_000, high_price, ctx2,
+            &mut treasury,
+            &mut system,
+            collateral_coin,
+            14_000_000_000,
+            high_price,
+            ctx2,
         );
         test_scenario::return_shared(treasury);
         test_scenario::return_shared(system);
@@ -313,7 +377,12 @@ module cdp_stablecoin::cdp_test {
 
         let ctx = scenario.ctx();
         let seized_collateral = cdp::liquidate<MOCK_COLL>(
-            &mut treasury, &mut system, position, repayment, low_price, ctx,
+            &mut treasury,
+            &mut system,
+            position,
+            repayment,
+            low_price,
+            ctx,
         );
 
         assert!(coin::value(&seized_collateral) == 10_000_000_000);
@@ -335,7 +404,11 @@ module cdp_stablecoin::cdp_test {
         {
             let ctx = scenario.ctx();
             create_system_for_testing<MOCK_COLL>(
-                100_000_000_000000, 15000, 13000, 1000, ctx,
+                100_000_000_000000,
+                15000,
+                13000,
+                1000,
+                ctx,
             );
             let coll_cap = setup_collateral(ctx);
             sui::transfer::public_transfer(coll_cap, scenario.sender());
@@ -351,7 +424,12 @@ module cdp_stablecoin::cdp_test {
         let mut system = test_scenario::take_shared<CDPSystem<MOCK_COLL>>(&scenario);
         let ctx2 = scenario.ctx();
         let position = cdp::open_position<MOCK_COLL>(
-            &mut treasury, &mut system, collateral_coin, 5_000_000_000, MOCK_PRICE, ctx2,
+            &mut treasury,
+            &mut system,
+            collateral_coin,
+            5_000_000_000,
+            MOCK_PRICE,
+            ctx2,
         );
         test_scenario::return_shared(treasury);
         test_scenario::return_shared(system);
@@ -365,7 +443,12 @@ module cdp_stablecoin::cdp_test {
 
         let ctx = scenario.ctx();
         let seized = cdp::liquidate<MOCK_COLL>(
-            &mut treasury, &mut system, position, repayment, MOCK_PRICE, ctx,
+            &mut treasury,
+            &mut system,
+            position,
+            repayment,
+            MOCK_PRICE,
+            ctx,
         );
 
         test_scenario::return_shared(treasury);
@@ -382,7 +465,11 @@ module cdp_stablecoin::cdp_test {
         {
             let ctx = scenario.ctx();
             create_system_for_testing<MOCK_COLL>(
-                100_000_000_000000, 15000, 13000, 1000, ctx,
+                100_000_000_000000,
+                15000,
+                13000,
+                1000,
+                ctx,
             );
             let coll_cap = setup_collateral(ctx);
             sui::transfer::public_transfer(coll_cap, scenario.sender());
@@ -407,7 +494,12 @@ module cdp_stablecoin::cdp_test {
 
         let ctx2 = scenario.ctx();
         let position = cdp::open_position<MOCK_COLL>(
-            &mut treasury, &mut system, collateral_coin, 5_000_000_000, MOCK_PRICE, ctx2,
+            &mut treasury,
+            &mut system,
+            collateral_coin,
+            5_000_000_000,
+            MOCK_PRICE,
+            ctx2,
         );
 
         test_scenario::return_shared(treasury);
@@ -416,5 +508,4 @@ module cdp_stablecoin::cdp_test {
 
         scenario.end();
     }
-
 }

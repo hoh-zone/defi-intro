@@ -1,13 +1,12 @@
 #[test_only]
 module liquid_staking::liquid_staking_test;
+
 use liquid_staking::liquid_staking;
-use sui::coin;
-use sui::coin::Coin;
+use std::unit_test::{Self, assert_eq};
+use sui::coin::{Self, Coin};
 use sui::sui::SUI;
 use sui::test_scenario;
 use sui::transfer;
-use std::unit_test::assert_eq;
-use std::unit_test;
 
 const ADMIN: address = @0xAD;
 

@@ -8,14 +8,14 @@ Draft → WhitelistOpen → SaleOpen → ClaimOpen → Closed
                           Cancelled
 ```
 
-| 状态 | 允许的操作 |
-|------|-----------|
-| Draft | 管理员配置参数 |
+| 状态          | 允许的操作     |
+| ------------- | -------------- |
+| Draft         | 管理员配置参数 |
 | WhitelistOpen | 用户注册白名单 |
-| SaleOpen | 白名单用户认购 |
-| ClaimOpen | 用户领取代币 |
-| Closed | 无操作 |
-| Cancelled | 退款 |
+| SaleOpen      | 白名单用户认购 |
+| ClaimOpen     | 用户领取代币   |
+| Closed        | 无操作         |
+| Cancelled     | 退款           |
 
 ## Move 实现
 

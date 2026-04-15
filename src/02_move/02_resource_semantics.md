@@ -6,37 +6,38 @@ Move 的每个 struct 可以拥有零到四种 ability：`key`、`store`、`drop
 
 ```move
 module defi_book::ability_demo;
-    use sui::coin::Coin;
-    use sui::sui::SUI;
 
-    public struct CoinAsset has key, store {
-        id: UID,
-        value: u64,
-    }
+use sui::coin::Coin;
+use sui::sui::SUI;
 
-    public struct AccessTicket has drop {
-        round: u64,
-    }
+public struct CoinAsset has key, store {
+    id: UID,
+    value: u64,
+}
 
-    public struct PriceFeed has copy, drop, store {
-        price: u64,
-        timestamp: u64,
-    }
+public struct AccessTicket has drop {
+    round: u64,
+}
 
-    public struct AdminCap has key, store {
-        id: UID,
-        module_name: String,
-    }
+public struct PriceFeed has copy, drop, store {
+    price: u64,
+    timestamp: u64,
+}
+
+public struct AdminCap has key, store {
+    id: UID,
+    module_name: String,
+}
 ```
 
 逐一分析：
 
-| Ability | 含义 | 金融含义 |
-|---------|------|----------|
-| `key` | 可以作为全局存储的顶层对象 | 这是链上资产——有 ID，有独立存在 |
-| `store` | 可以存储在其他对象中或转移 | 这是可转移资产——可以放入钱包或存入合约 |
-| `drop` | 可以被丢弃（不使用也不会编译错误） | 这是临时凭证——用完即弃，不是资产 |
-| `copy` | 可以被复制 | 这是信息/价格——复制不会创造价值 |
+| Ability | 含义                               | 金融含义                               |
+| ------- | ---------------------------------- | -------------------------------------- |
+| `key`   | 可以作为全局存储的顶层对象         | 这是链上资产——有 ID，有独立存在        |
+| `store` | 可以存储在其他对象中或转移         | 这是可转移资产——可以放入钱包或存入合约 |
+| `drop`  | 可以被丢弃（不使用也不会编译错误） | 这是临时凭证——用完即弃，不是资产       |
+| `copy`  | 可以被复制                         | 这是信息/价格——复制不会创造价值        |
 
 **关键规则**：真正的资产（Coin、LP Token、NFT）不应有 `copy` 和 `drop`。如果 Coin 有 `copy`，它可以被无限复制（通货膨胀漏洞）。如果 Coin 有 `drop`，它可以被意外销毁（资金丢失漏洞）。
 
@@ -66,65 +67,59 @@ fun exploit(bad: &BadCoin): BadCoin {
 
 ```move
 module defi_book::admin_cap_demo;
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
 
-    public struct Pool has key {
-        id: UID,
-        reserve: Coin<SUI>,
-        fee_bps: u64,
-        paused: bool,
-    }
+use sui::coin::{Self, Coin};
+use sui::sui::SUI;
 
-    public struct PoolAdminCap has key, store {
-        id: UID,
-        pool_id: ID,
-    }
+public struct Pool has key {
+    id: UID,
+    reserve: Coin<SUI>,
+    fee_bps: u64,
+    paused: bool,
+}
 
-    public entry fun create_pool(ctx: &mut TxContext) {
-        let pool = Pool {
-            id: object::new(ctx),
-            reserve: coin::zero(ctx),
-            fee_bps: 30,
-            paused: false,
-        };
-        let cap = PoolAdminCap {
-            id: object::new(ctx),
-            pool_id: object::id(&pool),
-        };
-        transfer::share_object(pool);
-        transfer::transfer(cap, ctx.sender());
-    }
+public struct PoolAdminCap has key, store {
+    id: UID,
+    pool_id: ID,
+}
 
-    public fun set_fee(
-        _cap: &PoolAdminCap,
-        pool: &mut Pool,
-        new_fee_bps: u64,
-) {
-        pool.fee_bps = new_fee_bps;
-    }
+public entry fun create_pool(ctx: &mut TxContext) {
+    let pool = Pool {
+        id: object::new(ctx),
+        reserve: coin::zero(ctx),
+        fee_bps: 30,
+        paused: false,
+    };
+    let cap = PoolAdminCap {
+        id: object::new(ctx),
+        pool_id: object::id(&pool),
+    };
+    transfer::share_object(pool);
+    transfer::transfer(cap, ctx.sender());
+}
 
-    public fun set_paused(
-        _cap: &PoolAdminCap,
-        pool: &mut Pool,
-        paused: bool,
-) {
-        pool.paused = paused;
-    }
+public fun set_fee(_cap: &PoolAdminCap, pool: &mut Pool, new_fee_bps: u64) {
+    pool.fee_bps = new_fee_bps;
+}
 
-    public entry fun swap(pool: &mut Pool, coin_in: Coin<SUI>, ctx: &mut TxContext): Coin<SUI> {
-        assert!(!pool.paused, EPaused);
-        let amount_in = coin.value(&coin_in);
-        let reserve = pool.reserve.value(&pool.reserve);
-        let amount_out = reserve * amount_in * (10000 - pool.fee_bps)
+public fun set_paused(_cap: &PoolAdminCap, pool: &mut Pool, paused: bool) {
+    pool.paused = paused;
+}
+
+public entry fun swap(pool: &mut Pool, coin_in: Coin<SUI>, ctx: &mut TxContext): Coin<SUI> {
+    assert!(!pool.paused, EPaused);
+    let amount_in = coin.value(&coin_in);
+    let reserve = pool.reserve.value(&pool.reserve);
+    let amount_out =
+        reserve * amount_in * (10000 - pool.fee_bps)
             / ((reserve + amount_in) * 10000);
-        let coin_out = coin::take(&mut pool.reserve, amount_out, ctx);
-        coin::join(&mut pool.reserve, coin_in);
-        coin_out
-    }
+    let coin_out = coin::take(&mut pool.reserve, amount_out, ctx);
+    coin::join(&mut pool.reserve, coin_in);
+    coin_out
+}
 
-    #[error]
-    const EPaused: vector<u8> = b"Paused";
+#[error]
+const EPaused: vector<u8> = b"Paused";
 ```
 
 `set_fee` 和 `set_paused` 都要求传入 `&PoolAdminCap`。没有这个对象，任何人都无法调用这两个函数。`swap` 不需要 AdminCap——它是公开函数。这就是 Sui 上的权限模型：**权限即对象**，而不是访问控制列表。

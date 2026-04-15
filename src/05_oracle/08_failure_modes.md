@@ -103,55 +103,56 @@
 
 ```move
 module oracle::attack_simulation;
-    public struct AttackVector has store {
-        attack_type: u8,
-        profit_potential: u64,
-        difficulty: u8,
-        detection_likelihood: u8,
-    }
 
-    public fun assess_oracle_risk(
-        uses_single_source: bool,
-        update_frequency_ms: u64,
-        has_deviation_check: bool,
-        has_staleness_check: bool,
-        asset_liquidity_usd: u64,
-    ): vector<AttackVector> {
-        let mut risks = vector::empty();
-        if (uses_single_source) {
-            risks.push_back(AttackVector {
-                attack_type: 1,
-                profit_potential: 100000,
-                difficulty: 2,
-                detection_likelihood: 3,
-            });
-        };
-        if (update_frequency_ms > 60_000) {
-            risks.push_back(AttackVector {
-                attack_type: 2,
-                profit_potential: 50000,
-                difficulty: 1,
-                detection_likelihood: 5,
-            });
-        };
-        if (!has_deviation_check) {
-            risks.push_back(AttackVector {
-                attack_type: 3,
-                profit_potential: 200000,
-                difficulty: 3,
-                detection_likelihood: 2,
-            });
-        };
-        if (asset_liquidity_usd < 1_000_000) {
-            risks.push_back(AttackVector {
-                attack_type: 4,
-                profit_potential: 500000,
-                difficulty: 2,
-                detection_likelihood: 1,
-            });
-        };
-        risks
-    }
+public struct AttackVector has store {
+    attack_type: u8,
+    profit_potential: u64,
+    difficulty: u8,
+    detection_likelihood: u8,
+}
+
+public fun assess_oracle_risk(
+    uses_single_source: bool,
+    update_frequency_ms: u64,
+    has_deviation_check: bool,
+    has_staleness_check: bool,
+    asset_liquidity_usd: u64,
+): vector<AttackVector> {
+    let mut risks = vector::empty();
+    if (uses_single_source) {
+        risks.push_back(AttackVector {
+            attack_type: 1,
+            profit_potential: 100000,
+            difficulty: 2,
+            detection_likelihood: 3,
+        });
+    };
+    if (update_frequency_ms > 60_000) {
+        risks.push_back(AttackVector {
+            attack_type: 2,
+            profit_potential: 50000,
+            difficulty: 1,
+            detection_likelihood: 5,
+        });
+    };
+    if (!has_deviation_check) {
+        risks.push_back(AttackVector {
+            attack_type: 3,
+            profit_potential: 200000,
+            difficulty: 3,
+            detection_likelihood: 2,
+        });
+    };
+    if (asset_liquidity_usd < 1_000_000) {
+        risks.push_back(AttackVector {
+            attack_type: 4,
+            profit_potential: 500000,
+            difficulty: 2,
+            detection_likelihood: 1,
+        });
+    };
+    risks
+}
 ```
 
 ## 攻击成本估算
@@ -178,9 +179,9 @@ module oracle::attack_simulation;
 
 ## 风险分析
 
-| 失效模式 | 检测难度 | 防护成本 | 影响范围 |
-|---|---|---|---|
-| 延迟失效 | 低（可检测） | 低（加 staleness check） | 单协议 |
-| 操纵攻击 | 中（实时难检测） | 高（多预言机 + TWAP） | 跨协议 |
-| 停滞失效 | 低（可检测） | 中（fallback 预言机） | 单协议 |
-| 多源冲突 | 中（需要仲裁逻辑） | 中（聚合算法） | 取决于协议 |
+| 失效模式 | 检测难度           | 防护成本                 | 影响范围   |
+| -------- | ------------------ | ------------------------ | ---------- |
+| 延迟失效 | 低（可检测）       | 低（加 staleness check） | 单协议     |
+| 操纵攻击 | 中（实时难检测）   | 高（多预言机 + TWAP）    | 跨协议     |
+| 停滞失效 | 低（可检测）       | 中（fallback 预言机）    | 单协议     |
+| 多源冲突 | 中（需要仲裁逻辑） | 中（聚合算法）           | 取决于协议 |

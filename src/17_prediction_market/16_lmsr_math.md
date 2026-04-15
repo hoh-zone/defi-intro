@@ -7,7 +7,7 @@
 设有 \(n\) 个互斥结果，市场状态用**份额向量** \(\mathbf{q}=(q_1,\ldots,q_n)\) 表示（可理解为「各结果方向上的累计成交量/库存」的抽象）。LMSR 定义**总成本函数**：
 
 \[
-C(\mathbf{q}) \;=\; b \cdot \ln\left(\sum_{i=1}^{n} e^{q_i/b}\right)
+C(\mathbf{q}) \;=\; b \cdot \ln\left(\sum\_{i=1}^{n} e^{q_i/b}\right)
 \]
 
 其中 \(b>0\) 是**流动性参数**（17.18 专门讲它）。直觉：\(C\) 是严格凸的，因而边际价格随买入单调变化。
@@ -17,7 +17,7 @@ C(\mathbf{q}) \;=\; b \cdot \ln\left(\sum_{i=1}^{n} e^{q_i/b}\right)
 对第 \(i\) 个结果，买入「极微小」的 \(dq_i\) 所付的边际成本为 \(\partial C/\partial q_i\)。直接求导得到**归一化指数形式**（softmax）：
 
 \[
-p_i \;=\; \frac{\partial C}{\partial q_i} \;=\; \frac{e^{q_i/b}}{\sum_{j=1}^{n} e^{q_j/b}}
+p*i \;=\; \frac{\partial C}{\partial q_i} \;=\; \frac{e^{q_i/b}}{\sum*{j=1}^{n} e^{q_j/b}}
 \]
 
 因此 \(\sum_i p_i = 1\)，可把 \(p_i\) 看成一组**非负且归一**的「相对昂贵程度」；在理想化假设下才把它口头叫「概率」。
@@ -30,7 +30,7 @@ LMSR 的关键性质：**路径无关**。从状态 \(\mathbf{q}\) 变到 \(\mat
 \Delta C \;=\; C(\mathbf{q}') - C(\mathbf{q})
 \]
 
-（若只增加第 \(i\) 个分量，则 \(\mathbf{q}'=\mathbf{q}+\Delta q_i \mathbf{e}_i\)。）  
+（若只增加第 \(i\) 个分量，则 \(\mathbf{q}'=\mathbf{q}+\Delta q_i \mathbf{e}\_i\)。）  
 实现里**绝不要用「边际价 × 数量」近似**大单——那是另一套近似做市，不是 LMSR。
 
 ## 4. 二元情形 \(n=2\)（YES/NO）

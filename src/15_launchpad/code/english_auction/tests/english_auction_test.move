@@ -1,20 +1,21 @@
 #[test_only]
 module english_auction::english_auction_test;
+
 use english_auction::english_auction;
+use sui::clock;
 use sui::coin;
 use sui::sui::SUI;
 use sui::test_scenario;
-use sui::clock;
 
 const ADMIN: address = @0xAD;
 const USER1: address = @0xB0;
 const USER2: address = @0xC0;
 const USER3: address = @0xD0;
 
-const RESERVE_PRICE: u64 = 1_000_000_000;       // 1 SUI
-const MIN_INCREMENT: u64 = 500_000_000;         // 0.5 SUI
-const TOKEN_AMOUNT: u64 = 1_000_000_000_000;    // 1M tokens
-const DURATION_MS: u64 = 3_600_000;             // 1 hour
+const RESERVE_PRICE: u64 = 1_000_000_000; // 1 SUI
+const MIN_INCREMENT: u64 = 500_000_000; // 0.5 SUI
+const TOKEN_AMOUNT: u64 = 1_000_000_000_000; // 1M tokens
+const DURATION_MS: u64 = 3_600_000; // 1 hour
 
 fun mint_sui(amount: u64, ctx: &mut sui::tx_context::TxContext): coin::Coin<SUI> {
     let mut treasury = coin::create_treasury_cap_for_testing<SUI>(ctx);
@@ -36,7 +37,15 @@ fun test_start_auction() {
     let cap = test_scenario::take_from_sender<english_auction::AdminCap>(&mut scenario);
     let mut clk = clock::create_for_testing(scenario.ctx());
     clock::set_for_testing(&mut clk, 0);
-    english_auction::start_auction(&cap, &mut auction, RESERVE_PRICE, MIN_INCREMENT, TOKEN_AMOUNT, DURATION_MS, &clk);
+    english_auction::start_auction(
+        &cap,
+        &mut auction,
+        RESERVE_PRICE,
+        MIN_INCREMENT,
+        TOKEN_AMOUNT,
+        DURATION_MS,
+        &clk,
+    );
     assert!(english_auction::state(&auction) == 1); // ACTIVE
     test_scenario::return_to_sender(&mut scenario, cap);
     clock::destroy_for_testing(clk);
@@ -59,7 +68,15 @@ fun test_bidding_and_winner() {
     let cap = test_scenario::take_from_sender<english_auction::AdminCap>(&mut scenario);
     let mut clk = clock::create_for_testing(scenario.ctx());
     clock::set_for_testing(&mut clk, 0);
-    english_auction::start_auction(&cap, &mut auction, RESERVE_PRICE, MIN_INCREMENT, TOKEN_AMOUNT, DURATION_MS, &clk);
+    english_auction::start_auction(
+        &cap,
+        &mut auction,
+        RESERVE_PRICE,
+        MIN_INCREMENT,
+        TOKEN_AMOUNT,
+        DURATION_MS,
+        &clk,
+    );
     test_scenario::return_to_sender(&mut scenario, cap);
     clock::destroy_for_testing(clk);
     test_scenario::return_shared(auction);
@@ -149,7 +166,15 @@ fun test_bid_below_reserve() {
     let cap = test_scenario::take_from_sender<english_auction::AdminCap>(&mut scenario);
     let mut clk = clock::create_for_testing(scenario.ctx());
     clock::set_for_testing(&mut clk, 0);
-    english_auction::start_auction(&cap, &mut auction, RESERVE_PRICE, MIN_INCREMENT, TOKEN_AMOUNT, DURATION_MS, &clk);
+    english_auction::start_auction(
+        &cap,
+        &mut auction,
+        RESERVE_PRICE,
+        MIN_INCREMENT,
+        TOKEN_AMOUNT,
+        DURATION_MS,
+        &clk,
+    );
     test_scenario::return_to_sender(&mut scenario, cap);
     clock::destroy_for_testing(clk);
     test_scenario::return_shared(auction);
@@ -179,7 +204,15 @@ fun test_cannot_outbid_self() {
     let cap = test_scenario::take_from_sender<english_auction::AdminCap>(&mut scenario);
     let mut clk = clock::create_for_testing(scenario.ctx());
     clock::set_for_testing(&mut clk, 0);
-    english_auction::start_auction(&cap, &mut auction, RESERVE_PRICE, MIN_INCREMENT, TOKEN_AMOUNT, DURATION_MS, &clk);
+    english_auction::start_auction(
+        &cap,
+        &mut auction,
+        RESERVE_PRICE,
+        MIN_INCREMENT,
+        TOKEN_AMOUNT,
+        DURATION_MS,
+        &clk,
+    );
     test_scenario::return_to_sender(&mut scenario, cap);
     clock::destroy_for_testing(clk);
     test_scenario::return_shared(auction);

@@ -89,6 +89,7 @@ public fun borrow(
 ```
 
 缺少检查：
+
 - `pool.borrows + amount <= pool.deposits`（可用流动性）
 - `amount > 0`（零借款）
 - `collateral > 0`（零抵押）

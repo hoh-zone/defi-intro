@@ -21,8 +21,8 @@
 cp .env.example .env
 ```
 
-| 变量 | 说明 |
-|------|------|
+| 变量              | 说明                                    |
+| ----------------- | --------------------------------------- |
 | `VITE_PACKAGE_ID` | `sui client publish` 得到的包 ID（0x…） |
 
 默认常量见 `src/constants.ts`（Testnet Pyth state、Wormhole state、SUI/USD feed id、Hermes beta URL）。主网使用前须自行替换为官方文档中的对象 ID 与端点。

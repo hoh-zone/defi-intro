@@ -31,163 +31,161 @@
 
 ```move
 module bridge::cross_chain_messaging;
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::event;
-    use sui::clock::Clock;
-    use sui::table::{Self, Table};
 
-    #[error]
-    const EUnauthorized: vector<u8> = b"Unauthorized";
-    #[error]
-    const EInvalidProof: vector<u8> = b"Invalid Proof";
-    #[error]
-    const EAlreadyExecuted: vector<u8> = b"Already Executed";
-    #[error]
-    const ENotPending: vector<u8> = b"Not Pending";
-    #[error]
-    const ETimeoutNotReached: vector<u8> = b"Timeout Not Reached";
+use sui::clock::Clock;
+use sui::event;
+use sui::object::{Self, UID};
+use sui::table::{Self, Table};
+use sui::tx_context::TxContext;
 
-    public struct MessageId has copy, drop, store {
-        source_chain: u64,
-        nonce: u64,
-    }
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EInvalidProof: vector<u8> = b"Invalid Proof";
+#[error]
+const EAlreadyExecuted: vector<u8> = b"Already Executed";
+#[error]
+const ENotPending: vector<u8> = b"Not Pending";
+#[error]
+const ETimeoutNotReached: vector<u8> = b"Timeout Not Reached";
 
-    public struct CrossChainMessage has store {
-        target_chain: u64,
-        target_contract: address,
-        payload: vector<u8>,
-        timeout_ms: u64,
-    }
+public struct MessageId has copy, drop, store {
+    source_chain: u64,
+    nonce: u64,
+}
 
-    public struct MessageStatus has store {
-        is_executed: bool,
-        is_rolled_back: bool,
-    }
+public struct CrossChainMessage has store {
+    target_chain: u64,
+    target_contract: address,
+    payload: vector<u8>,
+    timeout_ms: u64,
+}
 
-    public struct MessageBus has key {
-        id: UID,
-        nonce_counter: u64,
-        pending_messages: Table<MessageId, CrossChainMessage>,
-        executed: Table<MessageId, MessageStatus>,
-        timeout_buffer_ms: u64,
-        admin: address,
-    }
+public struct MessageStatus has store {
+    is_executed: bool,
+    is_rolled_back: bool,
+}
 
-    public struct MessageSent has copy, drop {
-        msg_id: MessageId,
-        target_chain: u64,
-        sender: address,
-    }
+public struct MessageBus has key {
+    id: UID,
+    nonce_counter: u64,
+    pending_messages: Table<MessageId, CrossChainMessage>,
+    executed: Table<MessageId, MessageStatus>,
+    timeout_buffer_ms: u64,
+    admin: address,
+}
 
-    public struct MessageExecuted has copy, drop {
-        msg_id: MessageId,
-        executor: address,
-        success: bool,
-    }
+public struct MessageSent has copy, drop {
+    msg_id: MessageId,
+    target_chain: u64,
+    sender: address,
+}
 
-    public struct MessageRolledBack has copy, drop {
-        msg_id: MessageId,
-        reason: String,
-    }
+public struct MessageExecuted has copy, drop {
+    msg_id: MessageId,
+    executor: address,
+    success: bool,
+}
 
-    public fun initialize(
-        timeout_buffer_ms: u64,
-        ctx: &mut TxContext,
-    ) {
-        let bus = MessageBus {
-            id: object::new(ctx),
-            nonce_counter: 0,
-            pending_messages: table::new(ctx),
-            executed: table::new(ctx),
-            timeout_buffer_ms,
-            admin: ctx.sender(),
-        };
-        transfer::share_object(bus);
-    }
+public struct MessageRolledBack has copy, drop {
+    msg_id: MessageId,
+    reason: String,
+}
 
-    public fun send_message(
-        bus: &mut MessageBus,
-        target_chain: u64,
-        target_contract: address,
-        payload: vector<u8>,
-        timeout_ms: u64,
-        clock: &Clock,
-    ): MessageId {
-        let msg_id = MessageId {
-            source_chain: 0,
-            nonce: bus.nonce_counter,
-        };
-        bus.nonce_counter = bus.nonce_counter + 1;
-        let msg = CrossChainMessage {
-            target_chain,
-            target_contract,
-            payload,
-            timeout_ms: clock.timestamp_ms() + timeout_ms,
-        };
-        table::add(&mut bus.pending_messages, msg_id, msg);
-        event::emit(MessageSent {
-            msg_id,
-            target_chain,
-            sender: ctx.sender(),
-        });
-        msg_id
-    }
+public fun initialize(timeout_buffer_ms: u64, ctx: &mut TxContext) {
+    let bus = MessageBus {
+        id: object::new(ctx),
+        nonce_counter: 0,
+        pending_messages: table::new(ctx),
+        executed: table::new(ctx),
+        timeout_buffer_ms,
+        admin: ctx.sender(),
+    };
+    transfer::share_object(bus);
+}
 
-    public fun execute_message(
-        bus: &mut MessageBus,
-        msg_id: MessageId,
-        proof: vector<u8>,
-        ctx: &mut TxContext,
-    ) {
-        assert!(!table::contains(&bus.executed, msg_id), EAlreadyExecuted);
-        assert!(table::contains(&bus.pending_messages, msg_id), ENotPending);
-        let _msg = table::borrow(&bus.pending_messages, msg_id);
-        table::add(&mut bus.executed, msg_id, MessageStatus {
+public fun send_message(
+    bus: &mut MessageBus,
+    target_chain: u64,
+    target_contract: address,
+    payload: vector<u8>,
+    timeout_ms: u64,
+    clock: &Clock,
+): MessageId {
+    let msg_id = MessageId {
+        source_chain: 0,
+        nonce: bus.nonce_counter,
+    };
+    bus.nonce_counter = bus.nonce_counter + 1;
+    let msg = CrossChainMessage {
+        target_chain,
+        target_contract,
+        payload,
+        timeout_ms: clock.timestamp_ms() + timeout_ms,
+    };
+    table::add(&mut bus.pending_messages, msg_id, msg);
+    event::emit(MessageSent {
+        msg_id,
+        target_chain,
+        sender: ctx.sender(),
+    });
+    msg_id
+}
+
+public fun execute_message(
+    bus: &mut MessageBus,
+    msg_id: MessageId,
+    proof: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    assert!(!table::contains(&bus.executed, msg_id), EAlreadyExecuted);
+    assert!(table::contains(&bus.pending_messages, msg_id), ENotPending);
+    let _msg = table::borrow(&bus.pending_messages, msg_id);
+    table::add(
+        &mut bus.executed,
+        msg_id,
+        MessageStatus {
             is_executed: true,
             is_rolled_back: false,
-        });
-        table::remove(&mut bus.pending_messages, msg_id);
-        event::emit(MessageExecuted {
-            msg_id,
-            executor: ctx.sender(),
-            success: true,
-        });
-    }
+        },
+    );
+    table::remove(&mut bus.pending_messages, msg_id);
+    event::emit(MessageExecuted {
+        msg_id,
+        executor: ctx.sender(),
+        success: true,
+    });
+}
 
-    public fun rollback(
-        bus: &mut MessageBus,
-        msg_id: MessageId,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ) {
-        assert!(table::contains(&bus.pending_messages, msg_id), ENotPending);
-        let msg = table::borrow(&bus.pending_messages, msg_id);
-        assert!(clock.timestamp_ms() > msg.timeout_ms, ETimeoutNotReached);
-        table::add(&mut bus.executed, msg_id, MessageStatus {
+public fun rollback(bus: &mut MessageBus, msg_id: MessageId, clock: &Clock, ctx: &mut TxContext) {
+    assert!(table::contains(&bus.pending_messages, msg_id), ENotPending);
+    let msg = table::borrow(&bus.pending_messages, msg_id);
+    assert!(clock.timestamp_ms() > msg.timeout_ms, ETimeoutNotReached);
+    table::add(
+        &mut bus.executed,
+        msg_id,
+        MessageStatus {
             is_executed: false,
             is_rolled_back: true,
-        });
-        table::remove(&mut bus.pending_messages, msg_id);
-        event::emit(MessageRolledBack {
-            msg_id,
-            reason: string::utf8(b"timeout"),
-        });
-    }
+        },
+    );
+    table::remove(&mut bus.pending_messages, msg_id);
+    event::emit(MessageRolledBack {
+        msg_id,
+        reason: string::utf8(b"timeout"),
+    });
+}
 
-    public fun message_status(
-        bus: &MessageBus,
-        msg_id: MessageId,
-    ): u8 {
-        if (table::contains(&bus.executed, msg_id)) {
-            let status = table::borrow(&bus.executed, msg_id);
-            if (status.is_executed) { 1 } else { 2 }
-        } else if (table::contains(&bus.pending_messages, msg_id)) {
-            0
-        } else {
-            3
-        }
+public fun message_status(bus: &MessageBus, msg_id: MessageId): u8 {
+    if (table::contains(&bus.executed, msg_id)) {
+        let status = table::borrow(&bus.executed, msg_id);
+        if (status.is_executed) { 1 } else { 2 }
+    } else if (table::contains(&bus.pending_messages, msg_id)) {
+        0
+    } else {
+        3
     }
+}
 ```
 
 ## 跨链组合调用
@@ -229,10 +227,10 @@ Sui 集成：
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 部分执行 | 跨链调用链中间步骤失败，资金卡在中间链 |
-| 超时攻击 | 攻击者延迟中继，导致消息超时后利用回滚逻辑 |
+| 风险     | 描述                                              |
+| -------- | ------------------------------------------------- |
+| 部分执行 | 跨链调用链中间步骤失败，资金卡在中间链            |
+| 超时攻击 | 攻击者延迟中继，导致消息超时后利用回滚逻辑        |
 | 消息重放 | 如果 nonce 管理有缺陷，已执行的消息可能被重新执行 |
-| 排序依赖 | 如果消息执行顺序错误，可能导致状态不一致 |
-| Gas 不足 | 跨链调用的 gas 预估困难，可能导致目标链执行失败 |
+| 排序依赖 | 如果消息执行顺序错误，可能导致状态不一致          |
+| Gas 不足 | 跨链调用的 gas 预估困难，可能导致目标链执行失败   |

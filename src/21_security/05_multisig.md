@@ -3,6 +3,7 @@
 ## 为什么 DeFi 协议需要多签
 
 单密钥管理的风险：
+
 - 私钥泄露 → 所有权限被接管
 - 密钥持有者失联 → 协议无法治理
 - 内部作恶 → 无制衡机制
@@ -33,44 +34,45 @@ sui keytool multiaddr \
 
 生产级 DeFi 协议建议使用以下角色分离：
 
-| 角色 | 多签配置 | 持有的 Capability | 用途 |
-|------|----------|-------------------|------|
-| 暂停委员会 | 2-of-3 | PauseCap | 紧急暂停 |
-| 参数委员会 | 3-of-5 | ParamsCap | 利率、费用等参数调整 |
-| 升级委员会 | 4-of-7 | UpgradeCap | 合约升级 |
-| 国库管理 | 3-of-5 | TreasuryCap | 资金提取 |
-| 紧急响应 | 2-of-3 | EmergencyCap | 紧急关停 |
+| 角色       | 多签配置 | 持有的 Capability | 用途                 |
+| ---------- | -------- | ----------------- | -------------------- |
+| 暂停委员会 | 2-of-3   | PauseCap          | 紧急暂停             |
+| 参数委员会 | 3-of-5   | ParamsCap         | 利率、费用等参数调整 |
+| 升级委员会 | 4-of-7   | UpgradeCap        | 合约升级             |
+| 国库管理   | 3-of-5   | TreasuryCap       | 资金提取             |
+| 紧急响应   | 2-of-3   | EmergencyCap      | 紧急关停             |
 
 ```move
 module defi::governance_setup;
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::TxContext;
 
-    public struct PauseCap has key, store { id: UID }
-    public struct ParamsCap has key, store { id: UID }
-    public struct UpgradeCapHolder has key, store { id: UID }
-    public struct EmergencyCap has key, store { id: UID }
+use sui::object::{Self, UID};
+use sui::transfer;
+use sui::tx_context::TxContext;
 
-    public fun init(
-        pause_multisig: address,
-        params_multisig: address,
-        emergency_multisig: address,
-        ctx: &mut TxContext,
-    ) {
-        transfer::public_transfer(
-            PauseCap { id: object::new(ctx) },
-            pause_multisig,
-        );
-        transfer::public_transfer(
-            ParamsCap { id: object::new(ctx) },
-            params_multisig,
-        );
-        transfer::public_transfer(
-            EmergencyCap { id: object::new(ctx) },
-            emergency_multisig,
-        );
-    }
+public struct PauseCap has key, store { id: UID }
+public struct ParamsCap has key, store { id: UID }
+public struct UpgradeCapHolder has key, store { id: UID }
+public struct EmergencyCap has key, store { id: UID }
+
+public fun init(
+    pause_multisig: address,
+    params_multisig: address,
+    emergency_multisig: address,
+    ctx: &mut TxContext,
+) {
+    transfer::public_transfer(
+        PauseCap { id: object::new(ctx) },
+        pause_multisig,
+    );
+    transfer::public_transfer(
+        ParamsCap { id: object::new(ctx) },
+        params_multisig,
+    );
+    transfer::public_transfer(
+        EmergencyCap { id: object::new(ctx) },
+        emergency_multisig,
+    );
+}
 ```
 
 `init` 函数接收多个多签地址，将 Capability 分配到对应的多签钱包。部署时通过 PTB 传入参数。
@@ -81,128 +83,127 @@ module defi::governance_setup;
 
 ```move
 module defi::timelock;
-    use sui::object::{Self, ID, UID};
-    use sui::event;
-    use sui::clock::Clock;
 
-    public struct Timelock has key {
-        id: UID,
-        min_delay: u64,
-        max_delay: u64,
-    }
+use sui::clock::Clock;
+use sui::event;
+use sui::object::{Self, ID, UID};
 
-    public struct ScheduledOp has key, store {
-        id: UID,
-        target_function: String,
-        parameters: vector<u8>,
-        execute_after: u64,
-        executed: bool,
-        cancelled: bool,
-    }
+public struct Timelock has key {
+    id: UID,
+    min_delay: u64,
+    max_delay: u64,
+}
 
-    public struct OperationScheduled has copy, drop {
-        op_id: ID,
-        execute_after: u64,
-    }
+public struct ScheduledOp has key, store {
+    id: UID,
+    target_function: String,
+    parameters: vector<u8>,
+    execute_after: u64,
+    executed: bool,
+    cancelled: bool,
+}
 
-    public struct OperationExecuted has copy, drop {
-        op_id: ID,
-    }
+public struct OperationScheduled has copy, drop {
+    op_id: ID,
+    execute_after: u64,
+}
 
-    public struct OperationCancelled has copy, drop {
-        op_id: ID,
-    }
+public struct OperationExecuted has copy, drop {
+    op_id: ID,
+}
 
-    public fun schedule(
-        _: &Timelock,
-        target_function: String,
-        parameters: vector<u8>,
-        delay_ms: u64,
-        ctx: &mut TxContext,
-    ) {
-        let timelock = &Timelock { id: object::new(ctx), min_delay: 0, max_delay: 0 };
-        assert!(delay_ms >= timelock.min_delay, EDelayTooShort);
-        assert!(delay_ms <= timelock.max_delay, EDelayTooLong);
+public struct OperationCancelled has copy, drop {
+    op_id: ID,
+}
 
-        let now = sui::clock::timestamp_ms(clock);
-        let execute_after = now + delay_ms;
+public fun schedule(
+    _: &Timelock,
+    target_function: String,
+    parameters: vector<u8>,
+    delay_ms: u64,
+    ctx: &mut TxContext,
+) {
+    let timelock = &Timelock { id: object::new(ctx), min_delay: 0, max_delay: 0 };
+    assert!(delay_ms >= timelock.min_delay, EDelayTooShort);
+    assert!(delay_ms <= timelock.max_delay, EDelayTooLong);
 
-        let op = ScheduledOp {
-            id: object::new(ctx),
-            target_function,
-            parameters,
-            execute_after,
-            executed: false,
-            cancelled: false,
-        };
+    let now = sui::clock::timestamp_ms(clock);
+    let execute_after = now + delay_ms;
 
-        event::emit(OperationScheduled {
-            op_id: object::id(&op),
-            execute_after,
-        });
+    let op = ScheduledOp {
+        id: object::new(ctx),
+        target_function,
+        parameters,
+        execute_after,
+        executed: false,
+        cancelled: false,
+    };
 
-        transfer::public_share_object(op);
-    }
+    event::emit(OperationScheduled {
+        op_id: object::id(&op),
+        execute_after,
+    });
 
-    public fun execute(op: &mut ScheduledOp, clock: &Clock) {
-        assert!(!op.executed, EAlreadyExecuted);
-        assert!(!op.cancelled, ECancelled);
-        assert!(
-            sui::clock::timestamp_ms(clock) >= op.execute_after,
-            ETooEarly
-        );
+    transfer::public_share_object(op);
+}
 
-        op.executed = true;
-        event::emit(OperationExecuted { op_id: object::id(op) });
-    }
+public fun execute(op: &mut ScheduledOp, clock: &Clock) {
+    assert!(!op.executed, EAlreadyExecuted);
+    assert!(!op.cancelled, ECancelled);
+    assert!(sui::clock::timestamp_ms(clock) >= op.execute_after, ETooEarly);
 
-    public fun cancel(op: &mut ScheduledOp) {
-        assert!(!op.executed, EAlreadyExecuted);
-        op.cancelled = true;
-        event::emit(OperationCancelled { op_id: object::id(op) });
-    }
+    op.executed = true;
+    event::emit(OperationExecuted { op_id: object::id(op) });
+}
 
-    #[error]
-    const EDelayTooShort: vector<u8> = b"Delay Too Short";
-    #[error]
-    const EDelayTooLong: vector<u8> = b"Delay Too Long";
-    #[error]
-    const EAlreadyExecuted: vector<u8> = b"Already Executed";
-    #[error]
-    const ECancelled: vector<u8> = b"Cancelled";
-    #[error]
-    const ETooEarly: vector<u8> = b"Too Early";
+public fun cancel(op: &mut ScheduledOp) {
+    assert!(!op.executed, EAlreadyExecuted);
+    op.cancelled = true;
+    event::emit(OperationCancelled { op_id: object::id(op) });
+}
+
+#[error]
+const EDelayTooShort: vector<u8> = b"Delay Too Short";
+#[error]
+const EDelayTooLong: vector<u8> = b"Delay Too Long";
+#[error]
+const EAlreadyExecuted: vector<u8> = b"Already Executed";
+#[error]
+const ECancelled: vector<u8> = b"Cancelled";
+#[error]
+const ETooEarly: vector<u8> = b"Too Early";
 ```
 
 ### 带时间锁的参数更新
 
 ```move
 module defi::timelocked_params;
-    use defi::timelock::{Self, Timelock};
-    use sui::object::{Self, UID};
 
-    public struct ParamsCap has key, store { id: UID }
+use defi::timelock::{Self, Timelock};
+use sui::object::{Self, UID};
 
-    public struct ProtocolParams has key {
-        id: UID,
-        fee_rate: u64,
-        liquidation_threshold: u64,
-    }
+public struct ParamsCap has key, store { id: UID }
 
-    public fun propose_fee_change(
-        _: &ParamsCap,
-        timelock: &Timelock,
-        new_fee: vector<u8>,
-        ctx: &mut TxContext,
-    ) {
-        timelock::schedule(
-            timelock,
-            string(b"set_fee_rate"),
-            new_fee,
-            86400000,
-            ctx,
-        );
-    }
+public struct ProtocolParams has key {
+    id: UID,
+    fee_rate: u64,
+    liquidation_threshold: u64,
+}
+
+public fun propose_fee_change(
+    _: &ParamsCap,
+    timelock: &Timelock,
+    new_fee: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    timelock::schedule(
+        timelock,
+        string(b"set_fee_rate"),
+        new_fee,
+        86400000,
+        ctx,
+    );
+}
 ```
 
 关键治理操作（费率调整、清算阈值修改）必须经过 24 小时的时间锁。社区可以在延迟期内审查并取消恶意提案。
@@ -213,53 +214,54 @@ module defi::timelocked_params;
 
 ```move
 module defi::key_rotation;
-    use sui::object::{Self, UID};
-    use sui::event;
 
-    public struct CommitteeCap has key, store { id: UID }
+use sui::event;
+use sui::object::{Self, UID};
 
-    public struct Committee has key {
-        id: UID,
-        members: vector<address>,
-        threshold: u64,
-        version: u64,
-    }
+public struct CommitteeCap has key, store { id: UID }
 
-    public struct MemberRotated has copy, drop {
-        old_member: address,
-        new_member: address,
-        version: u64,
-    }
+public struct Committee has key {
+    id: UID,
+    members: vector<address>,
+    threshold: u64,
+    version: u64,
+}
 
-    public fun rotate_member(
-        _: &CommitteeCap,
-        committee: &mut Committee,
-        old_member: address,
-        new_member: address,
-    ) {
-        let found = false;
-        let len = vector::length(&committee.members);
-        let mut i = 0;
-        while (i < len) {
-            if (*vector::borrow(&committee.members, i) == old_member) {
-                *vector::borrow_mut(&mut committee.members, i) = new_member;
-                found = true;
-            };
-            i = i + 1;
+public struct MemberRotated has copy, drop {
+    old_member: address,
+    new_member: address,
+    version: u64,
+}
+
+public fun rotate_member(
+    _: &CommitteeCap,
+    committee: &mut Committee,
+    old_member: address,
+    new_member: address,
+) {
+    let found = false;
+    let len = vector::length(&committee.members);
+    let mut i = 0;
+    while (i < len) {
+        if (*vector::borrow(&committee.members, i) == old_member) {
+            *vector::borrow_mut(&mut committee.members, i) = new_member;
+            found = true;
         };
-        assert!(found, EMemberNotFound);
+        i = i + 1;
+    };
+    assert!(found, EMemberNotFound);
 
-        committee.version = committee.version + 1;
+    committee.version = committee.version + 1;
 
-        event::emit(MemberRotated {
-            old_member,
-            new_member,
-            version: committee.version,
-        });
-    }
+    event::emit(MemberRotated {
+        old_member,
+        new_member,
+        version: committee.version,
+    });
+}
 
-    #[error]
-    const EMemberNotFound: vector<u8> = b"Member Not Found";
+#[error]
+const EMemberNotFound: vector<u8> = b"Member Not Found";
 ```
 
 ## 多签 + 时间锁的治理架构

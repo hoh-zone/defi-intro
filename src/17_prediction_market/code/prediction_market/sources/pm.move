@@ -12,6 +12,7 @@ use sui::balance::{Self, Balance};
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
 use sui::event;
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -241,12 +242,7 @@ public fun split<T>(
 }
 
 /// Merge: 1 YES + 1 NO -> 1 collateral.
-public fun merge<T>(
-    market: &mut Market<T>,
-    pos: &mut Position,
-    amount: u64,
-    ctx: &mut TxContext,
-) {
+public fun merge<T>(market: &mut Market<T>, pos: &mut Position, amount: u64, ctx: &mut TxContext) {
     assert!(object::id(market) == pos.market_id);
     assert!(amount > 0);
     assert!(pos.yes >= amount && pos.no >= amount);
@@ -374,11 +370,7 @@ fun sell_internal<T>(
 }
 
 /// Propose off-chain verified result (simplified oracle). In production, replace with committee / UMA-style escalation.
-public fun submit_result<T>(
-    market: &mut Market<T>,
-    outcome: u8,
-    clock: &Clock,
-) {
+public fun submit_result<T>(market: &mut Market<T>, outcome: u8, clock: &Clock) {
     assert!(market.resolved == STATUS_TRADING);
     assert!(outcome == OUTCOME_YES || outcome == OUTCOME_NO);
     market.proposed_outcome = outcome;
@@ -386,7 +378,12 @@ public fun submit_result<T>(
 }
 
 /// Challenge with stake; extends resolution (minimal stub — production needs bond accounting).
-public fun challenge_result<T>(market: &mut Market<T>, stake: Coin<T>, clock: &Clock, ctx: &TxContext) {
+public fun challenge_result<T>(
+    market: &mut Market<T>,
+    stake: Coin<T>,
+    clock: &Clock,
+    ctx: &TxContext,
+) {
     assert!(market.resolved == STATUS_TRADING);
     assert!(market.proposed_outcome != OUTCOME_NONE);
     assert!(clock.timestamp_ms() <= market.proposal_time_ms + market.challenge_window_ms);
@@ -435,10 +432,15 @@ public fun claim<T>(market: &mut Market<T>, pos: &mut Position, ctx: &mut TxCont
 // ---------------------------------------------------------------------------
 
 public fun q_yes<T>(m: &Market<T>): u64 { m.q_yes }
+
 public fun q_no<T>(m: &Market<T>): u64 { m.q_no }
+
 public fun b<T>(m: &Market<T>): u64 { m.b }
+
 public fun vault_amount<T>(m: &Market<T>): u64 { balance::value(&m.vault) }
+
 public fun position_yes(p: &Position): u64 { p.yes }
+
 public fun position_no(p: &Position): u64 { p.no }
 
 #[test_only]

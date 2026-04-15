@@ -4,14 +4,14 @@ Sui 生态已经有多种类型的 DEX，每种选择了不同的技术路线。
 
 ## Sui 主要 DEX 一览
 
-| DEX | 类型 | 特点 | 交易量级别 |
-|-----|------|------|-----------|
-| Cetus | CLMM | Sui 最大的 CLMM DEX，集中流动性 | 最高 |
-| Turbos Finance | CLMM | 高性能集中流动性，多链部署 | 高 |
-| FlowX Finance | Hybrid | AMM + Orderbook 混合模式 | 中高 |
-| Kriya | AMM + Perps | AMM 交易 + 永续合约 | 中 |
-| DeepBook | Orderbook | Sui 原生限价单订单簿 | 高 |
-| Aftermath Finance | CLMM | 集中流动性 + 自动复投 | 中 |
+| DEX               | 类型        | 特点                            | 交易量级别 |
+| ----------------- | ----------- | ------------------------------- | ---------- |
+| Cetus             | CLMM        | Sui 最大的 CLMM DEX，集中流动性 | 最高       |
+| Turbos Finance    | CLMM        | 高性能集中流动性，多链部署      | 高         |
+| FlowX Finance     | Hybrid      | AMM + Orderbook 混合模式        | 中高       |
+| Kriya             | AMM + Perps | AMM 交易 + 永续合约             | 中         |
+| DeepBook          | Orderbook   | Sui 原生限价单订单簿            | 高         |
+| Aftermath Finance | CLMM        | 集中流动性 + 自动复投           | 中         |
 
 ## Cetus：CLMM 标杆
 
@@ -26,6 +26,7 @@ Cetus 的核心特点：
 ```
 
 为什么 Cetus 选择 CLMM 而不是传统 AMM：
+
 - 资本效率：同样 1000 美元，CLMM 可以在目标价格区间提供更深流动性
 - LP 灵活性：LP 可以选择自己愿意做市的价格范围
 - 更低滑点：在集中的价格区间内，交易者的滑点更小
@@ -117,14 +118,14 @@ Sui 对 Orderbook 的优势：
 
 不同场景应该选择不同类型的 DEX：
 
-| 用户需求 | 推荐 DEX 类型 | Sui 上的选择 |
-|---------|-------------|-------------|
-| 快速小额 Swap | AMM / CLMM | Cetus、Turbos |
-| 大额交易，需要精确价格 | Orderbook | DeepBook |
-| 稳定币互换 | StableSwap | Cetus 稳定币池 |
-| 提供流动性赚手续费 | CLMM | Cetus、Turbos |
-| 专业做市 | Orderbook | DeepBook |
-| 长尾资产交易 | CLMM（宽区间）| Cetus |
-| 杠杆交易 | AMM + Perps | Kriya |
+| 用户需求               | 推荐 DEX 类型  | Sui 上的选择   |
+| ---------------------- | -------------- | -------------- |
+| 快速小额 Swap          | AMM / CLMM     | Cetus、Turbos  |
+| 大额交易，需要精确价格 | Orderbook      | DeepBook       |
+| 稳定币互换             | StableSwap     | Cetus 稳定币池 |
+| 提供流动性赚手续费     | CLMM           | Cetus、Turbos  |
+| 专业做市               | Orderbook      | DeepBook       |
+| 长尾资产交易           | CLMM（宽区间） | Cetus          |
+| 杠杆交易               | AMM + Perps    | Kriya          |
 
 > 详细的架构选择框架见 4.30 节。

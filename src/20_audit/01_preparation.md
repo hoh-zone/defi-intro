@@ -43,11 +43,11 @@
 
 所有可配置参数的当前值、合理范围、修改权限。
 
-| 参数 | 当前值 | 范围 | 修改权限 |
-|------|--------|------|----------|
-| collateral_ratio_bps | 15000 | 12000-20000 | AdminCap + Timelock |
-| liquidation_threshold_bps | 13000 | 11000-18000 | AdminCap + Timelock |
-| fee_bps | 30 | 0-100 | AdminCap |
+| 参数                      | 当前值 | 范围        | 修改权限            |
+| ------------------------- | ------ | ----------- | ------------------- |
+| collateral_ratio_bps      | 15000  | 12000-20000 | AdminCap + Timelock |
+| liquidation_threshold_bps | 13000  | 11000-18000 | AdminCap + Timelock |
+| fee_bps                   | 30     | 0-100       | AdminCap            |
 
 ### 6. 事件和错误码文档
 

@@ -49,6 +49,7 @@ public fun current_price(auction: &DutchAuctionRound, clock: &Clock): u64 {
 ```
 
 关键点：
+
 - 使用 `Clock` 共享对象获取链上时间，而非 `tx_context`
 - 整数运算先乘后除，避免精度损失
 - `elapsed >= duration` 时锁定在地板价
@@ -135,9 +136,9 @@ CREATED → ACTIVE → SETTLED
 CANCELLED  CANCELLED
 ```
 
-| 状态 | 可调用 |
-|------|--------|
-| CREATED | start_auction, cancel |
-| ACTIVE | buy, current_price, end_auction, cancel |
-| SETTLED | claim, withdraw_payments |
-| CANCELLED | refund |
+| 状态      | 可调用                                  |
+| --------- | --------------------------------------- |
+| CREATED   | start_auction, cancel                   |
+| ACTIVE    | buy, current_price, end_auction, cancel |
+| SETTLED   | claim, withdraw_payments                |
+| CANCELLED | refund                                  |

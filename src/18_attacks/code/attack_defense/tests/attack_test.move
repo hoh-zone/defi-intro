@@ -1,7 +1,8 @@
 #[test_only]
 module attack_defense::attack_test;
-use attack_defense::unsafe_oracle;
+
 use attack_defense::safe_oracle;
+use attack_defense::unsafe_oracle;
 use sui::coin;
 use sui::tx_context;
 
@@ -47,7 +48,13 @@ fun safe_twap_resists_manipulation() {
 
     // Simulate: swap at time 1001 changes spot price
     let swapped = safe_oracle::swap_safe<COIN_A, COIN_B>(
-        &mut pool, mint_a(500_000, &mut ctx), 0, 1000, 5000, 1001, &mut ctx,
+        &mut pool,
+        mint_a(500_000, &mut ctx),
+        0,
+        1000,
+        5000,
+        1001,
+        &mut ctx,
     );
     coin::burn_for_testing(swapped);
 

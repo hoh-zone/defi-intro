@@ -12,12 +12,12 @@
 
 ## 中心化与审查维度
 
-| 风险 | 说明 |
-|------|------|
-| 储备透明度 | 是否定期披露、是否由第三方审计 |
-| 对手方风险 | 发行方违约、挪用储备 |
-| 审查与冻结 | 合规地址可能被限制转账（与「公链无许可」叙事存在张力） |
-| 银行体系风险 | 储备存放银行的信用风险 |
+| 风险         | 说明                                                   |
+| ------------ | ------------------------------------------------------ |
+| 储备透明度   | 是否定期披露、是否由第三方审计                         |
+| 对手方风险   | 发行方违约、挪用储备                                   |
+| 审查与冻结   | 合规地址可能被限制转账（与「公链无许可」叙事存在张力） |
+| 银行体系风险 | 储备存放银行的信用风险                                 |
 
 这些风险**无法**仅靠 Move 代码消除，只能通过治理、监管与披露缓释。
 
@@ -33,26 +33,27 @@
 
 ```move
 module fiat_stablecoin_sketch::fiat;
-    // ...
-    public struct FiatTreasury has key {
-        id: UID,
-        cap: TreasuryCap<FIAT>,
-    }
 
-    public fun issuer_mint(
-        _: &IssuerCap,
-        treasury: &mut FiatTreasury,
-        to: address,
-        amount: u64,
-        ctx: &mut TxContext,
-    ) {
-        let c = coin::mint(&mut treasury.cap, amount, ctx);
-        transfer::public_transfer(c, to);
-    }
+// ...
+public struct FiatTreasury has key {
+    id: UID,
+    cap: TreasuryCap<FIAT>,
+}
 
-    public fun issuer_burn(_: &IssuerCap, treasury: &mut FiatTreasury, c: Coin<FIAT>) {
-        coin::burn(&mut treasury.cap, c);
-    }
+public fun issuer_mint(
+    _: &IssuerCap,
+    treasury: &mut FiatTreasury,
+    to: address,
+    amount: u64,
+    ctx: &mut TxContext,
+) {
+    let c = coin::mint(&mut treasury.cap, amount, ctx);
+    transfer::public_transfer(c, to);
+}
+
+public fun issuer_burn(_: &IssuerCap, treasury: &mut FiatTreasury, c: Coin<FIAT>) {
+    coin::burn(&mut treasury.cap, c);
+}
 ```
 
 ### 这段代码在教什么

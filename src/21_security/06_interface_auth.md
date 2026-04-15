@@ -4,51 +4,38 @@
 
 Move 的函数可见性决定了谁能调用：
 
-| 可见性 | 调用者 | DeFi 场景 |
-|--------|--------|-----------|
-| `public` | 任何模块 | 用户入口（deposit, swap） |
-| `public(package)` | 同一包内的模块 | 内部跨模块调用 |
-| `public(friend)` | 友元模块 | 受信任的集成方 |
-| 私有（无修饰符） | 同一模块 | 内部辅助函数 |
-| `entry` | 只有 PTB 顶层 | 用户直接调用 |
+| 可见性            | 调用者         | DeFi 场景                 |
+| ----------------- | -------------- | ------------------------- |
+| `public`          | 任何模块       | 用户入口（deposit, swap） |
+| `public(package)` | 同一包内的模块 | 内部跨模块调用            |
+| `public(friend)`  | 友元模块       | 受信任的集成方            |
+| 私有（无修饰符）  | 同一模块       | 内部辅助函数              |
+| `entry`           | 只有 PTB 顶层  | 用户直接调用              |
 
 ```move
 module defi::visibility;
-    use sui::object::{Self, UID};
 
-    public struct AdminCap has key, store { id: UID }
-    public struct Protocol has key { id: UID, paused: bool }
+use sui::object::{Self, UID};
 
-    entry fun user_deposit(
-        protocol: &mut Protocol,
-        amount: u64,
-        ctx: &mut TxContext,
-    ) {
-        assert!(!protocol.paused, EPaused);
-    }
+public struct AdminCap has key, store { id: UID }
+public struct Protocol has key { id: UID, paused: bool }
 
-    public fun deposit_internal(
-        protocol: &mut Protocol,
-        amount: u64,
-        ctx: &mut TxContext,
-    ) {
-        assert!(!protocol.paused, EPaused);
-    }
+entry fun user_deposit(protocol: &mut Protocol, amount: u64, ctx: &mut TxContext) {
+    assert!(!protocol.paused, EPaused);
+}
 
-    public(package) fun _update_state(
-        protocol: &mut Protocol,
-    ) {
-    }
+public fun deposit_internal(protocol: &mut Protocol, amount: u64, ctx: &mut TxContext) {
+    assert!(!protocol.paused, EPaused);
+}
 
-    public fun admin_pause(
-        _: &AdminCap,
-        protocol: &mut Protocol,
-    ) {
-        protocol.paused = true;
-    }
+public(package) fun _update_state(protocol: &mut Protocol) {}
 
-    #[error]
-    const EPaused: vector<u8> = b"Paused";
+public fun admin_pause(_: &AdminCap, protocol: &mut Protocol) {
+    protocol.paused = true;
+}
+
+#[error]
+const EPaused: vector<u8> = b"Paused";
 ```
 
 ### 可见性选择决策树
@@ -71,32 +58,26 @@ module defi::visibility;
 
 ```move
 module defi::sender_auth;
-    use sui::object::{Self, UID};
-    use sui::tx_context;
 
-    public struct UserVault has key {
-        id: UID,
-        owner: address,
-        balance: u64,
-    }
+use sui::object::{Self, UID};
+use sui::tx_context;
 
-    public fun withdraw(
-        vault: &mut UserVault,
-        amount: u64,
-        ctx: &mut TxContext,
-    ) {
-        assert!(
-            vault.owner == ctx.sender(),
-            ENotOwner,
-        );
-        assert!(vault.balance >= amount, EInsufficient);
-        vault.balance = vault.balance - amount;
-    }
+public struct UserVault has key {
+    id: UID,
+    owner: address,
+    balance: u64,
+}
 
-    #[error]
-    const ENotOwner: vector<u8> = b"Not Owner";
-    #[error]
-    const EInsufficient: vector<u8> = b"Insufficient";
+public fun withdraw(vault: &mut UserVault, amount: u64, ctx: &mut TxContext) {
+    assert!(vault.owner == ctx.sender(), ENotOwner);
+    assert!(vault.balance >= amount, EInsufficient);
+    vault.balance = vault.balance - amount;
+}
+
+#[error]
+const ENotOwner: vector<u8> = b"Not Owner";
+#[error]
+const EInsufficient: vector<u8> = b"Insufficient";
 ```
 
 但在 Sui 中，owned 对象只有所有者能发起修改交易，所以对于 owned 对象，`sender` 检查是冗余的。`sender` 鉴权主要用于 **shared 对象**。
@@ -107,40 +88,37 @@ module defi::sender_auth;
 
 ```move
 module defi::object_id_auth;
-    use sui::object::{Self, ID, UID};
-    use sui::transfer;
-    use sui::tx_context::TxContext;
 
-    public struct RoleTicket has key, store {
-        id: UID,
-        role: u8,
-    }
+use sui::object::{Self, ID, UID};
+use sui::transfer;
+use sui::tx_context::TxContext;
 
-    public struct Marketplace has key {
-        id: UID,
-        authorized_tickets: vector<ID>,
-    }
+public struct RoleTicket has key, store {
+    id: UID,
+    role: u8,
+}
 
-    public fun list_item(
-        marketplace: &mut Marketplace,
-        ticket: &RoleTicket,
-        item_id: ID,
-    ) {
-        let ticket_id = object::id(ticket);
-        let mut authorized = false;
-        let len = vector::length(&marketplace.authorized_tickets);
-        let mut i = 0;
-        while (i < len) {
-            if (*vector::borrow(&marketplace.authorized_tickets, i) == ticket_id) {
-                authorized = true;
-            };
-            i = i + 1;
+public struct Marketplace has key {
+    id: UID,
+    authorized_tickets: vector<ID>,
+}
+
+public fun list_item(marketplace: &mut Marketplace, ticket: &RoleTicket, item_id: ID) {
+    let ticket_id = object::id(ticket);
+    let mut authorized = false;
+    let len = vector::length(&marketplace.authorized_tickets);
+    let mut i = 0;
+    while (i < len) {
+        if (*vector::borrow(&marketplace.authorized_tickets, i) == ticket_id) {
+            authorized = true;
         };
-        assert!(authorized, EUnauthorized);
-    }
+        i = i + 1;
+    };
+    assert!(authorized, EUnauthorized);
+}
 
-    #[error]
-    const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
 ```
 
 ## Capability 鉴权（最佳实践）
@@ -165,23 +143,21 @@ public fun dangerous_proxy(
 
 ```move
 module defi::expiring_cap;
-    use sui::object::{Self, UID};
-    use sui::clock::Clock;
 
-    public struct SessionCap has key {
-        id: UID,
-        expires_at: u64,
-    }
+use sui::clock::Clock;
+use sui::object::{Self, UID};
 
-    public fun require_valid(cap: &SessionCap, clock: &Clock) {
-        assert!(
-            sui::clock::timestamp_ms(clock) < cap.expires_at,
-            EExpired,
-        );
-    }
+public struct SessionCap has key {
+    id: UID,
+    expires_at: u64,
+}
 
-    #[error]
-    const EExpired: vector<u8> = b"Expired";
+public fun require_valid(cap: &SessionCap, clock: &Clock) {
+    assert!(sui::clock::timestamp_ms(clock) < cap.expires_at, EExpired);
+}
+
+#[error]
+const EExpired: vector<u8> = b"Expired";
 ```
 
 ## 拒绝服务防护
@@ -270,15 +246,15 @@ public fun process_batch(
 
 ## 接口安全清单
 
-| 检查项 | 说明 |
-|--------|------|
-| 共享对象的入口函数都有鉴权？ | 检查 sender、Capability 或对象 ID |
-| entry fun 不暴露内部操作？ | 管理操作不用 `entry` |
-| 参数范围检查完整？ | amount > 0, amount < MAX, deadline > now |
-| 无无限循环？ | 循环次数有上限 |
-| 向量操作有上限？ | 遍历和处理都有最大数量 |
-| 事件数量有限制？ | 单次交易不会发出过多事件 |
-| 错误码有意义？ | 不是全部 `assert!(false, 0)` |
+| 检查项                       | 说明                                     |
+| ---------------------------- | ---------------------------------------- |
+| 共享对象的入口函数都有鉴权？ | 检查 sender、Capability 或对象 ID        |
+| entry fun 不暴露内部操作？   | 管理操作不用 `entry`                     |
+| 参数范围检查完整？           | amount > 0, amount < MAX, deadline > now |
+| 无无限循环？                 | 循环次数有上限                           |
+| 向量操作有上限？             | 遍历和处理都有最大数量                   |
+| 事件数量有限制？             | 单次交易不会发出过多事件                 |
+| 错误码有意义？               | 不是全部 `assert!(false, 0)`             |
 
 ## 小结
 

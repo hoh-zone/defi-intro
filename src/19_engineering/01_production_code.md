@@ -33,25 +33,26 @@ sources/
 
 ```move
 module protocol::admin;
-    use sui::object::{Self, UID};
 
-    public struct AdminCap has key, store {
-        id: UID,
-        roles: u64,
-    }
+use sui::object::{Self, UID};
 
-    const ROLE_PAUSE: u64 = 1;
-    const ROLE_PARAMS: u64 = 2;
-    const ROLE_ORACLE: u64 = 4;
-    const ROLE_EMERGENCY: u64 = 8;
+public struct AdminCap has key, store {
+    id: UID,
+    roles: u64,
+}
 
-    public fun has_role(cap: &AdminCap, role: u64): bool {
-        (cap.roles & role) == role
-    }
+const ROLE_PAUSE: u64 = 1;
+const ROLE_PARAMS: u64 = 2;
+const ROLE_ORACLE: u64 = 4;
+const ROLE_EMERGENCY: u64 = 8;
 
-    public fun require_role(cap: &AdminCap, role: u64) {
-        assert!(has_role(cap, role), 0);
-    }
+public fun has_role(cap: &AdminCap, role: u64): bool {
+    (cap.roles & role) == role
+}
+
+public fun require_role(cap: &AdminCap, role: u64) {
+    assert!(has_role(cap, role), 0);
+}
 ```
 
 通过位掩码实现角色分离：暂停、参数修改、预言机管理、紧急操作各自独立授权。
@@ -60,56 +61,58 @@ module protocol::admin;
 
 ```move
 module protocol::events;
-    public struct DepositEvent has copy, drop {
-        pool_id: ID,
-        user: address,
-        amount: u64,
-        shares_minted: u64,
-        timestamp: u64,
-    }
 
-    public struct BorrowEvent has copy, drop {
-        pool_id: ID,
-        user: address,
-        amount: u64,
-        health_factor_after: u64,
-        timestamp: u64,
-    }
+public struct DepositEvent has copy, drop {
+    pool_id: ID,
+    user: address,
+    amount: u64,
+    shares_minted: u64,
+    timestamp: u64,
+}
 
-    public struct LiquidationEvent has copy, drop {
-        pool_id: ID,
-        borrower: address,
-        liquidator: address,
-        debt_repaid: u64,
-        collateral_seized: u64,
-        timestamp: u64,
-    }
+public struct BorrowEvent has copy, drop {
+    pool_id: ID,
+    user: address,
+    amount: u64,
+    health_factor_after: u64,
+    timestamp: u64,
+}
+
+public struct LiquidationEvent has copy, drop {
+    pool_id: ID,
+    borrower: address,
+    liquidator: address,
+    debt_repaid: u64,
+    collateral_seized: u64,
+    timestamp: u64,
+}
 ```
 
 ## 标准化的错误码
 
 ```move
 module protocol::errors;
-    #[error]
-    const EInvalidAmount: vector<u8> = b"Invalid Amount";
-    #[error]
-    const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
-    #[error]
-    const EHealthFactorTooLow: vector<u8> = b"Health Factor Too Low";
-    #[error]
-    const EPoolPaused: vector<u8> = b"Pool Paused";
-    #[error]
-    const EUnauthorized: vector<u8> = b"Unauthorized";
-    #[error]
-    const EPriceStale: vector<u8> = b"Price Stale";
-    #[error]
-    const EPriceDeviation: vector<u8> = b"Price Deviation";
-    #[error]
-    const EPositionNotFound: vector<u8> = b"Position Not Found";
-    #[error]
-    const EDuplicatePosition: vector<u8> = b"Duplicate Position";
-    #[error]
-    const EExceedsLimit: vector<u8> = b"Exceeds Limit";
+
+#[error]
+const EInvalidAmount: vector<u8> = b"Invalid Amount";
+#[error]
+const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
+#[error]
+const EHealthFactorTooLow: vector<u8> = b"Health Factor Too Low";
+#[error]
+const EPoolPaused: vector<u8> = b"Pool Paused";
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EPriceStale: vector<u8> = b"Price Stale";
+#[error]
+const EPriceDeviation: vector<u8> = b"Price Deviation";
+#[error]
+const EPositionNotFound: vector<u8> = b"Position Not Found";
+#[error]
+const EDuplicatePosition: vector<u8> = b"Duplicate Position";
+#[error]
+const EExceedsLimit: vector<u8> = b"Exceeds Limit";
 ```
 
 ## 推荐的重构顺序

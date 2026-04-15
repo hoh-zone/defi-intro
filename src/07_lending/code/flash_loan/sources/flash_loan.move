@@ -8,8 +8,9 @@
 /// ends with an unconsumed receipt, the entire transaction aborts and all changes
 /// roll back atomically.
 module flash_loan::flash_loan;
-use sui::coin::{Self, Coin, TreasuryCap};
+
 use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin, TreasuryCap};
 use sui::object::{Self, ID};
 
 // ===== Error Constants =====
@@ -66,11 +67,7 @@ public struct FlashLoanReceipt<phantom T> has store {
 
 /// Create a new flash loan pool for coin type `T`.
 /// Only callable by the holder of the `TreasuryCap<T>`.
-public fun new_pool<T>(
-    treasury_cap: &TreasuryCap<T>,
-    fee_bps: u64,
-    ctx: &mut TxContext,
-) {
+public fun new_pool<T>(treasury_cap: &TreasuryCap<T>, fee_bps: u64, ctx: &mut TxContext) {
     assert!(fee_bps <= MAX_FEE_BPS, EFeeBpsTooHigh);
 
     let pool_uid = object::new(ctx);
@@ -162,10 +159,7 @@ public fun repay<T>(
 
 /// Anyone can deposit coins into the pool to provide liquidity.
 /// In a production system, this would mint LP tokens or track shares.
-public fun deposit<T>(
-    pool: &mut FlashPool<T>,
-    coin: Coin<T>,
-) {
+public fun deposit<T>(pool: &mut FlashPool<T>, coin: Coin<T>) {
     balance::join(&mut pool.balance, coin::into_balance(coin));
 }
 
@@ -199,11 +193,7 @@ public fun withdraw_fees<T>(
 // ===== Admin Functions =====
 
 /// Update the fee rate (in basis points).
-public fun set_fee_bps<T>(
-    cap: &AdminCap<T>,
-    pool: &mut FlashPool<T>,
-    new_fee_bps: u64,
-) {
+public fun set_fee_bps<T>(cap: &AdminCap<T>, pool: &mut FlashPool<T>, new_fee_bps: u64) {
     assert!(object::id(pool) == cap.pool_id, EWrongPool);
     assert!(new_fee_bps <= MAX_FEE_BPS, EFeeBpsTooHigh);
     pool.fee_bps = new_fee_bps;

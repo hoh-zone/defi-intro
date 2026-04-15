@@ -31,125 +31,116 @@ TWAP 计算：
 
 ```move
 module oracle::twap;
-    use sui::object::{Self, UID};
-    use sui::clock::Clock;
-    use sui::coin::{Self, Coin};
-    use sui::balance::Balance;
-    use sui::tx_context::TxContext;
-    use sui::event;
 
-    #[error]
-    const EZeroTime: vector<u8> = b"Zero Time";
-    #[error]
-    const EInsufficientHistory: vector<u8> = b"Insufficient History";
+use sui::balance::Balance;
+use sui::clock::Clock;
+use sui::coin::{Self, Coin};
+use sui::event;
+use sui::object::{Self, UID};
+use sui::tx_context::TxContext;
 
-    public struct TwapPool has key {
-        id: UID,
-        coin_a_balance: Balance<A>,
-        coin_b_balance: Balance<B>,
-        cumulative_price_a_in_b: u128,
-        cumulative_price_b_in_a: u128,
-        last_update_ms: u64,
-        last_price_a_in_b: u64,
-        observations: vector<Observation>,
-        max_observations: u64,
-    }
+#[error]
+const EZeroTime: vector<u8> = b"Zero Time";
+#[error]
+const EInsufficientHistory: vector<u8> = b"Insufficient History";
 
-    public struct Observation has store {
-        timestamp_ms: u64,
-        cumulative_price: u128,
-    }
+public struct TwapPool has key {
+    id: UID,
+    coin_a_balance: Balance<A>,
+    coin_b_balance: Balance<B>,
+    cumulative_price_a_in_b: u128,
+    cumulative_price_b_in_a: u128,
+    last_update_ms: u64,
+    last_price_a_in_b: u64,
+    observations: vector<Observation>,
+    max_observations: u64,
+}
 
-    public struct TwapResult has store {
-        twap_price: u64,
-        start_time_ms: u64,
-        end_time_ms: u64,
-        observations_used: u64,
-    }
+public struct Observation has store {
+    timestamp_ms: u64,
+    cumulative_price: u128,
+}
 
-    public fun create<A, B>(
-        coin_a: Coin<A>,
-        coin_b: Coin<B>,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ) {
-        let amount_a = coin::value(&coin_a);
-        let amount_b = coin::value(&coin_b);
-        assert!(amount_a > 0 && amount_b > 0, 0);
-        let initial_price = amount_b * 1_000_000_000 / amount_a;
-        let pool = TwapPool<A, B> {
-            id: object::new(ctx),
-            coin_a_balance: coin::into_balance(coin_a),
-            coin_b_balance: coin::into_balance(coin_b),
-            cumulative_price_a_in_b: 0,
-            cumulative_price_b_in_a: 0,
-            last_update_ms: clock.timestamp_ms(),
-            last_price_a_in_b: initial_price,
-            observations: vector::empty(),
-            max_observations: 100,
-        };
-        transfer::share_object(pool);
-    }
+public struct TwapResult has store {
+    twap_price: u64,
+    start_time_ms: u64,
+    end_time_ms: u64,
+    observations_used: u64,
+}
 
-    public fun update<A, B>(
-        pool: &mut TwapPool<A, B>,
-        clock: &Clock,
-    ) {
-        let now = clock.timestamp_ms();
-        if (now <= pool.last_update_ms) { return };
-        let elapsed = (now - pool.last_update_ms) as u128;
-        let balance_a = balance::value(&pool.coin_a_balance);
-        let balance_b = balance::value(&pool.coin_b_balance);
-        if (balance_a == 0) { return };
-        let spot_price = (balance_b as u128) * 1_000_000_000 / (balance_a as u128);
-        pool.cumulative_price_a_in_b = pool.cumulative_price_a_in_b + spot_price * elapsed;
-        pool.last_price_a_in_b = (spot_price as u64);
-        pool.last_update_ms = now;
-        if (pool.observations.length() >= pool.max_observations) {
-            pool.observations.remove(0);
-        };
-        pool.observations.push_back(Observation {
+public fun create<A, B>(coin_a: Coin<A>, coin_b: Coin<B>, clock: &Clock, ctx: &mut TxContext) {
+    let amount_a = coin::value(&coin_a);
+    let amount_b = coin::value(&coin_b);
+    assert!(amount_a > 0 && amount_b > 0, 0);
+    let initial_price = amount_b * 1_000_000_000 / amount_a;
+    let pool = TwapPool<A, B> {
+        id: object::new(ctx),
+        coin_a_balance: coin::into_balance(coin_a),
+        coin_b_balance: coin::into_balance(coin_b),
+        cumulative_price_a_in_b: 0,
+        cumulative_price_b_in_a: 0,
+        last_update_ms: clock.timestamp_ms(),
+        last_price_a_in_b: initial_price,
+        observations: vector::empty(),
+        max_observations: 100,
+    };
+    transfer::share_object(pool);
+}
+
+public fun update<A, B>(pool: &mut TwapPool<A, B>, clock: &Clock) {
+    let now = clock.timestamp_ms();
+    if (now <= pool.last_update_ms) { return };
+    let elapsed = (now - pool.last_update_ms) as u128;
+    let balance_a = balance::value(&pool.coin_a_balance);
+    let balance_b = balance::value(&pool.coin_b_balance);
+    if (balance_a == 0) { return };
+    let spot_price = (balance_b as u128) * 1_000_000_000 / (balance_a as u128);
+    pool.cumulative_price_a_in_b = pool.cumulative_price_a_in_b + spot_price * elapsed;
+    pool.last_price_a_in_b = (spot_price as u64);
+    pool.last_update_ms = now;
+    if (pool.observations.length() >= pool.max_observations) {
+        pool.observations.remove(0);
+    };
+    pool
+        .observations
+        .push_back(Observation {
             timestamp_ms: now,
             cumulative_price: pool.cumulative_price_a_in_b,
         });
-    }
+}
 
-    public fun get_twap<A, B>(
-        pool: &TwapPool<A, B>,
-        window_ms: u64,
-        clock: &Clock,
-    ): TwapResult {
-        let now = clock.timestamp_ms();
-        let start_time = now - window_ms;
-        assert!(pool.observations.length() >= 2, EInsufficientHistory);
-        let mut start_cumulative = 0u128;
-        let mut end_cumulative = 0u128;
-        let mut found = false;
-        let mut i = 0;
-        while (i < pool.observations.length()) {
-            let obs = pool.observations.borrow(i);
-            if (obs.timestamp_ms >= start_time && !found) {
-                start_cumulative = obs.cumulative_price;
-                found = true;
-            };
-            end_cumulative = obs.cumulative_price;
-            i = i + 1;
+public fun get_twap<A, B>(pool: &TwapPool<A, B>, window_ms: u64, clock: &Clock): TwapResult {
+    let now = clock.timestamp_ms();
+    let start_time = now - window_ms;
+    assert!(pool.observations.length() >= 2, EInsufficientHistory);
+    let mut start_cumulative = 0u128;
+    let mut end_cumulative = 0u128;
+    let mut found = false;
+    let mut i = 0;
+    while (i < pool.observations.length()) {
+        let obs = pool.observations.borrow(i);
+        if (obs.timestamp_ms >= start_time && !found) {
+            start_cumulative = obs.cumulative_price;
+            found = true;
         };
-        assert!(found, EInsufficientHistory);
-        let time_elapsed = (now - start_time) as u128;
-        assert!(time_elapsed > 0, EZeroTime);
-        let twap = ((end_cumulative - start_cumulative) / time_elapsed) as u64;
-        TwapResult {
-            twap_price: twap,
-            start_time_ms: start_time,
-            end_time_ms: now,
-            observations_used: pool.observations.length(),
-        }
+        end_cumulative = obs.cumulative_price;
+        i = i + 1;
+    };
+    assert!(found, EInsufficientHistory);
+    let time_elapsed = (now - start_time) as u128;
+    assert!(time_elapsed > 0, EZeroTime);
+    let twap = ((end_cumulative - start_cumulative) / time_elapsed) as u64;
+    TwapResult {
+        twap_price: twap,
+        start_time_ms: start_time,
+        end_time_ms: now,
+        observations_used: pool.observations.length(),
     }
+}
 
-    public fun twap_price(result: &TwapResult): u64 {
-        result.twap_price
-    }
+public fun twap_price(result: &TwapResult): u64 {
+    result.twap_price
+}
 ```
 
 ## TWAP 作为预言机补充
@@ -197,9 +188,9 @@ module oracle::twap;
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 低流动性池 | TWAP 在低流动性池中容易操纵 |
-| 数据延迟 | TWAP 反映的是过去一段时间的平均价格，不是实时价格 |
-| 观测点不足 | 如果 update 调用不频繁，TWAP 精度低 |
-| 仅限 AMM | TWAP 只能从 AMM 池计算，无法用于订单簿 DEX |
+| 风险       | 描述                                              |
+| ---------- | ------------------------------------------------- |
+| 低流动性池 | TWAP 在低流动性池中容易操纵                       |
+| 数据延迟   | TWAP 反映的是过去一段时间的平均价格，不是实时价格 |
+| 观测点不足 | 如果 update 调用不频繁，TWAP 精度低               |
+| 仅限 AMM   | TWAP 只能从 AMM 池计算，无法用于订单簿 DEX        |

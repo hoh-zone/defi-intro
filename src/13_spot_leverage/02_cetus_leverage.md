@@ -98,7 +98,7 @@ async function openCetusLeverageLong(params: {
             leverage,
             i,
             params.collateralType,
-            params.targetAsset
+            params.targetAsset,
         );
 
         const borrowCoin = tx.moveCall({
@@ -113,20 +113,13 @@ async function openCetusLeverageLong(params: {
 
         const [swapOutput] = tx.moveCall({
             target: `${CETUS_ROUTER}::swap::swap_exact_input`,
-            arguments: [
-                tx.object(POOL_ID),
-                borrowCoin,
-                tx.pure.u64(0),
-            ],
+            arguments: [tx.object(POOL_ID), borrowCoin, tx.pure.u64(0)],
             typeArguments: [params.targetAsset, params.collateralType],
         });
 
         const newDeposit = tx.moveCall({
             target: `${CETUS_LENDING}::market::supply`,
-            arguments: [
-                tx.object(MARKET_ID),
-                swapOutput,
-            ],
+            arguments: [tx.object(MARKET_ID), swapOutput],
             typeArguments: [params.targetAsset],
         });
 
@@ -200,19 +193,19 @@ module cetus_leverage;
 
 ## Cetus 杠杆的风险参数
 
-| 参数 | 典型值 | 说明 |
-|------|--------|------|
-| 最大杠杆 | 3x | 单一资产的最高杠杆倍数 |
-| LTV（贷款价值比） | 75% | 最大可借金额 = 抵押品 × LTV |
-| 清算阈值 | 80% | 抵押率低于此值触发清算 |
-| 清算罚金 | 5-8% | 清算时从抵押品中扣除的罚金 |
+| 参数              | 典型值 | 说明                        |
+| ----------------- | ------ | --------------------------- |
+| 最大杠杆          | 3x     | 单一资产的最高杠杆倍数      |
+| LTV（贷款价值比） | 75%    | 最大可借金额 = 抵押品 × LTV |
+| 清算阈值          | 80%    | 抵押率低于此值触发清算      |
+| 清算罚金          | 5-8%   | 清算时从抵押品中扣除的罚金  |
 
 ## 与传统杠杆的区别
 
-| 维度 | CeFi 杠杆 | Cetus 链上杠杆 |
-|------|-----------|---------------|
-| 资金来源 | 交易所自有资金 | 其他用户的存款 |
-| 清算方式 | 中心化引擎 | 链上智能合约 |
-| 透明度 | 不透明 | 全链上可验证 |
-| 利率 | 固定或浮动 | 动态利率模型 |
-| 杠杆来源 | 借款 | 借款 + DEX swap 循环 |
+| 维度     | CeFi 杠杆      | Cetus 链上杠杆       |
+| -------- | -------------- | -------------------- |
+| 资金来源 | 交易所自有资金 | 其他用户的存款       |
+| 清算方式 | 中心化引擎     | 链上智能合约         |
+| 透明度   | 不透明         | 全链上可验证         |
+| 利率     | 固定或浮动     | 动态利率模型         |
+| 杠杆来源 | 借款           | 借款 + DEX swap 循环 |

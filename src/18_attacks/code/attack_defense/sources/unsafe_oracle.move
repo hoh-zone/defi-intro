@@ -43,7 +43,12 @@ public fun get_price_unsafe<A, B>(pool: &Pool<A, B>): u64 {
 }
 
 /// Swap without TWAP validation — vulnerable to sandwich attacks
-public fun swap_a_to_b_unsafe<A, B>(pool: &mut Pool<A, B>, coin_in: Coin<A>, min_out: u64, ctx: &mut TxContext): Coin<B> {
+public fun swap_a_to_b_unsafe<A, B>(
+    pool: &mut Pool<A, B>,
+    coin_in: Coin<A>,
+    min_out: u64,
+    ctx: &mut TxContext,
+): Coin<B> {
     assert!(!pool.paused, EPoolPaused);
     let amount_in = coin::value(&coin_in);
     assert!(amount_in > 0, EInvalidAmount);
@@ -59,10 +64,15 @@ public fun swap_a_to_b_unsafe<A, B>(pool: &mut Pool<A, B>, coin_in: Coin<A>, min
 }
 
 public fun reserve_a<A, B>(pool: &Pool<A, B>): u64 { balance::value(&pool.reserve_a) }
+
 public fun reserve_b<A, B>(pool: &Pool<A, B>): u64 { balance::value(&pool.reserve_b) }
 
 #[test_only]
-public fun create_pool_for_testing<A, B>(coin_a: Coin<A>, coin_b: Coin<B>, ctx: &mut TxContext): Pool<A, B> {
+public fun create_pool_for_testing<A, B>(
+    coin_a: Coin<A>,
+    coin_b: Coin<B>,
+    ctx: &mut TxContext,
+): Pool<A, B> {
     Pool {
         id: object::new(ctx),
         reserve_a: coin::into_balance(coin_a),

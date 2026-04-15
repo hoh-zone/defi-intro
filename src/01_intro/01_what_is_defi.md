@@ -6,14 +6,14 @@
 
 DeFi 的核心主张是用代码替代制度信任：
 
-| 维度 | 传统金融 | DeFi |
-|------|----------|------|
-| 资产托管 | 银行/券商 | 智能合约 |
-| 交易撮合 | 中心化交易所 | AMM 或链上订单簿 |
-| 价格来源 | 做市商/交易所 | 预言机/流动性池 |
-| 清算 | 风控部门自动执行 | 合约逻辑自动触发 |
-| 准入 | KYC/资质审核 | 钱包地址即可 |
-| 透明度 | 事后披露 | 链上实时可查 |
+| 维度     | 传统金融         | DeFi             |
+| -------- | ---------------- | ---------------- |
+| 资产托管 | 银行/券商        | 智能合约         |
+| 交易撮合 | 中心化交易所     | AMM 或链上订单簿 |
+| 价格来源 | 做市商/交易所    | 预言机/流动性池  |
+| 清算     | 风控部门自动执行 | 合约逻辑自动触发 |
+| 准入     | KYC/资质审核     | 钱包地址即可     |
+| 透明度   | 事后披露         | 链上实时可查     |
 
 信任模型从"信任机构"变成了"信任代码"。这不是免费升级——代码可能有 bug，机制可能有缺陷，组合可能制造系统性风险。
 
@@ -29,23 +29,24 @@ DeFi 向用户承诺了三件事：
 
 ```move
 module defi_book::permissionless_deposit;
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
 
-    public struct Vault has key {
-        id: UID,
-        total_deposits: Coin<SUI>,
-    }
+use sui::coin::{Self, Coin};
+use sui::sui::SUI;
 
-    public entry fun deposit(vault: &mut Vault, coin: Coin<SUI>, ctx: &mut TxContext) {
-        let amount = coin.value(&coin);
-        coin::join(&mut vault.total_deposits, coin);
-        event::emit(DepositEvent { amount });
-    }
+public struct Vault has key {
+    id: UID,
+    total_deposits: Coin<SUI>,
+}
 
-    public struct DepositEvent has copy, drop {
-        amount: u64,
-    }
+public entry fun deposit(vault: &mut Vault, coin: Coin<SUI>, ctx: &mut TxContext) {
+    let amount = coin.value(&coin);
+    coin::join(&mut vault.total_deposits, coin);
+    event::emit(DepositEvent { amount });
+}
+
+public struct DepositEvent has copy, drop {
+    amount: u64,
+}
 ```
 
 这段代码展示了一个无许可存款函数：任何拥有 `Coin<SUI>` 的人都可以调用 `deposit`，没有白名单检查。这就是"无许可"的代码表达——不是通过赋予每个人权限，而是通过不设置权限门槛。
@@ -57,6 +58,7 @@ module defi_book::permissionless_deposit;
 **智能合约风险**：代码可能包含漏洞。2016 年 The DAO 的重入攻击导致 6000 万美元被盗。2023 年，多起 DeFi 攻击的根因仍然是智能合约漏洞。无许可意味着任何人都可以与合约交互——包括攻击者。
 
 **机制设计风险**：即使代码完全正确，机制本身可能存在结构性缺陷。例如：
+
 - AMM 的无常损失（Impermanent Loss）——LP 在价格波动中承担隐性亏损
 - 清算参数设计不当——极端行情下清算人无法及时清算，导致坏账
 - 激励不可持续——代币补贴结束后 TVL 骤降

@@ -3,9 +3,11 @@
 ## Ronin Bridge — $624M（2022 年 3 月）
 
 ### 桥的类型
+
 锁铸桥，由 Sky Mavis（Axie Infinity 开发商）运营。
 
 ### 信任模型
+
 ```
 验证者：9 个节点
 阈值：5/9 多签
@@ -43,44 +45,46 @@
 
 ```move
 module bridge::security_guard;
-    use sui::clock::Clock;
 
-    public struct WithdrawalLimit has store {
-        daily_limit: u64,
-        single_tx_limit: u64,
-        delay_ms: u64,
-    }
+use sui::clock::Clock;
 
-    public struct PendingWithdrawal has store {
-        amount: u64,
-        request_ms: u64,
-        executed: bool,
-    }
+public struct WithdrawalLimit has store {
+    daily_limit: u64,
+    single_tx_limit: u64,
+    delay_ms: u64,
+}
 
-    public fun check_withdrawal(
-        limit: &WithdrawalLimit,
-        amount: u64,
-        pending: &vector<PendingWithdrawal>,
-        clock: &Clock,
-    ): bool {
-        if (amount > limit.single_tx_limit) { return false };
-        let mut daily_total = 0u64;
-        let now = clock.timestamp_ms();
-        let mut i = 0;
-        while (i < pending.length()) {
-            let w = pending.borrow(i);
-            if (!w.executed && now - w.request_ms < 86_400_000) {
-                daily_total = daily_total + w.amount;
-            };
-            i = i + 1;
+public struct PendingWithdrawal has store {
+    amount: u64,
+    request_ms: u64,
+    executed: bool,
+}
+
+public fun check_withdrawal(
+    limit: &WithdrawalLimit,
+    amount: u64,
+    pending: &vector<PendingWithdrawal>,
+    clock: &Clock,
+): bool {
+    if (amount > limit.single_tx_limit) { return false };
+    let mut daily_total = 0u64;
+    let now = clock.timestamp_ms();
+    let mut i = 0;
+    while (i < pending.length()) {
+        let w = pending.borrow(i);
+        if (!w.executed && now - w.request_ms < 86_400_000) {
+            daily_total = daily_total + w.amount;
         };
-        daily_total + amount <= limit.daily_limit
-    }
+        i = i + 1;
+    };
+    daily_total + amount <= limit.daily_limit
+}
 ```
 
 ## Wormhole — $326M（2022 年 2 月）
 
 ### 桥的类型
+
 锁铸桥 + 消息传递，由 Certus One 运营 Guardian 网络。
 
 ### 攻击过程
@@ -112,45 +116,43 @@ Sui Move 的类型安全可以防止类似漏洞：
 
 ```move
 module bridge::secure_verification;
-    use sui::object::ID;
 
-    public struct GuardianSignature has store {
-        guardian_id: ID,
-        signature: vector<u8>,
-    }
+use sui::object::ID;
 
-    public struct VerifiedProof has store {
-        hash: vector<u8>,
-        guardian_count: u64,
-    }
+public struct GuardianSignature has store {
+    guardian_id: ID,
+    signature: vector<u8>,
+}
 
-    public fun verify_quorum(
-        signatures: &vector<GuardianSignature>,
-        message_hash: &vector<u8>,
-        threshold: u64,
-    ): VerifiedProof {
-        let mut valid = 0;
-        let mut i = 0;
-        while (i < signatures.length()) {
-            let sig = signatures.borrow(i);
-            if (verify_single_signature(sig, message_hash)) {
-                valid = valid + 1;
-            };
-            i = i + 1;
+public struct VerifiedProof has store {
+    hash: vector<u8>,
+    guardian_count: u64,
+}
+
+public fun verify_quorum(
+    signatures: &vector<GuardianSignature>,
+    message_hash: &vector<u8>,
+    threshold: u64,
+): VerifiedProof {
+    let mut valid = 0;
+    let mut i = 0;
+    while (i < signatures.length()) {
+        let sig = signatures.borrow(i);
+        if (verify_single_signature(sig, message_hash)) {
+            valid = valid + 1;
         };
-        assert!(valid >= threshold, 0);
-        VerifiedProof {
-            hash: *message_hash,
-            guardian_count: valid,
-        }
+        i = i + 1;
+    };
+    assert!(valid >= threshold, 0);
+    VerifiedProof {
+        hash: *message_hash,
+        guardian_count: valid,
     }
+}
 
-    fun verify_single_signature(
-        sig: &GuardianSignature,
-        _hash: &vector<u8>,
-    ): bool {
-        sig.signature.length() >= 64
-    }
+fun verify_single_signature(sig: &GuardianSignature, _hash: &vector<u8>): bool {
+    sig.signature.length() >= 64
+}
 ```
 
 Sui Move 的优势：`VerifiedProof` 是一个类型化的对象，只有通过 `verify_quorum` 函数才能创建。后续代码只需要检查 `VerifiedProof` 是否存在，不需要重新验证签名——**通过类型系统保证验证不被绕过**。
@@ -158,6 +160,7 @@ Sui Move 的优势：`VerifiedProof` 是一个类型化的对象，只有通过 
 ## Nomad — $190M（2022 年 8 月）
 
 ### 桥的类型
+
 乐观桥。
 
 ### 攻击过程
@@ -193,10 +196,10 @@ Sui Move 的优势：`VerifiedProof` 是一个类型化的对象，只有通过 
 
 ## 风险分析
 
-| 教训 | 适用于 |
-|---|---|
-| 中心化 = 单点故障 | 所有桥——验证者越多越好 |
-| 初始化是最容易被忽视的攻击面 | 所有合约 |
-| 乐观验证的默认值必须安全 | 乐观桥 |
-| 签名验证不能有 shortcut | 所有需要密码学验证的合约 |
-| 大额操作需要延迟和限额 | 所有涉及资产的合约 |
+| 教训                         | 适用于                   |
+| ---------------------------- | ------------------------ |
+| 中心化 = 单点故障            | 所有桥——验证者越多越好   |
+| 初始化是最容易被忽视的攻击面 | 所有合约                 |
+| 乐观验证的默认值必须安全     | 乐观桥                   |
+| 签名验证不能有 shortcut      | 所有需要密码学验证的合约 |
+| 大额操作需要延迟和限额       | 所有涉及资产的合约       |

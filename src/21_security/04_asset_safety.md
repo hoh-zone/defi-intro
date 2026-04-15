@@ -89,53 +89,50 @@ public fun safe_create(amount: u64, ctx: &mut TxContext): Coin<SUI> {
 
 ```move
 module defi::balance_safety;
-    use sui::balance::{Self, Balance};
-    use sui::coin::{Self, Coin, TreasuryCap};
-    use sui::sui::SUI;
 
-    public struct Vault has key {
-        id: UID,
-        total: Balance<SUI>,
-        pending: Balance<SUI>,
-    }
+use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin, TreasuryCap};
+use sui::sui::SUI;
 
-    public fun deposit(vault: &mut Vault, coin: Coin<SUI>) {
-        let amount = coin::value(&coin);
-        assert!(amount > 0, EZeroDeposit);
+public struct Vault has key {
+    id: UID,
+    total: Balance<SUI>,
+    pending: Balance<SUI>,
+}
 
-        balance::join(&mut vault.total, coin::into_balance(coin));
-    }
+public fun deposit(vault: &mut Vault, coin: Coin<SUI>) {
+    let amount = coin::value(&coin);
+    assert!(amount > 0, EZeroDeposit);
 
-    public fun withdraw(
-        vault: &mut Vault,
-        amount: u64,
-        ctx: &mut TxContext,
-    ): Coin<SUI> {
-        assert!(balance::value(&vault.total) >= amount, EInsufficient);
-        let taken = balance::split(&mut vault.total, amount);
-        coin::from_balance(taken, ctx)
-    }
+    balance::join(&mut vault.total, coin::into_balance(coin));
+}
 
-    public fun move_to_pending(vault: &mut Vault, amount: u64) {
-        assert!(balance::value(&vault.total) >= amount, EInsufficient);
-        let split = balance::split(&mut vault.total, amount);
-        balance::join(&mut vault.pending, split);
-    }
+public fun withdraw(vault: &mut Vault, amount: u64, ctx: &mut TxContext): Coin<SUI> {
+    assert!(balance::value(&vault.total) >= amount, EInsufficient);
+    let taken = balance::split(&mut vault.total, amount);
+    coin::from_balance(taken, ctx)
+}
 
-    #[error]
-    const EZeroDeposit: vector<u8> = b"Zero Deposit";
-    #[error]
-    const EInsufficient: vector<u8> = b"Insufficient";
+public fun move_to_pending(vault: &mut Vault, amount: u64) {
+    assert!(balance::value(&vault.total) >= amount, EInsufficient);
+    let split = balance::split(&mut vault.total, amount);
+    balance::join(&mut vault.pending, split);
+}
+
+#[error]
+const EZeroDeposit: vector<u8> = b"Zero Deposit";
+#[error]
+const EInsufficient: vector<u8> = b"Insufficient";
 ```
 
 ### Balance vs Coin 的选择
 
-| 特性 | Coin | Balance |
-|------|------|---------|
-| 是否是对象 | 是（包含 UID） | 否 |
-| Gas 成本 | 较高（对象处理） | 较低 |
-| 可直接转账 | 是（transfer） | 否（需包装为 Coin） |
-| 适用场景 | 跨地址转移 | 协议内部记账 |
+| 特性       | Coin             | Balance             |
+| ---------- | ---------------- | ------------------- |
+| 是否是对象 | 是（包含 UID）   | 否                  |
+| Gas 成本   | 较高（对象处理） | 较低                |
+| 可直接转账 | 是（transfer）   | 否（需包装为 Coin） |
+| 适用场景   | 跨地址转移       | 协议内部记账        |
 
 最佳实践：**内部用 Balance，外部用 Coin**。在用户存入时 `coin::into_balance`，在用户提取时 `coin::from_balance`。
 
@@ -145,111 +142,105 @@ module defi::balance_safety;
 
 ```move
 module defi::fund_safety;
-    use sui::object::{Self, UID};
-    use sui::coin::{Self, Coin, TreasuryCap};
-    use sui::balance::{Self, Balance};
-    use sui::sui::SUI;
-    use sui::event;
 
-    public struct Pool has key {
-        id: UID,
-        asset_balance: Balance<SUI>,
-        total_shares: u64,
-        paused: bool,
-    }
+use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin, TreasuryCap};
+use sui::event;
+use sui::object::{Self, UID};
+use sui::sui::SUI;
 
-    public struct DepositEvent has copy, drop {
-        user: address,
-        amount: u64,
-        shares_minted: u64,
-    }
+public struct Pool has key {
+    id: UID,
+    asset_balance: Balance<SUI>,
+    total_shares: u64,
+    paused: bool,
+}
 
-    public struct WithdrawEvent has copy, drop {
-        user: address,
-        amount: u64,
-        shares_burned: u64,
-    }
+public struct DepositEvent has copy, drop {
+    user: address,
+    amount: u64,
+    shares_minted: u64,
+}
 
-    public fun deposit(
-        pool: &mut Pool,
-        coin: Coin<SUI>,
-        ctx: &mut TxContext,
-    ): u64 {
-        assert!(!pool.paused, EProtocolPaused);
+public struct WithdrawEvent has copy, drop {
+    user: address,
+    amount: u64,
+    shares_burned: u64,
+}
 
-        let amount = coin::value(&coin);
-        assert!(amount >= MIN_DEPOSIT, EBelowMinDeposit);
-        assert!(amount <= MAX_DEPOSIT, EAboveMaxDeposit);
+public fun deposit(pool: &mut Pool, coin: Coin<SUI>, ctx: &mut TxContext): u64 {
+    assert!(!pool.paused, EProtocolPaused);
 
-        let shares = if (pool.total_shares == 0) {
-            amount
-        } else {
-            let total_value = balance::value(&pool.asset_balance);
-            ((amount as u256) * (pool.total_shares as u256) / (total_value as u256) as u64)
-        };
+    let amount = coin::value(&coin);
+    assert!(amount >= MIN_DEPOSIT, EBelowMinDeposit);
+    assert!(amount <= MAX_DEPOSIT, EAboveMaxDeposit);
 
-        assert!(shares > 0, EZeroShares);
-
-        balance::join(&mut pool.asset_balance, coin::into_balance(coin));
-        pool.total_shares = pool.total_shares + shares;
-
-        event::emit(DepositEvent {
-            user: ctx.sender(),
-            amount,
-            shares_minted: shares,
-        });
-
-        shares
-    }
-
-    public fun withdraw(
-        pool: &mut Pool,
-        shares: u64,
-        ctx: &mut TxContext,
-    ): Coin<SUI> {
-        assert!(!pool.paused, EProtocolPaused);
-        assert!(shares > 0, EZeroShares);
-        assert!(shares <= pool.total_shares, EExceedsTotalShares);
-
+    let shares = if (pool.total_shares == 0) {
+        amount
+    } else {
         let total_value = balance::value(&pool.asset_balance);
-        let amount = ((shares as u256) * (total_value as u256) / (pool.total_shares as u256) as u64);
+        ((amount as u256) * (pool.total_shares as u256) / (total_value as u256) as u64)
+    };
 
-        assert!(amount > 0, EZeroWithdraw);
-        assert!(amount <= total_value, EExceedsBalance);
+    assert!(shares > 0, EZeroShares);
 
-        pool.total_shares = pool.total_shares - shares;
+    balance::join(&mut pool.asset_balance, coin::into_balance(coin));
+    pool.total_shares = pool.total_shares + shares;
 
-        let withdrawn = balance::split(&mut pool.asset_balance, amount);
-        let coin = coin::from_balance(withdrawn, ctx);
+    event::emit(DepositEvent {
+        user: ctx.sender(),
+        amount,
+        shares_minted: shares,
+    });
 
-        event::emit(WithdrawEvent {
-            user: ctx.sender(),
-            amount,
-            shares_burned: shares,
-        });
+    shares
+}
 
-        coin
-    }
+public fun withdraw(pool: &mut Pool, shares: u64, ctx: &mut TxContext): Coin<SUI> {
+    assert!(!pool.paused, EProtocolPaused);
+    assert!(shares > 0, EZeroShares);
+    assert!(shares <= pool.total_shares, EExceedsTotalShares);
 
-    const MIN_DEPOSIT: u64 = 100000000;
-    const MAX_DEPOSIT: u64 = 100000000000000;
-    #[error]
-    const EProtocolPaused: vector<u8> = b"Protocol Paused";
-    #[error]
-    const EBelowMinDeposit: vector<u8> = b"Below Min Deposit";
-    #[error]
-    const EAboveMaxDeposit: vector<u8> = b"Above Max Deposit";
-    #[error]
-    const EZeroShares: vector<u8> = b"Zero Shares";
-    #[error]
-    const EZeroWithdraw: vector<u8> = b"Zero Withdraw";
-    #[error]
-    const EExceedsTotalShares: vector<u8> = b"Exceeds Total Shares";
-    #[error]
-    const EExceedsBalance: vector<u8> = b"Exceeds Balance";
+    let total_value = balance::value(&pool.asset_balance);
+    let amount = ((shares as u256) * (total_value as u256) / (pool.total_shares as u256) as u64);
+
+    assert!(amount > 0, EZeroWithdraw);
+    assert!(amount <= total_value, EExceedsBalance);
+
+    pool.total_shares = pool.total_shares - shares;
+
+    let withdrawn = balance::split(&mut pool.asset_balance, amount);
+    let coin = coin::from_balance(withdrawn, ctx);
+
+    event::emit(WithdrawEvent {
+        user: ctx.sender(),
+        amount,
+        shares_burned: shares,
+    });
+
+    coin
+}
+
+const MIN_DEPOSIT: u64 = 100000000;
+const MAX_DEPOSIT: u64 = 100000000000000;
+#[error]
+const EProtocolPaused: vector<u8> = b"Protocol Paused";
+#[error]
+const EBelowMinDeposit: vector<u8> = b"Below Min Deposit";
+#[error]
+const EAboveMaxDeposit: vector<u8> = b"Above Max Deposit";
+#[error]
+const EZeroShares: vector<u8> = b"Zero Shares";
+#[error]
+const EZeroWithdraw: vector<u8> = b"Zero Withdraw";
+#[error]
+const EExceedsTotalShares: vector<u8> = b"Exceeds Total Shares";
+#[error]
+const EExceedsBalance: vector<u8> = b"Exceeds Balance";
 ```
 
 关键检查点：
+
 1. 暂停检查在最前面——避免资金被锁在正在处理中的交易
 2. 金额范围检查——防止极端值导致精度问题
 3. 份额计算用 `u256`——避免乘法溢出

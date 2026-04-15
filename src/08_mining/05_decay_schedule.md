@@ -26,95 +26,88 @@
 
 ```move
 module liquidity_mining::linear_decay;
-    use sui::clock::Clock;
 
-    public struct LinearDecay has store {
-        initial_rate: u64,
-        decay_per_ms: u64,
-        start_ms: u64,
-        duration_ms: u64,
-        min_rate: u64,
-    }
+use sui::clock::Clock;
 
-    public fun new(
-        initial_rate: u64,
-        duration_ms: u64,
-        min_rate: u64,
-        start_ms: u64,
-    ): LinearDecay {
-        let decay_per_ms = (initial_rate - min_rate) / duration_ms;
-        LinearDecay {
-            initial_rate,
-            decay_per_ms,
-            start_ms,
-            duration_ms,
-            min_rate,
-        }
-    }
+public struct LinearDecay has store {
+    initial_rate: u64,
+    decay_per_ms: u64,
+    start_ms: u64,
+    duration_ms: u64,
+    min_rate: u64,
+}
 
-    public fun current_rate(decay: &LinearDecay, clock: &Clock): u64 {
-        let now = clock.timestamp_ms();
-        if (now <= decay.start_ms) {
-            return decay.initial_rate
-        };
-        let elapsed = now - decay.start_ms;
-        if (elapsed >= decay.duration_ms) {
-            return decay.min_rate
-        };
-        let decayed = decay.decay_per_ms * elapsed;
-        if (decayed >= decay.initial_rate) {
-            decay.min_rate
-        } else {
-            let rate = decay.initial_rate - decayed;
-            if (rate < decay.min_rate) { decay.min_rate } else { rate }
-        }
+public fun new(initial_rate: u64, duration_ms: u64, min_rate: u64, start_ms: u64): LinearDecay {
+    let decay_per_ms = (initial_rate - min_rate) / duration_ms;
+    LinearDecay {
+        initial_rate,
+        decay_per_ms,
+        start_ms,
+        duration_ms,
+        min_rate,
     }
+}
+
+public fun current_rate(decay: &LinearDecay, clock: &Clock): u64 {
+    let now = clock.timestamp_ms();
+    if (now <= decay.start_ms) {
+        return decay.initial_rate
+    };
+    let elapsed = now - decay.start_ms;
+    if (elapsed >= decay.duration_ms) {
+        return decay.min_rate
+    };
+    let decayed = decay.decay_per_ms * elapsed;
+    if (decayed >= decay.initial_rate) {
+        decay.min_rate
+    } else {
+        let rate = decay.initial_rate - decayed;
+        if (rate < decay.min_rate) { decay.min_rate } else { rate }
+    }
+}
 ```
 
 ### 阶梯衰减（Epoch 式）
 
 ```move
 module liquidity_mining::epoch_decay;
-    use sui::clock::Clock;
 
-    public struct EpochDecay has store {
-        rates: vector<u64>,
-        epoch_duration_ms: u64,
-        start_ms: u64,
-    }
+use sui::clock::Clock;
 
-    public fun new(
-        rates: vector<u64>,
-        epoch_duration_ms: u64,
-        start_ms: u64,
-    ): EpochDecay {
-        EpochDecay {
-            rates,
-            epoch_duration_ms,
-            start_ms,
-        }
-    }
+public struct EpochDecay has store {
+    rates: vector<u64>,
+    epoch_duration_ms: u64,
+    start_ms: u64,
+}
 
-    public fun current_rate(decay: &EpochDecay, clock: &Clock): u64 {
-        let now = clock.timestamp_ms();
-        if (now < decay.start_ms) {
-            return *decay.rates.borrow(0)
-        };
-        let elapsed = now - decay.start_ms;
-        let epoch_index = (elapsed / decay.epoch_duration_ms);
-        let num_epochs = decay.rates.length();
-        if (epoch_index >= num_epochs) {
-            *decay.rates.borrow(num_epochs - 1)
-        } else {
-            *decay.rates.borrow(epoch_index)
-        }
+public fun new(rates: vector<u64>, epoch_duration_ms: u64, start_ms: u64): EpochDecay {
+    EpochDecay {
+        rates,
+        epoch_duration_ms,
+        start_ms,
     }
+}
 
-    public fun current_epoch(decay: &EpochDecay, clock: &Clock): u64 {
-        let now = clock.timestamp_ms();
-        if (now < decay.start_ms) { return 0 };
-        (now - decay.start_ms) / decay.epoch_duration_ms
+public fun current_rate(decay: &EpochDecay, clock: &Clock): u64 {
+    let now = clock.timestamp_ms();
+    if (now < decay.start_ms) {
+        return *decay.rates.borrow(0)
+    };
+    let elapsed = now - decay.start_ms;
+    let epoch_index = (elapsed / decay.epoch_duration_ms);
+    let num_epochs = decay.rates.length();
+    if (epoch_index >= num_epochs) {
+        *decay.rates.borrow(num_epochs - 1)
+    } else {
+        *decay.rates.borrow(epoch_index)
     }
+}
+
+public fun current_epoch(decay: &EpochDecay, clock: &Clock): u64 {
+    let now = clock.timestamp_ms();
+    if (now < decay.start_ms) { return 0 };
+    (now - decay.start_ms) / decay.epoch_duration_ms
+}
 ```
 
 使用示例：
@@ -130,145 +123,145 @@ let epoch_decay = epoch_decay::new(rates, 30 * 24 * 3600 * 1000, start_ms);
 
 ```move
 module liquidity_mining::exponential_decay;
-    use sui::clock::Clock;
 
-    const PRECISION: u64 = 1_000_000_000;
+use sui::clock::Clock;
 
-    public struct ExponentialDecay has store {
-        initial_rate: u64,
-        half_life_ms: u64,
-        start_ms: u64,
-        min_rate: u64,
+const PRECISION: u64 = 1_000_000_000;
+
+public struct ExponentialDecay has store {
+    initial_rate: u64,
+    half_life_ms: u64,
+    start_ms: u64,
+    min_rate: u64,
+}
+
+public fun new(
+    initial_rate: u64,
+    half_life_ms: u64,
+    min_rate: u64,
+    start_ms: u64,
+): ExponentialDecay {
+    ExponentialDecay {
+        initial_rate,
+        half_life_ms,
+        start_ms,
+        min_rate,
     }
+}
 
-    public fun new(
-        initial_rate: u64,
-        half_life_ms: u64,
-        min_rate: u64,
-        start_ms: u64,
-    ): ExponentialDecay {
-        ExponentialDecay {
-            initial_rate,
-            half_life_ms,
-            start_ms,
-            min_rate,
-        }
-    }
+public fun current_rate(decay: &ExponentialDecay, clock: &Clock): u64 {
+    let now = clock.timestamp_ms();
+    if (now <= decay.start_ms) {
+        return decay.initial_rate
+    };
+    let elapsed = now - decay.start_ms;
+    let half_lives_elapsed = (elapsed * PRECISION) / decay.half_life_ms;
+    let factor = pow_1_over_2(half_lives_elapsed);
+    let rate = decay.initial_rate * factor / PRECISION;
+    if (rate < decay.min_rate) { decay.min_rate } else { rate }
+}
 
-    public fun current_rate(decay: &ExponentialDecay, clock: &Clock): u64 {
-        let now = clock.timestamp_ms();
-        if (now <= decay.start_ms) {
-            return decay.initial_rate
+fun pow_1_over_2(exponent_scaled: u64): u64 {
+    if (exponent_scaled == 0) { return PRECISION };
+    let result = PRECISION;
+    let i = 0;
+    while (i < 60 && result > 1) {
+        if ((exponent_scaled >> i) & 1 == 1) {
+            result = result / 2;
         };
-        let elapsed = now - decay.start_ms;
-        let half_lives_elapsed = (elapsed * PRECISION) / decay.half_life_ms;
-        let factor = pow_1_over_2(half_lives_elapsed);
-        let rate = decay.initial_rate * factor / PRECISION;
-        if (rate < decay.min_rate) { decay.min_rate } else { rate }
-    }
-
-    fun pow_1_over_2(exponent_scaled: u64): u64 {
-        if (exponent_scaled == 0) { return PRECISION };
-        let result = PRECISION;
-        let i = 0;
-        while (i < 60 && result > 1) {
-            if ((exponent_scaled >> i) & 1 == 1) {
-                result = result / 2;
-            };
-            i = i + 1;
-        };
-        result
-    }
+        i = i + 1;
+    };
+    result
+}
 ```
 
 ## 排放调度器：将衰减器接入挖矿合约
 
 ```move
 module liquidity_mining::emission_scheduler;
-    use sui::coin::{Self, Coin};
-    use sui::clock::Clock;
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use liquidity_mining::epoch_decay::{Self, EpochDecay};
 
-    #[error]
-    const EUnauthorized: vector<u8> = b"Unauthorized";
-    #[error]
-    const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
+use liquidity_mining::epoch_decay::{Self, EpochDecay};
+use sui::clock::Clock;
+use sui::coin::{Self, Coin};
+use sui::object::{Self, UID};
+use sui::tx_context::TxContext;
 
-    public struct EmissionController<phantom RewardCoin> has key {
-        id: UID,
-        treasury: Coin<RewardCoin>,
-        decay: EpochDecay,
-        last_collection_ms: u64,
-        uncollected_reward: u64,
-        admin: address,
-    }
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
 
-    public fun create<RewardCoin>(
-        treasury: Coin<RewardCoin>,
-        rates: vector<u64>,
-        epoch_ms: u64,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ) {
-        let controller = EmissionController<RewardCoin> {
-            id: object::new(ctx),
-            treasury,
-            decay: epoch_decay::new(rates, epoch_ms, clock.timestamp_ms()),
-            last_collection_ms: clock.timestamp_ms(),
-            uncollected_reward: 0,
-            admin: ctx.sender(),
-        };
-        transfer::share_object(controller);
-    }
+public struct EmissionController<phantom RewardCoin> has key {
+    id: UID,
+    treasury: Coin<RewardCoin>,
+    decay: EpochDecay,
+    last_collection_ms: u64,
+    uncollected_reward: u64,
+    admin: address,
+}
 
-    public fun collect<RewardCoin>(
-        controller: &mut EmissionController<RewardCoin>,
-        clock: &Clock,
-    ): u64 {
-        let now = clock.timestamp_ms();
-        if (now <= controller.last_collection_ms) { return 0 };
-        let elapsed = now - controller.last_collection_ms;
-        let rate = epoch_decay::current_rate(&controller.decay, clock);
-        let reward = rate * elapsed;
-        controller.last_collection_ms = now;
-        controller.uncollected_reward = controller.uncollected_reward + reward;
-        controller.uncollected_reward
-    }
+public fun create<RewardCoin>(
+    treasury: Coin<RewardCoin>,
+    rates: vector<u64>,
+    epoch_ms: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    let controller = EmissionController<RewardCoin> {
+        id: object::new(ctx),
+        treasury,
+        decay: epoch_decay::new(rates, epoch_ms, clock.timestamp_ms()),
+        last_collection_ms: clock.timestamp_ms(),
+        uncollected_reward: 0,
+        admin: ctx.sender(),
+    };
+    transfer::share_object(controller);
+}
 
-    public fun withdraw_reward<RewardCoin>(
-        controller: &mut EmissionController<RewardCoin>,
-        amount: u64,
-        ctx: &mut TxContext,
-    ): Coin<RewardCoin> {
-        assert!(ctx.sender() == controller.admin, EUnauthorized);
-        assert!(controller.uncollected_reward >= amount, EInsufficientBalance);
-        controller.uncollected_reward = controller.uncollected_reward - amount;
-        coin::take(&mut controller.treasury, amount, ctx)
-    }
+public fun collect<RewardCoin>(
+    controller: &mut EmissionController<RewardCoin>,
+    clock: &Clock,
+): u64 {
+    let now = clock.timestamp_ms();
+    if (now <= controller.last_collection_ms) { return 0 };
+    let elapsed = now - controller.last_collection_ms;
+    let rate = epoch_decay::current_rate(&controller.decay, clock);
+    let reward = rate * elapsed;
+    controller.last_collection_ms = now;
+    controller.uncollected_reward = controller.uncollected_reward + reward;
+    controller.uncollected_reward
+}
 
-    public fun current_emission_rate<RewardCoin>(
-        controller: &EmissionController<RewardCoin>,
-        clock: &Clock,
-    ): u64 {
-        epoch_decay::current_rate(&controller.decay, clock)
-    }
+public fun withdraw_reward<RewardCoin>(
+    controller: &mut EmissionController<RewardCoin>,
+    amount: u64,
+    ctx: &mut TxContext,
+): Coin<RewardCoin> {
+    assert!(ctx.sender() == controller.admin, EUnauthorized);
+    assert!(controller.uncollected_reward >= amount, EInsufficientBalance);
+    controller.uncollected_reward = controller.uncollected_reward - amount;
+    coin::take(&mut controller.treasury, amount, ctx)
+}
 
-    public fun treasury_balance<RewardCoin>(
-        controller: &EmissionController<RewardCoin>,
-    ): u64 {
-        coin::value(&controller.treasury)
-    }
+public fun current_emission_rate<RewardCoin>(
+    controller: &EmissionController<RewardCoin>,
+    clock: &Clock,
+): u64 {
+    epoch_decay::current_rate(&controller.decay, clock)
+}
+
+public fun treasury_balance<RewardCoin>(controller: &EmissionController<RewardCoin>): u64 {
+    coin::value(&controller.treasury)
+}
 ```
 
 ## 三种衰减对比
 
-| 模型 | 优点 | 缺点 | 适用场景 |
-|---|---|---|---|
-| 线性衰减 | 可预测、简单 | 后期衰减太慢或太快 | 固定预算的项目 |
+| 模型     | 优点                          | 缺点                  | 适用场景                      |
+| -------- | ----------------------------- | --------------------- | ----------------------------- |
+| 线性衰减 | 可预测、简单                  | 后期衰减太慢或太快    | 固定预算的项目                |
 | 阶梯衰减 | 每个 epoch 内稳定，可精确规划 | epoch 切换时 APR 突变 | Sui 生态常用（按 epoch 调整） |
-| 指数衰减 | 前期快速衰减，后期长尾 | 前期对 LP 不友好 | 有明确半衰期的项目 |
+| 指数衰减 | 前期快速衰减，后期长尾        | 前期对 LP 不友好      | 有明确半衰期的项目            |
 
 ## Sui Epoch 与衰减
 
@@ -285,9 +278,9 @@ Epoch 91-120: 125 token/epoch
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 衰减过快 | 前期吸引的 LP 在奖励骤降时集体撤离 |
-| 衰减过慢 | 代币持续通胀，长期持有者被严重稀释 |
+| 风险     | 描述                                         |
+| -------- | -------------------------------------------- |
+| 衰减过快 | 前期吸引的 LP 在奖励骤降时集体撤离           |
+| 衰减过慢 | 代币持续通胀，长期持有者被严重稀释           |
 | 国库耗尽 | 排放速度超过国库余额，合约在 claim 时 revert |
-| 治理延迟 | 阶梯衰减需要治理投票调整，可能反应太慢 |
+| 治理延迟 | 阶梯衰减需要治理投票调整，可能反应太慢       |

@@ -2,15 +2,14 @@
 module flash_loan::test_coin {
     /// A simple coin type used only in tests.
     public struct LOANCOIN has copy, drop, store {}
-
 }
 #[test_only]
 module flash_loan::flash_loan_test {
-    use sui::test_scenario;
-    use sui::coin;
-    use sui::transfer;
     use flash_loan::flash_loan;
     use flash_loan::test_coin::LOANCOIN;
+    use sui::coin;
+    use sui::test_scenario;
+    use sui::transfer;
 
     // ===== Constants =====
     const FEE_BPS: u64 = 30; // 0.3%
@@ -89,7 +88,11 @@ module flash_loan::flash_loan_test {
         assert!(flash_loan::pool_balance(&pool) == 100_000_000_000);
 
         // Borrow 10_000 LOANCOIN
-        let (mut borrowed_coin, receipt) = flash_loan::borrow<LOANCOIN>(&mut pool, 10_000_000_000, scenario.ctx());
+        let (mut borrowed_coin, receipt) = flash_loan::borrow<LOANCOIN>(
+            &mut pool,
+            10_000_000_000,
+            scenario.ctx(),
+        );
         assert!(coin::value(&borrowed_coin) == 10_000_000_000);
         assert!(flash_loan::pool_balance(&pool) == 90_000_000_000);
 
@@ -129,7 +132,11 @@ module flash_loan::flash_loan_test {
 
         scenario.next_tx(@0xA);
 
-        let deposit_coin = coin::mint<LOANCOIN>(&mut treasury_cap, 1_000_000_000_000, scenario.ctx());
+        let deposit_coin = coin::mint<LOANCOIN>(
+            &mut treasury_cap,
+            1_000_000_000_000,
+            scenario.ctx(),
+        );
         let mut pool = scenario.take_shared<flash_loan::FlashPool<LOANCOIN>>();
         flash_loan::deposit<LOANCOIN>(&mut pool, deposit_coin);
 
@@ -163,7 +170,11 @@ module flash_loan::flash_loan_test {
         let mut pool = scenario.take_shared<flash_loan::FlashPool<LOANCOIN>>();
         flash_loan::deposit<LOANCOIN>(&mut pool, deposit_coin);
 
-        let (borrowed_coin, receipt) = flash_loan::borrow<LOANCOIN>(&mut pool, 10_000_000_000, scenario.ctx());
+        let (borrowed_coin, receipt) = flash_loan::borrow<LOANCOIN>(
+            &mut pool,
+            10_000_000_000,
+            scenario.ctx(),
+        );
 
         // Attempt to repay with ONLY the principal (no fee) -- should abort
         let excess = flash_loan::repay<LOANCOIN>(&mut pool, receipt, borrowed_coin, scenario.ctx());
@@ -197,7 +208,11 @@ module flash_loan::flash_loan_test {
         flash_loan::deposit<LOANCOIN>(&mut pool, deposit_coin);
 
         // Flash loan to generate fees
-        let (mut borrowed_coin, receipt) = flash_loan::borrow<LOANCOIN>(&mut pool, 10_000_000_000, scenario.ctx());
+        let (mut borrowed_coin, receipt) = flash_loan::borrow<LOANCOIN>(
+            &mut pool,
+            10_000_000_000,
+            scenario.ctx(),
+        );
         let fee_coin = coin::mint<LOANCOIN>(&mut treasury_cap, 30_000_000, scenario.ctx());
         coin::join(&mut borrowed_coin, fee_coin);
 
@@ -231,24 +246,40 @@ module flash_loan::flash_loan_test {
 
         scenario.next_tx(@0xA);
 
-        let deposit_coin = coin::mint<LOANCOIN>(&mut treasury_cap, 1_000_000_000_000, scenario.ctx());
+        let deposit_coin = coin::mint<LOANCOIN>(
+            &mut treasury_cap,
+            1_000_000_000_000,
+            scenario.ctx(),
+        );
         let mut pool = scenario.take_shared<flash_loan::FlashPool<LOANCOIN>>();
         flash_loan::deposit<LOANCOIN>(&mut pool, deposit_coin);
 
         // Flash loan #1
-        let (mut borrowed1, receipt1) = flash_loan::borrow<LOANCOIN>(&mut pool, 10_000_000_000, scenario.ctx());
+        let (mut borrowed1, receipt1) = flash_loan::borrow<LOANCOIN>(
+            &mut pool,
+            10_000_000_000,
+            scenario.ctx(),
+        );
         let fee1 = coin::mint<LOANCOIN>(&mut treasury_cap, 30_000_000, scenario.ctx());
         coin::join(&mut borrowed1, fee1);
         let excess1 = flash_loan::repay<LOANCOIN>(&mut pool, receipt1, borrowed1, scenario.ctx());
 
         // Flash loan #2
-        let (mut borrowed2, receipt2) = flash_loan::borrow<LOANCOIN>(&mut pool, 50_000_000_000, scenario.ctx());
+        let (mut borrowed2, receipt2) = flash_loan::borrow<LOANCOIN>(
+            &mut pool,
+            50_000_000_000,
+            scenario.ctx(),
+        );
         let fee2 = coin::mint<LOANCOIN>(&mut treasury_cap, 150_000_000, scenario.ctx());
         coin::join(&mut borrowed2, fee2);
         let excess2 = flash_loan::repay<LOANCOIN>(&mut pool, receipt2, borrowed2, scenario.ctx());
 
         // Flash loan #3
-        let (mut borrowed3, receipt3) = flash_loan::borrow<LOANCOIN>(&mut pool, 100_000_000_000, scenario.ctx());
+        let (mut borrowed3, receipt3) = flash_loan::borrow<LOANCOIN>(
+            &mut pool,
+            100_000_000_000,
+            scenario.ctx(),
+        );
         let fee3 = coin::mint<LOANCOIN>(&mut treasury_cap, 300_000_000, scenario.ctx());
         coin::join(&mut borrowed3, fee3);
         let excess3 = flash_loan::repay<LOANCOIN>(&mut pool, receipt3, borrowed3, scenario.ctx());
@@ -302,7 +333,11 @@ module flash_loan::flash_loan_test {
         flash_loan::deposit<LOANCOIN>(&mut pool, deposit_coin);
 
         // Try to borrow 10_000 (more than pool has)
-        let (borrowed, receipt) = flash_loan::borrow<LOANCOIN>(&mut pool, 10_000_000_000, scenario.ctx());
+        let (borrowed, receipt) = flash_loan::borrow<LOANCOIN>(
+            &mut pool,
+            10_000_000_000,
+            scenario.ctx(),
+        );
 
         // Consume for compilation (won't reach here)
         let excess = flash_loan::repay<LOANCOIN>(&mut pool, receipt, borrowed, scenario.ctx());
@@ -313,5 +348,4 @@ module flash_loan::flash_loan_test {
         transfer::public_transfer(treasury_cap, @0x0);
         scenario.end();
     }
-
 }

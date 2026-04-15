@@ -286,10 +286,15 @@ fun cumulative_end(oracle: &Oracle): u64 {
 // ===== Accessors for tests / external modules =====
 
 public fun feed_price(feed: &PriceFeed): u64 { feed.price }
+
 public fun feed_confidence(feed: &PriceFeed): u64 { feed.confidence }
+
 public fun feed_timestamp(feed: &PriceFeed): u64 { feed.timestamp_ms }
+
 public fun observation_timestamp(o: &TwapObservation): u64 { o.timestamp_ms }
+
 public fun observation_price(o: &TwapObservation): u64 { o.price }
+
 public fun observation_cumulative(o: &TwapObservation): u64 { o.cumulative_price }
 
 // ===== AdminCap destructor (for test cleanup) =====

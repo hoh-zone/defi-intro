@@ -24,9 +24,9 @@
 
 ## 协议工程师在 Move 里的映射（本章代码）
 
-| 角色 | `pm.move` 中的落点 |
-|------|---------------------|
-| 任意用户 | 调用 `buy_*` / `sell_*` / `split` / `merge` / `claim` |
-| 金库 | `Market.vault: Balance<T>` |
+| 角色               | `pm.move` 中的落点                                              |
+| ------------------ | --------------------------------------------------------------- |
+| 任意用户           | 调用 `buy_*` / `sell_*` / `split` / `merge` / `claim`           |
+| 金库               | `Market.vault: Balance<T>`                                      |
 | 裁决流程（教学版） | `submit_result` →（可选）`challenge_result` → `finalize_result` |
-| 参数治理（未展开） | 生产环境常用 `AdminCap` 调 `b`、费率、暂停——本章保持最小化 |
+| 参数治理（未展开） | 生产环境常用 `AdminCap` 调 `b`、费率、暂停——本章保持最小化      |

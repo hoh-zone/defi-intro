@@ -2,7 +2,7 @@
 
 ## 与 AMM 腿的本质区别
 
-- **AMM（Cetus CLMM 等）**：核心状态在 **池对象**；聚合器包装函数主要转发 **`SwapContext` + 池 + Clock**。  
+- **AMM（Cetus CLMM 等）**：核心状态在 **池对象**；聚合器包装函数主要转发 **`SwapContext` + 池 + Clock**。
 - **DeepBook V3**：成交在 **订单簿**；除了池/市场对象外，还常涉及 **DEEP 手续费**、**全局配置**、以及有时必须先写的 **价格点 / 参考池** 等辅助操作。
 
 因此 **`DeepbookV3Router`**（`src/movecall/deepbook_v3.ts`）的 `prepareSwapData` 会读 **路径扩展字段**，再决定 PTB 里 **要不要多插一两个 `moveCall`**。
@@ -50,8 +50,8 @@
 
 **读这段代码应建立的直觉：**
 
-1. **类型参数顺序** 仍由 `direction` 决定，与 Cetus 一节相同；  
-2. **中间币最后一跳** 同样可能用 `MAX_AMOUNT_IN`；  
+1. **类型参数顺序** 仍由 `direction` 决定，与 Cetus 一节相同；
+2. **中间币最后一跳** 同样可能用 `MAX_AMOUNT_IN`；
 3. **DeepBook 特有** 的是 `needAddDeepPricePoint` 与 **参考池类型**——缺字段时 **客户端直接抛错**，避免发一笔必失败的 PTB。
 
 `swap` 方法里若 `needAddDeepPricePoint` 为真，会先走 `addDeepPricePoint(...)`，再执行真正的 `swap`（具体 `moveCall` 目标名见源码）。

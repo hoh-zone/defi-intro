@@ -98,35 +98,33 @@ module defi::commodity_oracle;
 
 ```move
 module insurance::weather;
-    use sui::clock::Clock;
 
-    public struct WeatherData has store {
-        rainfall_mm: u64,
-        temperature_c: u64,
-        timestamp_ms: u64,
-    }
+use sui::clock::Clock;
 
-    public struct RainfallPolicy has store {
-        threshold_mm: u64,
-        duration_days: u64,
-        consecutive_days_below: u64,
-        triggered: bool,
-    }
+public struct WeatherData has store {
+    rainfall_mm: u64,
+    temperature_c: u64,
+    timestamp_ms: u64,
+}
 
-    public fun check_rainfall_trigger(
-        policy: &mut RainfallPolicy,
-        weather: &WeatherData,
-    ): bool {
-        if (weather.rainfall_mm < policy.threshold_mm) {
-            policy.consecutive_days_below = policy.consecutive_days_below + 1;
-        } else {
-            policy.consecutive_days_below = 0;
-        };
-        if (policy.consecutive_days_below >= policy.duration_days) {
-            policy.triggered = true;
-        };
-        policy.triggered
-    }
+public struct RainfallPolicy has store {
+    threshold_mm: u64,
+    duration_days: u64,
+    consecutive_days_below: u64,
+    triggered: bool,
+}
+
+public fun check_rainfall_trigger(policy: &mut RainfallPolicy, weather: &WeatherData): bool {
+    if (weather.rainfall_mm < policy.threshold_mm) {
+        policy.consecutive_days_below = policy.consecutive_days_below + 1;
+    } else {
+        policy.consecutive_days_below = 0;
+    };
+    if (policy.consecutive_days_below >= policy.duration_days) {
+        policy.triggered = true;
+    };
+    policy.triggered
+}
 ```
 
 ## 体育与事件预言机
@@ -166,9 +164,9 @@ module insurance::weather;
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| API 可用性 | 外部 API 可能宕机或限流 |
-| 数据格式变化 | API 返回格式变更导致解析失败 |
-| 时区问题 | 天气和体育数据需要精确的时区处理 |
-| 人为操纵 | 某些事件结果可能被操纵（如低级别比赛） |
+| 风险         | 描述                                   |
+| ------------ | -------------------------------------- |
+| API 可用性   | 外部 API 可能宕机或限流                |
+| 数据格式变化 | API 返回格式变更导致解析失败           |
+| 时区问题     | 天气和体育数据需要精确的时区处理       |
+| 人为操纵     | 某些事件结果可能被操纵（如低级别比赛） |

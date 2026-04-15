@@ -74,157 +74,157 @@ Delta 分析：
 
 ```move
 module yield_strategy::delta_neutral;
-    use sui::coin::{Self, Coin};
-    use sui::balance::{Self, Balance};
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::event;
 
-    #[error]
-    const ENotOwner: vector<u8> = b"Not Owner";
-    #[error]
-    const EZeroAmount: vector<u8> = b"Zero Amount";
-    #[error]
-    const EDeltaExceeded: vector<u8> = b"Delta Exceeded";
-    #[error]
-    const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
-    const PRECISION: u64 = 1_000_000_000;
+use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin};
+use sui::event;
+use sui::object::{Self, UID};
+use sui::tx_context::TxContext;
 
-    public struct DeltaNeutralPosition has key {
-        id: UID,
-        owner: address,
-        long_balance: Balance<BaseCoin>,
-        short_amount: u64,
-        lp_shares: u64,
-        target_delta_bps: u64,
-        max_delta_bps: u64,
-        entry_price: u64,
-        total_fees_earned: u64,
-        total_funding_paid: u64,
+#[error]
+const ENotOwner: vector<u8> = b"Not Owner";
+#[error]
+const EZeroAmount: vector<u8> = b"Zero Amount";
+#[error]
+const EDeltaExceeded: vector<u8> = b"Delta Exceeded";
+#[error]
+const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
+const PRECISION: u64 = 1_000_000_000;
+
+public struct DeltaNeutralPosition has key {
+    id: UID,
+    owner: address,
+    long_balance: Balance<BaseCoin>,
+    short_amount: u64,
+    lp_shares: u64,
+    target_delta_bps: u64,
+    max_delta_bps: u64,
+    entry_price: u64,
+    total_fees_earned: u64,
+    total_funding_paid: u64,
+}
+
+public struct Rebalanced has copy, drop {
+    position: address,
+    old_short: u64,
+    new_short: u64,
+    delta_before: u64,
+    delta_after: u64,
+}
+
+public fun open<BaseCoin>(
+    initial_long: Coin<BaseCoin>,
+    short_amount: u64,
+    entry_price: u64,
+    target_delta_bps: u64,
+    ctx: &mut TxContext,
+) {
+    assert!(initial_long.value() > 0, EZeroAmount);
+    assert!(target_delta_bps <= 1000, EDeltaExceeded);
+    let long_value = initial_long.value() * entry_price / PRECISION;
+    let position = DeltaNeutralPosition {
+        id: object::new(ctx),
+        owner: ctx.sender(),
+        long_balance: coin::into_balance(initial_long),
+        short_amount,
+        lp_shares: 0,
+        target_delta_bps,
+        max_delta_bps: target_delta_bps * 3,
+        entry_price,
+        total_fees_earned: 0,
+        total_funding_paid: 0,
+    };
+    transfer::transfer(position, ctx.sender());
+}
+
+public fun current_delta(position: &DeltaNeutralPosition, current_price: u64): u64 {
+    let long_value = position.long_balance.value() * current_price / PRECISION;
+    let short_value = position.short_amount * current_price / PRECISION;
+    if (long_value + short_value == 0) { return 0 };
+    if (long_value > short_value) {
+        (long_value - short_value) * 10000 / (long_value + short_value)
+    } else {
+        (short_value - long_value) * 10000 / (long_value + short_value)
     }
+}
 
-    public struct Rebalanced has copy, drop {
-        position: address,
-        old_short: u64,
-        new_short: u64,
-        delta_before: u64,
-        delta_after: u64,
-    }
+public fun needs_rebalance(position: &DeltaNeutralPosition, current_price: u64): bool {
+    current_delta(position, current_price) > position.max_delta_bps
+}
 
-    public fun open<BaseCoin>(
-        initial_long: Coin<BaseCoin>,
-        short_amount: u64,
-        entry_price: u64,
-        target_delta_bps: u64,
-        ctx: &mut TxContext,
-    ) {
-        assert!(initial_long.value() > 0, EZeroAmount);
-        assert!(target_delta_bps <= 1000, EDeltaExceeded);
-        let long_value = initial_long.value() * entry_price / PRECISION;
-        let position = DeltaNeutralPosition {
-            id: object::new(ctx),
-            owner: ctx.sender(),
-            long_balance: coin::into_balance(initial_long),
-            short_amount,
-            lp_shares: 0,
-            target_delta_bps,
-            max_delta_bps: target_delta_bps * 3,
-            entry_price,
-            total_fees_earned: 0,
-            total_funding_paid: 0,
-        };
-        transfer::transfer(position, ctx.sender());
+public fun compute_rebalance_amount(position: &DeltaNeutralPosition, current_price: u64): u64 {
+    let long_value = position.long_balance.value() * current_price / PRECISION;
+    let target_short = long_value * (10000 - position.target_delta_bps) / 10000;
+    let current_short_value = position.short_amount * current_price / PRECISION;
+    if (target_short > current_short_value) {
+        (target_short - current_short_value) * PRECISION / current_price
+    } else {
+        0
     }
+}
 
-    public fun current_delta(
-        position: &DeltaNeutralPosition,
-        current_price: u64,
-    ): u64 {
-        let long_value = position.long_balance.value() * current_price / PRECISION;
-        let short_value = position.short_amount * current_price / PRECISION;
-        if (long_value + short_value == 0) { return 0 };
-        if (long_value > short_value) {
-            (long_value - short_value) * 10000 / (long_value + short_value)
-        } else {
-            (short_value - long_value) * 10000 / (long_value + short_value)
-        }
-    }
+public fun rebalance<BaseCoin>(
+    position: &mut DeltaNeutralPosition<BaseCoin>,
+    current_price: u64,
+    ctx: &mut TxContext,
+) {
+    assert!(ctx.sender() == position.owner, ENotOwner);
+    let delta_before = current_delta(position, current_price);
+    assert!(delta_before > position.max_delta_bps, EDeltaExceeded);
+    let long_value = position.long_balance.value() * current_price / PRECISION;
+    let target_short = long_value * (10000 - position.target_delta_bps) / 10000;
+    let new_short_amount = target_short * PRECISION / current_price;
+    let old_short = position.short_amount;
+    position.short_amount = new_short_amount;
+    let delta_after = current_delta(position, current_price);
+    event::emit(Rebalanced {
+        position: object::uid_to_address(&position.id),
+        old_short,
+        new_short: new_short_amount,
+        delta_before,
+        delta_after,
+    });
+}
 
-    public fun needs_rebalance(
-        position: &DeltaNeutralPosition,
-        current_price: u64,
-    ): bool {
-        current_delta(position, current_price) > position.max_delta_bps
-    }
+public fun record_funding<BaseCoin>(
+    position: &mut DeltaNeutralPosition<BaseCoin>,
+    funding_amount: u64,
+) {
+    position.total_funding_paid = position.total_funding_paid + funding_amount;
+}
 
-    public fun compute_rebalance_amount(
-        position: &DeltaNeutralPosition,
-        current_price: u64,
-    ): u64 {
-        let long_value = position.long_balance.value() * current_price / PRECISION;
-        let target_short = long_value * (10000 - position.target_delta_bps) / 10000;
-        let current_short_value = position.short_amount * current_price / PRECISION;
-        if (target_short > current_short_value) {
-            (target_short - current_short_value) * PRECISION / current_price
-        } else {
-            0
-        }
-    }
+public fun record_fees<BaseCoin>(position: &mut DeltaNeutralPosition<BaseCoin>, fee_amount: u64) {
+    position.total_fees_earned = position.total_fees_earned + fee_amount;
+}
 
-    public fun rebalance<BaseCoin>(
-        position: &mut DeltaNeutralPosition<BaseCoin>,
-        current_price: u64,
-        ctx: &mut TxContext,
-    ) {
-        assert!(ctx.sender() == position.owner, ENotOwner);
-        let delta_before = current_delta(position, current_price);
-        assert!(delta_before > position.max_delta_bps, EDeltaExceeded);
-        let long_value = position.long_balance.value() * current_price / PRECISION;
-        let target_short = long_value * (10000 - position.target_delta_bps) / 10000;
-        let new_short_amount = target_short * PRECISION / current_price;
-        let old_short = position.short_amount;
-        position.short_amount = new_short_amount;
-        let delta_after = current_delta(position, current_price);
-        event::emit(Rebalanced {
-            position: object::uid_to_address(&position.id),
-            old_short,
-            new_short: new_short_amount,
-            delta_before,
-            delta_after,
-        });
-    }
+public fun net_pnl(position: &DeltaNeutralPosition, current_price: u64): u64 {
+    let long_value = position.long_balance.value() * current_price / PRECISION;
+    let short_cost = position.short_amount * current_price / PRECISION;
+    let unrealized = if (long_value > short_cost) { long_value - short_cost } else { 0 };
+    position.total_fees_earned + unrealized - position.total_funding_paid
+}
 
-    public fun record_funding<BaseCoin>(
-        position: &mut DeltaNeutralPosition<BaseCoin>,
-        funding_amount: u64,
-    ) {
-        position.total_funding_paid = position.total_funding_paid + funding_amount;
-    }
-
-    public fun record_fees<BaseCoin>(
-        position: &mut DeltaNeutralPosition<BaseCoin>,
-        fee_amount: u64,
-    ) {
-        position.total_fees_earned = position.total_fees_earned + fee_amount;
-    }
-
-    public fun net_pnl(position: &DeltaNeutralPosition, current_price: u64): u64 {
-        let long_value = position.long_balance.value() * current_price / PRECISION;
-        let short_cost = position.short_amount * current_price / PRECISION;
-        let unrealized = if (long_value > short_cost) { long_value - short_cost } else { 0 };
-        position.total_fees_earned + unrealized - position.total_funding_paid
-    }
-
-    public fun close<BaseCoin>(
-        position: DeltaNeutralPosition<BaseCoin>,
-        ctx: &mut TxContext,
-    ): Coin<BaseCoin> {
-        assert!(ctx.sender() == position.owner, ENotOwner);
-        let base = coin::from_balance(position.long_balance, ctx);
-        let DeltaNeutralPosition { id, owner: _, long_balance: _, short_amount: _, lp_shares: _, target_delta_bps: _, max_delta_bps: _, entry_price: _, total_fees_earned: _, total_funding_paid: _ } = position;
-        id.delete();
-        base
-    }
+public fun close<BaseCoin>(
+    position: DeltaNeutralPosition<BaseCoin>,
+    ctx: &mut TxContext,
+): Coin<BaseCoin> {
+    assert!(ctx.sender() == position.owner, ENotOwner);
+    let base = coin::from_balance(position.long_balance, ctx);
+    let DeltaNeutralPosition {
+        id,
+        owner: _,
+        long_balance: _,
+        short_amount: _,
+        lp_shares: _,
+        target_delta_bps: _,
+        max_delta_bps: _,
+        entry_price: _,
+        total_fees_earned: _,
+        total_funding_paid: _,
+    } = position;
+    id.delete();
+    base
+}
 ```
 
 ## Delta 中性的实际成本
@@ -248,10 +248,10 @@ Delta 中性不是免费的。维持 Delta ≈ 0 需要：
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 再平衡延迟 | 价格快速变化时来不及再平衡，Delta 偏离 |
-| 资金费率反转 | 资金费率可能变为负值，做空方需要付费 |
-| 对冲不完美 | LP 的 Delta 不是线性的（CLMM 集中区间），难以精确对冲 |
-| 多协议风险 | 策略涉及 LP + 借贷/永续合约，任一协议出问题都有影响 |
-| 极端行情 | 闪崩时永续合约和现货价格可能脱钩，对冲失效 |
+| 风险         | 描述                                                  |
+| ------------ | ----------------------------------------------------- |
+| 再平衡延迟   | 价格快速变化时来不及再平衡，Delta 偏离                |
+| 资金费率反转 | 资金费率可能变为负值，做空方需要付费                  |
+| 对冲不完美   | LP 的 Delta 不是线性的（CLMM 集中区间），难以精确对冲 |
+| 多协议风险   | 策略涉及 LP + 借贷/永续合约，任一协议出问题都有影响   |
+| 极端行情     | 闪崩时永续合约和现货价格可能脱钩，对冲失效            |

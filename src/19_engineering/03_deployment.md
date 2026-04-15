@@ -38,68 +38,70 @@ Sui 支持合约升级。升级策略：
 
 ```move
 module protocol::upgrade;
-    public struct PackageCap has key {
-        id: UID,
-        package_id: ID,
-    }
 
-    public struct UpgradePolicy has store {
-        max_upgrade_delay_ms: u64,
-        required_signatures: u64,
-        pending_upgrade: Option<UpgradeProposal>,
-    }
+public struct PackageCap has key {
+    id: UID,
+    package_id: ID,
+}
 
-    public struct UpgradeProposal has store {
-        new_package_digest: vector<u8>,
-        proposed_at: u64,
-        signers: vector<address>,
-    }
+public struct UpgradePolicy has store {
+    max_upgrade_delay_ms: u64,
+    required_signatures: u64,
+    pending_upgrade: Option<UpgradeProposal>,
+}
+
+public struct UpgradeProposal has store {
+    new_package_digest: vector<u8>,
+    proposed_at: u64,
+    signers: vector<address>,
+}
 ```
 
 ### 升级兼容性规则
 
-| 修改类型 | 兼容？ | 说明 |
-|----------|--------|------|
-| 新增 public 函数 | 是 | 不影响现有调用 |
-| 修改函数签名 | 否 | 必须通过新函数迁移 |
-| 新增 struct 字段 | 否 | 需要迁移方案 |
-| 修改错误码 | 谨慎 | 可能影响错误处理逻辑 |
-| 修改事件结构 | 谨慎 | 可能影响链下监控 |
+| 修改类型         | 兼容？ | 说明                 |
+| ---------------- | ------ | -------------------- |
+| 新增 public 函数 | 是     | 不影响现有调用       |
+| 修改函数签名     | 否     | 必须通过新函数迁移   |
+| 新增 struct 字段 | 否     | 需要迁移方案         |
+| 修改错误码       | 谨慎   | 可能影响错误处理逻辑 |
+| 修改事件结构     | 谨慎   | 可能影响链下监控     |
 
 ## 紧急暂停机制
 
 ```move
 module protocol::pause;
-    public struct PauseState has store {
-        deposits_paused: bool,
-        withdrawals_paused: bool,
-        borrows_paused: bool,
-        liquidations_paused: bool,
-        all_paused: bool,
-    }
 
-    public fun pause_deposits(_cap: &AdminCap, state: &mut PauseState) {
-        state.deposits_paused = true;
-    }
+public struct PauseState has store {
+    deposits_paused: bool,
+    withdrawals_paused: bool,
+    borrows_paused: bool,
+    liquidations_paused: bool,
+    all_paused: bool,
+}
 
-    public fun pause_all(_cap: &AdminCap, state: &mut PauseState) {
-        state.all_paused = true;
-    }
+public fun pause_deposits(_cap: &AdminCap, state: &mut PauseState) {
+    state.deposits_paused = true;
+}
 
-    public fun is_paused(state: &PauseState, action: u8): bool {
-        if (state.all_paused) { return true };
-        if (action == 0) {
-            state.deposits_paused
-        } else if (action == 1) {
-            state.withdrawals_paused
-        } else if (action == 2) {
-            state.borrows_paused
-        } else if (action == 3) {
-            state.liquidations_paused
-        } else {
-            false
-        }
+public fun pause_all(_cap: &AdminCap, state: &mut PauseState) {
+    state.all_paused = true;
+}
+
+public fun is_paused(state: &PauseState, action: u8): bool {
+    if (state.all_paused) { return true };
+    if (action == 0) {
+        state.deposits_paused
+    } else if (action == 1) {
+        state.withdrawals_paused
+    } else if (action == 2) {
+        state.borrows_paused
+    } else if (action == 3) {
+        state.liquidations_paused
+    } else {
+        false
     }
+}
 ```
 
 细粒度暂停：可以只暂停存款而不影响取款。确保用户在紧急情况下仍能退出。

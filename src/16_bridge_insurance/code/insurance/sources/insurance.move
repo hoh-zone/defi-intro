@@ -4,8 +4,8 @@
 /// Claims are simplified (no oracle) for educational purposes.
 module insurance::insurance;
 
-use sui::coin::{Self, Coin};
 use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin};
 use sui::event;
 
 // ===== Constants =====
@@ -326,11 +326,7 @@ public fun policy_start_time<Token>(policy: &Policy<Token>): u64 {
 
 /// Calculate the premium for a given coverage amount and duration.
 /// Formula: coverage_amount * premium_rate_bps / BPS_DIVISOR * duration_ms / MS_PER_YEAR
-public fun calculate_premium(
-    coverage_amount: u64,
-    premium_rate_bps: u64,
-    duration_ms: u64,
-): u64 {
+public fun calculate_premium(coverage_amount: u64, premium_rate_bps: u64, duration_ms: u64): u64 {
     // Do multiplication first to avoid truncation, then divide
     // coverage_amount * premium_rate_bps / BPS_DIVISOR gives annual premium
     // then * duration_ms / MS_PER_YEAR prorates it

@@ -2,16 +2,13 @@
 module lending_market::test_coins {
     public struct COLLATERAL has copy, drop, store {}
     public struct BORROW has copy, drop, store {}
-
 }
 #[test_only]
 module lending_market::market_test {
-    use sui::coin;
-    use sui::coin::{TreasuryCap, Coin};
-    use sui::test_scenario;
-    use lending_market::market;
-    use lending_market::market::{Market, DepositReceipt, BorrowReceipt, AdminCap};
+    use lending_market::market::{Self, Market, DepositReceipt, BorrowReceipt, AdminCap};
     use lending_market::test_coins::{COLLATERAL, BORROW};
+    use sui::coin::{Self, TreasuryCap, Coin};
+    use sui::test_scenario;
 
     const ADMIN: address = @0xA;
     const USER_B: address = @0xB;
@@ -20,15 +17,11 @@ module lending_market::market_test {
     // Helpers
     // ============================================================
 
-    fun setup_collateral(
-        ctx: &mut sui::tx_context::TxContext,
-    ): TreasuryCap<COLLATERAL> {
+    fun setup_collateral(ctx: &mut sui::tx_context::TxContext): TreasuryCap<COLLATERAL> {
         coin::create_treasury_cap_for_testing<COLLATERAL>(ctx)
     }
 
-    fun setup_borrow(
-        ctx: &mut sui::tx_context::TxContext,
-    ): TreasuryCap<BORROW> {
+    fun setup_borrow(ctx: &mut sui::tx_context::TxContext): TreasuryCap<BORROW> {
         coin::create_treasury_cap_for_testing<BORROW>(ctx)
     }
 
@@ -42,13 +35,13 @@ module lending_market::market_test {
     /// - jump_multiplier: 5x (slope above kink)
     fun init_market(ctx: &mut sui::tx_context::TxContext) {
         market::create_market<COLLATERAL, BORROW>(
-            7500,  // collateral_factor_bps
-            8000,  // liquidation_threshold_bps
-            500,   // liquidation_bonus_bps
-            200,   // base_rate_bps
-            8000,  // kink_bps
-            1000,  // multiplier_bps
-            500,   // jump_multiplier_bps
+            7500, // collateral_factor_bps
+            8000, // liquidation_threshold_bps
+            500, // liquidation_bonus_bps
+            200, // base_rate_bps
+            8000, // kink_bps
+            1000, // multiplier_bps
+            500, // jump_multiplier_bps
             ctx,
         );
     }
@@ -102,7 +95,11 @@ module lending_market::market_test {
         // Scope ctx usage so scenario is free for take_shared
         let collateral_coin = coin::mint(&mut coll_cap, 1000, scenario.ctx());
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let deposit_receipt = market::supply_collateral(&mut market_obj, collateral_coin, scenario.ctx());
+        let deposit_receipt = market::supply_collateral(
+            &mut market_obj,
+            collateral_coin,
+            scenario.ctx(),
+        );
 
         assert!(market::total_collateral(&market_obj) == 1000);
         assert!(market::collateral_vault_balance(&market_obj) == 1000);
@@ -139,7 +136,11 @@ module lending_market::market_test {
         scenario.next_tx(ADMIN);
         let collateral_coin = coin::mint(&mut coll_cap, 1000, scenario.ctx());
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let deposit_receipt = market::supply_collateral(&mut market_obj, collateral_coin, scenario.ctx());
+        let deposit_receipt = market::supply_collateral(
+            &mut market_obj,
+            collateral_coin,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(market_obj);
         sui::transfer::public_transfer(deposit_receipt, scenario.sender());
 
@@ -149,7 +150,12 @@ module lending_market::market_test {
         scenario.next_tx(ADMIN);
         let deposit_receipt = scenario.take_from_sender<DepositReceipt<COLLATERAL, BORROW>>();
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let (borrow_coin, borrow_receipt) = market::borrow(&mut market_obj, &deposit_receipt, 500, scenario.ctx());
+        let (borrow_coin, borrow_receipt) = market::borrow(
+            &mut market_obj,
+            &deposit_receipt,
+            500,
+            scenario.ctx(),
+        );
 
         assert!(coin::value(&borrow_coin) == 500);
         assert!(market::total_borrow(&market_obj) == 500);
@@ -188,7 +194,11 @@ module lending_market::market_test {
         scenario.next_tx(ADMIN);
         let collateral_coin = coin::mint(&mut coll_cap, 1000, scenario.ctx());
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let deposit_receipt = market::supply_collateral(&mut market_obj, collateral_coin, scenario.ctx());
+        let deposit_receipt = market::supply_collateral(
+            &mut market_obj,
+            collateral_coin,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(market_obj);
         sui::transfer::public_transfer(deposit_receipt, scenario.sender());
 
@@ -197,7 +207,12 @@ module lending_market::market_test {
         scenario.next_tx(ADMIN);
         let deposit_receipt = scenario.take_from_sender<DepositReceipt<COLLATERAL, BORROW>>();
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let (borrow_coin, borrow_receipt) = market::borrow(&mut market_obj, &deposit_receipt, 800, scenario.ctx());
+        let (borrow_coin, borrow_receipt) = market::borrow(
+            &mut market_obj,
+            &deposit_receipt,
+            800,
+            scenario.ctx(),
+        );
 
         // Should not reach here.
         test_scenario::return_shared(market_obj);
@@ -232,7 +247,11 @@ module lending_market::market_test {
         scenario.next_tx(ADMIN);
         let collateral_coin = coin::mint(&mut coll_cap, 1000, scenario.ctx());
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let deposit_receipt = market::supply_collateral(&mut market_obj, collateral_coin, scenario.ctx());
+        let deposit_receipt = market::supply_collateral(
+            &mut market_obj,
+            collateral_coin,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(market_obj);
         sui::transfer::public_transfer(deposit_receipt, scenario.sender());
 
@@ -240,7 +259,12 @@ module lending_market::market_test {
         scenario.next_tx(ADMIN);
         let deposit_receipt = scenario.take_from_sender<DepositReceipt<COLLATERAL, BORROW>>();
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let (borrow_coin, borrow_receipt) = market::borrow(&mut market_obj, &deposit_receipt, 500, scenario.ctx());
+        let (borrow_coin, borrow_receipt) = market::borrow(
+            &mut market_obj,
+            &deposit_receipt,
+            500,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(market_obj);
         scenario.return_to_sender(deposit_receipt);
         sui::transfer::public_transfer(borrow_receipt, scenario.sender());
@@ -288,7 +312,11 @@ module lending_market::market_test {
         scenario.next_tx(ADMIN);
         let collateral_coin = coin::mint(&mut coll_cap, 1000, scenario.ctx());
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let deposit_receipt = market::supply_collateral(&mut market_obj, collateral_coin, scenario.ctx());
+        let deposit_receipt = market::supply_collateral(
+            &mut market_obj,
+            collateral_coin,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(market_obj);
         sui::transfer::public_transfer(deposit_receipt, scenario.sender());
 
@@ -297,7 +325,12 @@ module lending_market::market_test {
         scenario.next_tx(ADMIN);
         let deposit_receipt = scenario.take_from_sender<DepositReceipt<COLLATERAL, BORROW>>();
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let (borrow_coin, borrow_receipt) = market::borrow(&mut market_obj, &deposit_receipt, 100, scenario.ctx());
+        let (borrow_coin, borrow_receipt) = market::borrow(
+            &mut market_obj,
+            &deposit_receipt,
+            100,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(market_obj);
         scenario.return_to_sender(deposit_receipt);
         sui::transfer::public_transfer(borrow_receipt, scenario.sender());
@@ -311,7 +344,12 @@ module lending_market::market_test {
         let borrow_coin = scenario.take_from_sender<Coin<BORROW>>();
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
 
-        let withdrawn = market::withdraw_collateral(&mut market_obj, deposit_receipt, &borrow_receipt, scenario.ctx());
+        let withdrawn = market::withdraw_collateral(
+            &mut market_obj,
+            deposit_receipt,
+            &borrow_receipt,
+            scenario.ctx(),
+        );
 
         assert!(coin::value(&withdrawn) == 1000);
         assert!(market::total_collateral(&market_obj) == 0);
@@ -350,14 +388,23 @@ module lending_market::market_test {
         scenario.next_tx(USER_B);
         let collateral_coin = coin::mint(&mut coll_cap, 1000, scenario.ctx());
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let deposit_receipt_b = market::supply_collateral(&mut market_obj, collateral_coin, scenario.ctx());
+        let deposit_receipt_b = market::supply_collateral(
+            &mut market_obj,
+            collateral_coin,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(market_obj);
         sui::transfer::public_transfer(deposit_receipt_b, scenario.sender());
 
         scenario.next_tx(USER_B);
         let deposit_receipt_b = scenario.take_from_sender<DepositReceipt<COLLATERAL, BORROW>>();
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let (borrow_coin, borrow_receipt_b) = market::borrow(&mut market_obj, &deposit_receipt_b, 500, scenario.ctx());
+        let (borrow_coin, borrow_receipt_b) = market::borrow(
+            &mut market_obj,
+            &deposit_receipt_b,
+            500,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(market_obj);
         scenario.return_to_sender(deposit_receipt_b);
         sui::transfer::public_transfer(borrow_receipt_b, scenario.sender());
@@ -438,7 +485,11 @@ module lending_market::market_test {
         scenario.next_tx(ADMIN);
         let collateral_coin = coin::mint(&mut coll_cap, 10000, scenario.ctx());
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let deposit_receipt = market::supply_collateral(&mut market_obj, collateral_coin, scenario.ctx());
+        let deposit_receipt = market::supply_collateral(
+            &mut market_obj,
+            collateral_coin,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(market_obj);
         sui::transfer::public_transfer(deposit_receipt, scenario.sender());
 
@@ -448,7 +499,12 @@ module lending_market::market_test {
         scenario.next_tx(ADMIN);
         let deposit_receipt = scenario.take_from_sender<DepositReceipt<COLLATERAL, BORROW>>();
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let (borrow_coin, borrow_receipt) = market::borrow(&mut market_obj, &deposit_receipt, 5000, scenario.ctx());
+        let (borrow_coin, borrow_receipt) = market::borrow(
+            &mut market_obj,
+            &deposit_receipt,
+            5000,
+            scenario.ctx(),
+        );
 
         let rate_at_50 = market::calculate_interest_rate(&market_obj);
         assert!(rate_at_50 == 700);
@@ -466,7 +522,12 @@ module lending_market::market_test {
         let borrow_receipt1 = scenario.take_from_sender<BorrowReceipt<COLLATERAL, BORROW>>();
         let borrow_coin1 = scenario.take_from_sender<Coin<BORROW>>();
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let (borrow_coin2, borrow_receipt2) = market::borrow(&mut market_obj, &deposit_receipt, 3000, scenario.ctx());
+        let (borrow_coin2, borrow_receipt2) = market::borrow(
+            &mut market_obj,
+            &deposit_receipt,
+            3000,
+            scenario.ctx(),
+        );
 
         let rate_at_kink = market::calculate_interest_rate(&market_obj);
         assert!(rate_at_kink == 1000);
@@ -489,7 +550,12 @@ module lending_market::market_test {
         let borrow_coin1 = scenario.take_from_sender<Coin<BORROW>>();
         let borrow_coin2 = scenario.take_from_sender<Coin<BORROW>>();
         let mut market_obj = test_scenario::take_shared<Market<COLLATERAL, BORROW>>(&scenario);
-        let (borrow_coin3, borrow_receipt3) = market::borrow(&mut market_obj, &deposit_receipt, 1000, scenario.ctx());
+        let (borrow_coin3, borrow_receipt3) = market::borrow(
+            &mut market_obj,
+            &deposit_receipt,
+            1000,
+            scenario.ctx(),
+        );
 
         let rate_above_kink = market::calculate_interest_rate(&market_obj);
         assert!(rate_above_kink == 1005);
@@ -508,5 +574,4 @@ module lending_market::market_test {
 
         scenario.end();
     }
-
 }

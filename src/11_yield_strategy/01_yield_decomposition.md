@@ -53,14 +53,14 @@ AMM LP 价值 = 2 × √(P/P₀) / (1 + P/P₀) × 初始价值
 ```
 
 | 价格变化 | 无常损失 |
-|---|---|
-| 1.25x | 0.6% |
-| 1.5x | 2.0% |
-| 2.0x | 5.7% |
-| 3.0x | 13.4% |
-| 5.0x | 25.5% |
-| 0.5x | 5.7% |
-| 0.25x | 20.0% |
+| -------- | -------- |
+| 1.25x    | 0.6%     |
+| 1.5x     | 2.0%     |
+| 2.0x     | 5.7%     |
+| 3.0x     | 13.4%    |
+| 5.0x     | 25.5%    |
+| 0.5x     | 5.7%     |
+| 0.25x    | 20.0%    |
 
 ### CLMM 风格（集中区间）
 
@@ -93,55 +93,56 @@ AMM LP 价值 = 2 × √(P/P₀) / (1 + P/P₀) × 初始价值
 
 ```move
 module yield_strategy::il_calculator;
-    const PRECISION: u64 = 1_000_000_000;
 
-    public fun impermanent_loss(price_ratio_scaled: u64): u64 {
-        let sqrt_r = sqrt_scaled(price_ratio_scaled);
-        let amm_value = 2 * sqrt_r;
-        let hold_value = PRECISION + price_ratio_scaled;
-        if (amm_value * 2 >= hold_value) {
-            0
-        } else {
-            (hold_value - amm_value * 2) * PRECISION / hold_value
-        }
-    }
+const PRECISION: u64 = 1_000_000_000;
 
-    public fun net_yield(
-        fee_apr_bps: u64,
-        incentive_apr_bps: u64,
-        il_bps: u64,
-    ): u64 {
-        let total = fee_apr_bps + incentive_apr_bps;
-        if (total > il_bps) { total - il_bps } else { 0 }
+public fun impermanent_loss(price_ratio_scaled: u64): u64 {
+    let sqrt_r = sqrt_scaled(price_ratio_scaled);
+    let amm_value = 2 * sqrt_r;
+    let hold_value = PRECISION + price_ratio_scaled;
+    if (amm_value * 2 >= hold_value) {
+        0
+    } else {
+        (hold_value - amm_value * 2) * PRECISION / hold_value
     }
+}
 
-    fun sqrt_scaled(n: u64): u64 {
-        if (n == 0) { return 0 };
-        let mut x = n;
-        let mut y = (x + 1) / 2;
-        while (y < x) {
-            x = y;
-            y = (x + n / x) / 2;
-        };
-        x
-    }
+public fun net_yield(fee_apr_bps: u64, incentive_apr_bps: u64, il_bps: u64): u64 {
+    let total = fee_apr_bps + incentive_apr_bps;
+    if (total > il_bps) { total - il_bps } else { 0 }
+}
 
-    public fun clmm_concentration_factor(
-        tick_lower: int32,
-        tick_upper: int32,
-        current_tick: int32,
-    ): u64 {
-        let range = (tick_upper - tick_lower) as u64;
-        if (range == 0) { return PRECISION };
-        let dist_lower = if (current_tick > tick_lower) { (current_tick - tick_lower) as u64 } else { 0 };
-        let dist_upper = if (tick_upper > current_tick) { (tick_upper - current_tick) as u64 } else { 0 };
-        let in_range = if (dist_lower > 0 && dist_upper > 0) {
-            if (dist_lower < dist_upper) { dist_lower * 2 } else { dist_upper * 2 }
-        } else {
-            0
-        };
-        PRECISION * in_range / range
-    }
+fun sqrt_scaled(n: u64): u64 {
+    if (n == 0) { return 0 };
+    let mut x = n;
+    let mut y = (x + 1) / 2;
+    while (y < x) {
+        x = y;
+        y = (x + n / x) / 2;
+    };
+    x
+}
+
+public fun clmm_concentration_factor(
+    tick_lower: int32,
+    tick_upper: int32,
+    current_tick: int32,
+): u64 {
+    let range = (tick_upper - tick_lower) as u64;
+    if (range == 0) { return PRECISION };
+    let dist_lower = if (current_tick > tick_lower) { (current_tick - tick_lower) as u64 } else {
+        0
+    };
+    let dist_upper = if (tick_upper > current_tick) { (tick_upper - current_tick) as u64 } else {
+        0
+    };
+    let in_range = if (dist_lower > 0 && dist_upper > 0) {
+        if (dist_lower < dist_upper) { dist_lower * 2 } else { dist_upper * 2 }
+    } else {
+        0
+    };
+    PRECISION * in_range / range
+}
 ```
 
 ## 收益归因分析
@@ -167,9 +168,9 @@ module yield_strategy::il_calculator;
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 无常损失被低估 | 很多 LP 只看手续费 APR，忽视 IL 可能吃掉全部收益 |
-| 激励代币贬值 | 激励收入以协议代币发放，代币价格下跌时实际收益远低于名义值 |
-| 区间穿出 | CLMM 集中区间被价格穿出后，手续费收入归零，资金全部转为单边资产 |
-| 尾部风险 | 极端行情下 IL 可能超过 50%，远超手续费收入 |
+| 风险           | 描述                                                            |
+| -------------- | --------------------------------------------------------------- |
+| 无常损失被低估 | 很多 LP 只看手续费 APR，忽视 IL 可能吃掉全部收益                |
+| 激励代币贬值   | 激励收入以协议代币发放，代币价格下跌时实际收益远低于名义值      |
+| 区间穿出       | CLMM 集中区间被价格穿出后，手续费收入归零，资金全部转为单边资产 |
+| 尾部风险       | 极端行情下 IL 可能超过 50%，远超手续费收入                      |

@@ -201,10 +201,10 @@ sui move build
 
 ## 三、小结：先上下文、再腿、再 confirm
 
-| 阶段 | 链上含义 |
-|------|----------|
-| `new_swap_context*` | 吃进用户 `Coin`，建立上下文与约束 |
+| 阶段                          | 链上含义                            |
+| ----------------------------- | ----------------------------------- |
+| `new_swap_context*`           | 吃进用户 `Coin`，建立上下文与约束   |
 | 各 `DexRouter.swap`（下一节） | 按路径追加多跳调用，消耗/产生中间币 |
-| `confirm_swap` / transfer* | 校验 min_out，把目标币交给用户 |
+| `confirm_swap` / transfer\*   | 校验 min_out，把目标币交给用户      |
 
 下一节讲 **DexRouter** 如何把 **API 的一跳路径** 变成 **`moveCall`**。

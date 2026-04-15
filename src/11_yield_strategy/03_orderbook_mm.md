@@ -50,135 +50,133 @@ Spread % = (Ask - Bid) / Mid Price
 
 ```move
 module yield_strategy::orderbook_mm;
-    use sui::coin::{Self, Coin};
-    use sui::clock::Clock;
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::balance::{Self, Balance};
 
-    #[error]
-    const ENotOwner: vector<u8> = b"Not Owner";
-    #[error]
-    const EInvalidSpread: vector<u8> = b"Invalid Spread";
-    #[error]
-    const EInsufficientInventory: vector<u8> = b"Insufficient Inventory";
-    const PRECISION: u64 = 1_000_000_000;
+use sui::balance::{Self, Balance};
+use sui::clock::Clock;
+use sui::coin::{Self, Coin};
+use sui::object::{Self, UID};
+use sui::tx_context::TxContext;
 
-    public struct MarketMaker has key {
-        id: UID,
-        base_balance: Balance<BaseCoin>,
-        quote_balance: Balance<QuoteCoin>,
-        mid_price: u64,
-        spread_bps: u64,
-        order_size: u64,
-        inventory_limit_bps: u64,
-        total_bought: u64,
-        total_sold: u64,
-        total_fees: u64,
-        owner: address,
+#[error]
+const ENotOwner: vector<u8> = b"Not Owner";
+#[error]
+const EInvalidSpread: vector<u8> = b"Invalid Spread";
+#[error]
+const EInsufficientInventory: vector<u8> = b"Insufficient Inventory";
+const PRECISION: u64 = 1_000_000_000;
+
+public struct MarketMaker has key {
+    id: UID,
+    base_balance: Balance<BaseCoin>,
+    quote_balance: Balance<QuoteCoin>,
+    mid_price: u64,
+    spread_bps: u64,
+    order_size: u64,
+    inventory_limit_bps: u64,
+    total_bought: u64,
+    total_sold: u64,
+    total_fees: u64,
+    owner: address,
+}
+
+public fun initialize<BaseCoin, QuoteCoin>(
+    base: Coin<BaseCoin>,
+    quote: Coin<QuoteCoin>,
+    spread_bps: u64,
+    order_size: u64,
+    ctx: &mut TxContext,
+) {
+    assert!(spread_bps > 0 && spread_bps < 10000, EInvalidSpread);
+    let mm = MarketMaker {
+        id: object::new(ctx),
+        base_balance: coin::into_balance(base),
+        quote_balance: coin::into_balance(quote),
+        mid_price: 0,
+        spread_bps,
+        order_size,
+        inventory_limit_bps: 3000,
+        total_bought: 0,
+        total_sold: 0,
+        total_fees: 0,
+        owner: ctx.sender(),
+    };
+    transfer::share_object(mm);
+}
+
+public fun update_price(mm: &mut MarketMaker, new_mid_price: u64) {
+    mm.mid_price = new_mid_price;
+}
+
+public fun compute_quotes(mm: &MarketMaker): (u64, u64) {
+    let half_spread = mm.mid_price * mm.spread_bps / 20000;
+    let skew = inventory_skew(mm);
+    let skew_adj = half_spread * skew / PRECISION;
+    let bid = mm.mid_price - half_spread + skew_adj;
+    let ask = mm.mid_price + half_spread + skew_adj;
+    (bid, ask)
+}
+
+public fun inventory_skew(mm: &MarketMaker): u64 {
+    let total = mm.total_bought + mm.total_sold;
+    if (total == 0) { return 0 };
+    if (mm.total_bought > mm.total_sold) {
+        let excess = mm.total_bought - mm.total_sold;
+        0 - (excess * PRECISION / total / 2)
+    } else {
+        let excess = mm.total_sold - mm.total_bought;
+        excess * PRECISION / total / 2
     }
+}
 
-    public fun initialize<BaseCoin, QuoteCoin>(
-        base: Coin<BaseCoin>,
-        quote: Coin<QuoteCoin>,
-        spread_bps: u64,
-        order_size: u64,
-        ctx: &mut TxContext,
-    ) {
-        assert!(spread_bps > 0 && spread_bps < 10000, EInvalidSpread);
-        let mm = MarketMaker {
-            id: object::new(ctx),
-            base_balance: coin::into_balance(base),
-            quote_balance: coin::into_balance(quote),
-            mid_price: 0,
-            spread_bps,
-            order_size,
-            inventory_limit_bps: 3000,
-            total_bought: 0,
-            total_sold: 0,
-            total_fees: 0,
-            owner: ctx.sender(),
-        };
-        transfer::share_object(mm);
-    }
+public fun place_bid<BaseCoin, QuoteCoin>(
+    mm: &mut MarketMaker<BaseCoin, QuoteCoin>,
+    amount: u64,
+    ctx: &mut TxContext,
+): Coin<QuoteCoin> {
+    let (bid_price, _) = compute_quotes(mm);
+    let cost = amount * bid_price / PRECISION;
+    assert!(mm.quote_balance.value() >= cost, EInsufficientInventory);
+    mm.total_bought = mm.total_bought + amount;
+    coin::take(&mut mm.quote_balance, cost, ctx)
+}
 
-    public fun update_price(
-        mm: &mut MarketMaker,
-        new_mid_price: u64,
-    ) {
-        mm.mid_price = new_mid_price;
-    }
+public fun place_ask<BaseCoin, QuoteCoin>(
+    mm: &mut MarketMaker<BaseCoin, QuoteCoin>,
+    amount: u64,
+    ctx: &mut TxContext,
+): Coin<BaseCoin> {
+    assert!(mm.base_balance.value() >= amount, EInsufficientInventory);
+    mm.total_sold = mm.total_sold + amount;
+    coin::take(&mut mm.base_balance, amount, ctx)
+}
 
-    public fun compute_quotes(mm: &MarketMaker): (u64, u64) {
-        let half_spread = mm.mid_price * mm.spread_bps / 20000;
-        let skew = inventory_skew(mm);
-        let skew_adj = half_spread * skew / PRECISION;
-        let bid = mm.mid_price - half_spread + skew_adj;
-        let ask = mm.mid_price + half_spread + skew_adj;
-        (bid, ask)
-    }
+public fun on_bid_filled<BaseCoin, QuoteCoin>(
+    mm: &mut MarketMaker<BaseCoin, QuoteCoin>,
+    base_received: Coin<BaseCoin>,
+) {
+    let value = base_received.value();
+    balance::join(&mut mm.base_balance, coin::into_balance(base_received));
+    mm.total_fees = mm.total_fees + value * mm.spread_bps / 20000;
+}
 
-    public fun inventory_skew(mm: &MarketMaker): u64 {
-        let total = mm.total_bought + mm.total_sold;
-        if (total == 0) { return 0 };
-        if (mm.total_bought > mm.total_sold) {
-            let excess = mm.total_bought - mm.total_sold;
-            0 - (excess * PRECISION / total / 2)
-        } else {
-            let excess = mm.total_sold - mm.total_bought;
-            excess * PRECISION / total / 2
-        }
-    }
+public fun on_ask_filled<BaseCoin, QuoteCoin>(
+    mm: &mut MarketMaker<BaseCoin, QuoteCoin>,
+    quote_received: Coin<QuoteCoin>,
+) {
+    let value = quote_received.value();
+    balance::join(&mut mm.quote_balance, coin::into_balance(quote_received));
+    mm.total_fees = mm.total_fees + value * mm.spread_bps / 20000;
+}
 
-    public fun place_bid<BaseCoin, QuoteCoin>(
-        mm: &mut MarketMaker<BaseCoin, QuoteCoin>,
-        amount: u64,
-        ctx: &mut TxContext,
-    ): Coin<QuoteCoin> {
-        let (bid_price, _) = compute_quotes(mm);
-        let cost = amount * bid_price / PRECISION;
-        assert!(mm.quote_balance.value() >= cost, EInsufficientInventory);
-        mm.total_bought = mm.total_bought + amount;
-        coin::take(&mut mm.quote_balance, cost, ctx)
-    }
+public fun total_pnl(mm: &MarketMaker): u64 {
+    mm.total_fees
+}
 
-    public fun place_ask<BaseCoin, QuoteCoin>(
-        mm: &mut MarketMaker<BaseCoin, QuoteCoin>,
-        amount: u64,
-        ctx: &mut TxContext,
-    ): Coin<BaseCoin> {
-        assert!(mm.base_balance.value() >= amount, EInsufficientInventory);
-        mm.total_sold = mm.total_sold + amount;
-        coin::take(&mut mm.base_balance, amount, ctx)
-    }
-
-    public fun on_bid_filled<BaseCoin, QuoteCoin>(
-        mm: &mut MarketMaker<BaseCoin, QuoteCoin>,
-        base_received: Coin<BaseCoin>,
-    ) {
-        let value = base_received.value();
-        balance::join(&mut mm.base_balance, coin::into_balance(base_received));
-        mm.total_fees = mm.total_fees + value * mm.spread_bps / 20000;
-    }
-
-    public fun on_ask_filled<BaseCoin, QuoteCoin>(
-        mm: &mut MarketMaker<BaseCoin, QuoteCoin>,
-        quote_received: Coin<QuoteCoin>,
-    ) {
-        let value = quote_received.value();
-        balance::join(&mut mm.quote_balance, coin::into_balance(quote_received));
-        mm.total_fees = mm.total_fees + value * mm.spread_bps / 20000;
-    }
-
-    public fun total_pnl(mm: &MarketMaker): u64 {
-        mm.total_fees
-    }
-
-    public fun inventory_value(mm: &MarketMaker, price: u64): u64 {
-        let base_val = mm.base_balance.value() * price / PRECISION;
-        let quote_val = mm.quote_balance.value();
-        base_val + quote_val
-    }
+public fun inventory_value(mm: &MarketMaker, price: u64): u64 {
+    let base_val = mm.base_balance.value() * price / PRECISION;
+    let quote_val = mm.quote_balance.value();
+    base_val + quote_val
+}
 ```
 
 ## 库存管理策略
@@ -223,20 +221,20 @@ DeepBook 是 Sui 上的 CLOB 订单簿 DEX。做市时需要考虑：
 
 ## AMM 做市 vs 订单簿做市对比
 
-| 维度 | AMM LP | 订单簿 MM |
-|---|---|---|
-| 无常损失 | 有 | 无 |
-| 库存风险 | 有（被动的） | 有（主动的） |
-| 资金效率 | 低（全区间）/ 高（集中） | 高（只在最优价位挂单） |
-| 操作复杂度 | 低 | 高 |
-| 适合人群 | 大多数人 | 专业交易者 |
-| Gas 成本 | 低（一次 deposit） | 高（频繁挂单撤单） |
+| 维度       | AMM LP                   | 订单簿 MM              |
+| ---------- | ------------------------ | ---------------------- |
+| 无常损失   | 有                       | 无                     |
+| 库存风险   | 有（被动的）             | 有（主动的）           |
+| 资金效率   | 低（全区间）/ 高（集中） | 高（只在最优价位挂单） |
+| 操作复杂度 | 低                       | 高                     |
+| 适合人群   | 大多数人                 | 专业交易者             |
+| Gas 成本   | 低（一次 deposit）       | 高（频繁挂单撤单）     |
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 库存积累 | 单边行情下，做市商持续买入（或卖出），库存严重偏斜 |
-| 被信息优势者剥削 | 知情交易者总是在你这边成交，你承担逆向选择成本 |
-| Gas 成本 | 频繁调整报价消耗大量 gas |
-| 流动性不足 | 如果对手盘太少，报价长时间不成交 |
+| 风险             | 描述                                               |
+| ---------------- | -------------------------------------------------- |
+| 库存积累         | 单边行情下，做市商持续买入（或卖出），库存严重偏斜 |
+| 被信息优势者剥削 | 知情交易者总是在你这边成交，你承担逆向选择成本     |
+| Gas 成本         | 频繁调整报价消耗大量 gas                           |
+| 流动性不足       | 如果对手盘太少，报价长时间不成交                   |

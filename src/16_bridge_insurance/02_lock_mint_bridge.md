@@ -28,197 +28,186 @@
 
 ```move
 module bridge::lock_mint;
-    use sui::coin::{Self, Coin, TreasuryCap};
-    use sui::balance::{Self, Balance};
-    use sui::object::{Self, UID, ID};
-    use sui::tx_context::TxContext;
-    use sui::event;
-    use sui::clock::Clock;
-    use sui::table::{Self, Table};
-    use sui::vec_set::{Self, VecSet};
 
-    #[error]
-    const EUnauthorized: vector<u8> = b"Unauthorized";
-    #[error]
-    const EInvalidProof: vector<u8> = b"Invalid Proof";
-    #[error]
-    const EAlreadyProcessed: vector<u8> = b"Already Processed";
-    #[error]
-    const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
-    #[error]
-    const EAmountMismatch: vector<u8> = b"Amount Mismatch";
+use sui::balance::{Self, Balance};
+use sui::clock::Clock;
+use sui::coin::{Self, Coin, TreasuryCap};
+use sui::event;
+use sui::object::{Self, UID, ID};
+use sui::table::{Self, Table};
+use sui::tx_context::TxContext;
+use sui::vec_set::{Self, VecSet};
 
-    public struct BridgeAdmin has key {
-        id: UID,
-        attesters: VecSet<address>,
-        threshold: u64,
-    }
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EInvalidProof: vector<u8> = b"Invalid Proof";
+#[error]
+const EAlreadyProcessed: vector<u8> = b"Already Processed";
+#[error]
+const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
+#[error]
+const EAmountMismatch: vector<u8> = b"Amount Mismatch";
 
-    public struct SourceVault<phantom CoinType> has key {
-        id: UID,
-        balance: Balance<CoinType>,
-        total_locked: u64,
-    }
+public struct BridgeAdmin has key {
+    id: UID,
+    attesters: VecSet<address>,
+    threshold: u64,
+}
 
-    public struct WrappedCoin has copy, drop, store {}
+public struct SourceVault<phantom CoinType> has key {
+    id: UID,
+    balance: Balance<CoinType>,
+    total_locked: u64,
+}
 
-    public struct WrappedCoinCap has key {
-        id: UID,
-        cap: TreasuryCap<WrappedCoin>,
-    }
+public struct WrappedCoin has copy, drop, store {}
 
-    public struct LockEvent has copy, drop {
-        source_chain_id: u64,
-        target_chain_id: u64,
-        sender: address,
-        recipient: address,
-        amount: u64,
-        nonce: u64,
-    }
+public struct WrappedCoinCap has key {
+    id: UID,
+    cap: TreasuryCap<WrappedCoin>,
+}
 
-    public struct BurnEvent has copy, drop {
-        source_chain_id: u64,
-        target_chain_id: u64,
+public struct LockEvent has copy, drop {
+    source_chain_id: u64,
+    target_chain_id: u64,
     sender: address,
-        recipient: address,
-        amount: u64,
-        nonce: u64,
-    }
+    recipient: address,
+    amount: u64,
+    nonce: u64,
+}
 
-    public struct Proof has store {
-        event_hash: vector<u8>,
-        signatures: vector<vector<u8>>,
-        nonce: u64,
-    }
+public struct BurnEvent has copy, drop {
+    source_chain_id: u64,
+    target_chain_id: u64,
+    sender: address,
+    recipient: address,
+    amount: u64,
+    nonce: u64,
+}
 
-    public fun initialize(
-        threshold: u64,
-        ctx: &mut TxContext,
-    ) {
-        let admin = BridgeAdmin {
-            id: object::new(ctx),
-            attesters: vec_set::empty(),
-            threshold,
+public struct Proof has store {
+    event_hash: vector<u8>,
+    signatures: vector<vector<u8>>,
+    nonce: u64,
+}
+
+public fun initialize(threshold: u64, ctx: &mut TxContext) {
+    let admin = BridgeAdmin {
+        id: object::new(ctx),
+        attesters: vec_set::empty(),
+        threshold,
+    };
+    transfer::share_object(admin);
+}
+
+public fun create_vault<CoinType>(ctx: &mut TxContext) {
+    let vault = SourceVault<CoinType> {
+        id: object::new(ctx),
+        balance: balance::zero(),
+        total_locked: 0,
+    };
+    transfer::share_object(vault);
+}
+
+public fun lock<CoinType>(
+    vault: &mut SourceVault<CoinType>,
+    coin: Coin<CoinType>,
+    target_chain: u64,
+    recipient: address,
+    nonce: u64,
+    clock: &Clock,
+) {
+    let amount = coin::value(&coin);
+    assert!(amount > 0, EAmountMismatch);
+    balance::join(&mut vault.balance, coin::into_balance(coin));
+    vault.total_locked = vault.total_locked + amount;
+    event::emit(LockEvent {
+        source_chain_id: 0,
+        target_chain_id: target_chain,
+        sender: ctx.sender(),
+        recipient,
+        amount,
+        nonce,
+    });
+}
+
+public fun mint(
+    cap: &mut WrappedCoinCap,
+    admin: &BridgeAdmin,
+    proof: Proof,
+    recipient: address,
+    amount: u64,
+    processed_nonces: &mut Table<u64, bool>,
+    ctx: &mut TxContext,
+) {
+    assert!(!table::contains(processed_nonces, proof.nonce), EAlreadyProcessed);
+    verify_proof(admin, &proof);
+    table::add(processed_nonces, proof.nonce, true);
+    let coins = coin::mint(&mut cap.cap, amount, ctx);
+    coin::destroy_zero(coin::split(&mut coins, 0, ctx));
+    transfer::public_transfer(coins, recipient);
+}
+
+public fun burn(
+    coin: Coin<WrappedCoin>,
+    admin: &BridgeAdmin,
+    target_chain: u64,
+    recipient: address,
+    nonce: u64,
+) {
+    let amount = coin::value(&coin);
+    assert!(amount > 0, EAmountMismatch);
+    coin::destroy_zero(coin);
+    event::emit(BurnEvent {
+        source_chain_id: 0,
+        target_chain_id,
+        sender: ctx.sender(),
+        recipient,
+        amount,
+        nonce,
+    });
+}
+
+public fun release<CoinType>(
+    vault: &mut SourceVault<CoinType>,
+    admin: &BridgeAdmin,
+    proof: Proof,
+    recipient: address,
+    amount: u64,
+    processed_nonces: &mut Table<u64, bool>,
+    ctx: &mut TxContext,
+) {
+    assert!(!table::contains(processed_nonces, proof.nonce), EAlreadyProcessed);
+    assert!(balance::value(&vault.balance) >= amount, EInsufficientLiquidity);
+    verify_proof(admin, &proof);
+    table::add(processed_nonces, proof.nonce, true);
+    let coin = coin::take(&mut vault.balance, amount, ctx);
+    transfer::public_transfer(coin, recipient);
+}
+
+fun verify_proof(admin: &BridgeAdmin, proof: &Proof) {
+    let sig_count = proof.signatures.length();
+    let mut valid_sigs = 0;
+    let mut i = 0;
+    while (i < sig_count) {
+        let sig = proof.signatures.borrow(i);
+        if (sig.length() > 0) {
+            valid_sigs = valid_sigs + 1;
         };
-        transfer::share_object(admin);
-    }
+        i = i + 1;
+    };
+    assert!(valid_sigs >= admin.threshold, EInvalidProof);
+}
 
-    public fun create_vault<CoinType>(
-        ctx: &mut TxContext,
-    ) {
-        let vault = SourceVault<CoinType> {
-            id: object::new(ctx),
-            balance: balance::zero(),
-            total_locked: 0,
-        };
-        transfer::share_object(vault);
-    }
+public fun add_attester(admin: &mut BridgeAdmin, attester: address, ctx: &mut TxContext) {
+    assert!(ctx.sender() == object::uid_to_address(&admin.id), EUnauthorized);
+    admin.attesters.insert(attester);
+}
 
-    public fun lock<CoinType>(
-        vault: &mut SourceVault<CoinType>,
-        coin: Coin<CoinType>,
-        target_chain: u64,
-        recipient: address,
-        nonce: u64,
-        clock: &Clock,
-    ) {
-        let amount = coin::value(&coin);
-        assert!(amount > 0, EAmountMismatch);
-        balance::join(&mut vault.balance, coin::into_balance(coin));
-        vault.total_locked = vault.total_locked + amount;
-        event::emit(LockEvent {
-            source_chain_id: 0,
-            target_chain_id: target_chain,
-            sender: ctx.sender(),
-            recipient,
-            amount,
-            nonce,
-        });
-    }
-
-    public fun mint(
-        cap: &mut WrappedCoinCap,
-        admin: &BridgeAdmin,
-        proof: Proof,
-        recipient: address,
-        amount: u64,
-        processed_nonces: &mut Table<u64, bool>,
-        ctx: &mut TxContext,
-    ) {
-        assert!(!table::contains(processed_nonces, proof.nonce), EAlreadyProcessed);
-        verify_proof(admin, &proof);
-        table::add(processed_nonces, proof.nonce, true);
-        let coins = coin::mint(&mut cap.cap, amount, ctx);
-        coin::destroy_zero(coin::split(&mut coins, 0, ctx));
-        transfer::public_transfer(coins, recipient);
-    }
-
-    public fun burn(
-        coin: Coin<WrappedCoin>,
-        admin: &BridgeAdmin,
-        target_chain: u64,
-        recipient: address,
-        nonce: u64,
-    ) {
-        let amount = coin::value(&coin);
-        assert!(amount > 0, EAmountMismatch);
-        coin::destroy_zero(coin);
-        event::emit(BurnEvent {
-            source_chain_id: 0,
-            target_chain_id,
-            sender: ctx.sender(),
-            recipient,
-            amount,
-            nonce,
-        });
-    }
-
-    public fun release<CoinType>(
-        vault: &mut SourceVault<CoinType>,
-        admin: &BridgeAdmin,
-        proof: Proof,
-        recipient: address,
-        amount: u64,
-        processed_nonces: &mut Table<u64, bool>,
-        ctx: &mut TxContext,
-    ) {
-        assert!(!table::contains(processed_nonces, proof.nonce), EAlreadyProcessed);
-        assert!(balance::value(&vault.balance) >= amount, EInsufficientLiquidity);
-        verify_proof(admin, &proof);
-        table::add(processed_nonces, proof.nonce, true);
-        let coin = coin::take(&mut vault.balance, amount, ctx);
-        transfer::public_transfer(coin, recipient);
-    }
-
-    fun verify_proof(
-        admin: &BridgeAdmin,
-        proof: &Proof,
-    ) {
-        let sig_count = proof.signatures.length();
-        let mut valid_sigs = 0;
-        let mut i = 0;
-        while (i < sig_count) {
-            let sig = proof.signatures.borrow(i);
-            if (sig.length() > 0) {
-                valid_sigs = valid_sigs + 1;
-            };
-            i = i + 1;
-        };
-        assert!(valid_sigs >= admin.threshold, EInvalidProof);
-    }
-
-    public fun add_attester(
-        admin: &mut BridgeAdmin,
-        attester: address,
-        ctx: &mut TxContext,
-    ) {
-        assert!(ctx.sender() == object::uid_to_address(&admin.id), EUnauthorized);
-        admin.attesters.insert(attester);
-    }
-
-    public fun vault_balance<CoinType>(vault: &SourceVault<CoinType>): u64 {
-        balance::value(&vault.balance)
-    }
+public fun vault_balance<CoinType>(vault: &SourceVault<CoinType>): u64 {
+    balance::value(&vault.balance)
+}
 ```
 
 ## 关键安全设计
@@ -275,10 +264,10 @@ assert!(balance::value(&vault.balance) >= amount, EInsufficientLiquidity);
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 金库耗尽 | 如果源链金库资产被抽空，目标链的 wrapped 资产将无法赎回 |
-| 签名串通 | 足够多的 attester 串通可以伪造任何消息 |
-| 重放攻击 | 如果 nonce 管理有 bug，同一笔资产可能被铸造两次 |
-| 中继延迟 | 如果中继者停止工作，用户的资产可能长时间被困在源链 |
-| wrapped 资产脱锚 | 如果信任崩塌，wrapped 资产可能大幅折价 |
+| 风险             | 描述                                                    |
+| ---------------- | ------------------------------------------------------- |
+| 金库耗尽         | 如果源链金库资产被抽空，目标链的 wrapped 资产将无法赎回 |
+| 签名串通         | 足够多的 attester 串通可以伪造任何消息                  |
+| 重放攻击         | 如果 nonce 管理有 bug，同一笔资产可能被铸造两次         |
+| 中继延迟         | 如果中继者停止工作，用户的资产可能长时间被困在源链      |
+| wrapped 资产脱锚 | 如果信任崩塌，wrapped 资产可能大幅折价                  |

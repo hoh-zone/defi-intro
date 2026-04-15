@@ -244,43 +244,44 @@ module oracle::slot;
 
 ```move
 module lending::market;
-    use oracle::slot::{Self, OracleSlot, PriceData};
 
-    public struct Market has key {
-        id: UID,
-        oracle_slot: ID,
-        reserves: vector<Reserve>,
-    }
+use oracle::slot::{Self, OracleSlot, PriceData};
 
-    public fun get_asset_price(
-        market: &Market,
-        asset: address,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ): u64 {
-        let slot = object::borrow_mut<OracleSlot>(market.oracle_slot);
-        let data = slot::get_price(slot, asset, clock, ctx);
-        data.price
-    }
+public struct Market has key {
+    id: UID,
+    oracle_slot: ID,
+    reserves: vector<Reserve>,
+}
 
-    public fun borrow(
-        market: &mut Market,
-        asset: address,
-        amount: u64,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ) {
-        let price = get_asset_price(market, asset, clock, ctx);
-        let health = calculate_health(market, asset, amount, price);
-        assert!(health >= MIN_HEALTH_FACTOR, 0);
-    }
+public fun get_asset_price(
+    market: &Market,
+    asset: address,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): u64 {
+    let slot = object::borrow_mut<OracleSlot>(market.oracle_slot);
+    let data = slot::get_price(slot, asset, clock, ctx);
+    data.price
+}
+
+public fun borrow(
+    market: &mut Market,
+    asset: address,
+    amount: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    let price = get_asset_price(market, asset, clock, ctx);
+    let health = calculate_health(market, asset, amount, price);
+    assert!(health >= MIN_HEALTH_FACTOR, 0);
+}
 ```
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 切换期间风险 | timelock 期间，用户不知道最终会切换到哪个预言机 |
-| 插槽实现 bug | 统一接口层的实现可能有 bug，影响所有预言机 |
-| 治理攻击 | 如果 admin 可以即时切换预言机，可能切换到恶意预言机 |
-| 接口不完整 | 统一接口可能无法覆盖所有预言机的特殊功能 |
+| 风险         | 描述                                                |
+| ------------ | --------------------------------------------------- |
+| 切换期间风险 | timelock 期间，用户不知道最终会切换到哪个预言机     |
+| 插槽实现 bug | 统一接口层的实现可能有 bug，影响所有预言机          |
+| 治理攻击     | 如果 admin 可以即时切换预言机，可能切换到恶意预言机 |
+| 接口不完整   | 统一接口可能无法覆盖所有预言机的特殊功能            |

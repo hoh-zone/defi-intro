@@ -1,9 +1,10 @@
 #[test_only]
 module mock_oracle::oracle_test;
-use sui::test_scenario;
-use mock_oracle::price_oracle;
+
 use mock_oracle::aggregator;
+use mock_oracle::price_oracle;
 use std::unit_test::assert_eq;
+use sui::test_scenario;
 
 const ADMIN: address = @0xAD;
 
@@ -109,10 +110,10 @@ fun stale_price_rejection() {
         // Try to read at t=5000 with max staleness 1000ms => age=4000 > 1000 => abort.
         price_oracle::safe_read_price(
             &oracle,
-            1000,   // max_staleness_ms
+            1000, // max_staleness_ms
             10_000, // max_deviation_bps (very loose)
-            1_000,  // reference_price
-            5000,   // current_ms
+            1_000, // reference_price
+            5000, // current_ms
         );
 
         test_scenario::return_shared(oracle);
@@ -141,10 +142,10 @@ fun price_deviation_rejection() {
         // diff=200, bps = 200*10000/800 = 2500 > 1000 bps => abort.
         price_oracle::safe_read_price(
             &oracle,
-            1000,  // max_staleness_ms
-            1000,  // max_deviation_bps = 10%
-            800,   // reference_price
-            1500,  // current_ms
+            1000, // max_staleness_ms
+            1000, // max_deviation_bps = 10%
+            800, // reference_price
+            1500, // current_ms
         );
 
         test_scenario::return_shared(oracle);
@@ -170,10 +171,10 @@ fun safe_read_ok() {
 
         let price = price_oracle::safe_read_price(
             &oracle,
-            1000,   // max_staleness_ms
-            1000,   // max_deviation_bps = 10%
-            950,    // reference_price (close enough)
-            1500,   // current_ms => age=500 <= 1000
+            1000, // max_staleness_ms
+            1000, // max_deviation_bps = 10%
+            950, // reference_price (close enough)
+            1500, // current_ms => age=500 <= 1000
         );
         assert!(price == 1_000, price);
 

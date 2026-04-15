@@ -38,187 +38,182 @@
 
 ```move
 module lending::oracle_integration;
-    use sui::object::{Self, UID, ID};
-    use sui::clock::Clock;
-    use sui::coin::Coin;
-    use sui::sui::SUI;
-    use sui::tx_context::TxContext;
-    use sui::event;
 
-    #[error]
-    const EStale: vector<u8> = b"Stale";
-    #[error]
-    const EDeviation: vector<u8> = b"Deviation";
-    #[error]
-    const EPaused: vector<u8> = b"Paused";
-    #[error]
-    const EUnauthorized: vector<u8> = b"Unauthorized";
+use sui::clock::Clock;
+use sui::coin::Coin;
+use sui::event;
+use sui::object::{Self, UID, ID};
+use sui::sui::SUI;
+use sui::tx_context::TxContext;
 
-    public struct AssetOracle has store {
-        asset_type: String,
-        pyth_feed_id: ID,
-        supra_pair_index: u64,
-        twap_pool_id: ID,
-        decimals: u8,
-    }
+#[error]
+const EStale: vector<u8> = b"Stale";
+#[error]
+const EDeviation: vector<u8> = b"Deviation";
+#[error]
+const EPaused: vector<u8> = b"Paused";
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
 
-    public struct LendingOracle has key {
-        id: UID,
-        assets: vector<AssetOracle>,
-        max_staleness_ms: u64,
-        max_deviation_bps: u64,
-        max_pyth_supra_deviation_bps: u64,
-        last_prices: vector<u64>,
-        fallback_prices: vector<u64>,
-        paused: bool,
-        admin: address,
-    }
+public struct AssetOracle has store {
+    asset_type: String,
+    pyth_feed_id: ID,
+    supra_pair_index: u64,
+    twap_pool_id: ID,
+    decimals: u8,
+}
 
-    public struct PriceRead has copy, drop {
-        asset: String,
-        price: u64,
-        source: u8,
-        timestamp_ms: u64,
-    }
+public struct LendingOracle has key {
+    id: UID,
+    assets: vector<AssetOracle>,
+    max_staleness_ms: u64,
+    max_deviation_bps: u64,
+    max_pyth_supra_deviation_bps: u64,
+    last_prices: vector<u64>,
+    fallback_prices: vector<u64>,
+    paused: bool,
+    admin: address,
+}
 
-    const SOURCE_PYTH: u8 = 1;
-    const SOURCE_SUPRA: u8 = 2;
-    const SOURCE_TWAP: u8 = 3;
-    const SOURCE_FALLBACK: u8 = 4;
+public struct PriceRead has copy, drop {
+    asset: String,
+    price: u64,
+    source: u8,
+    timestamp_ms: u64,
+}
 
-    public fun create(
-        max_staleness_ms: u64,
-        max_deviation_bps: u64,
-        ctx: &mut TxContext,
-    ) {
-        let oracle = LendingOracle {
-            id: object::new(ctx),
-            assets: vector::empty(),
-            max_staleness_ms,
-            max_deviation_bps,
-            max_pyth_supra_deviation_bps: 300,
-            last_prices: vector::empty(),
-            fallback_prices: vector::empty(),
-            paused: false,
-            admin: ctx.sender(),
-        };
-        transfer::share_object(oracle);
-    }
+const SOURCE_PYTH: u8 = 1;
+const SOURCE_SUPRA: u8 = 2;
+const SOURCE_TWAP: u8 = 3;
+const SOURCE_FALLBACK: u8 = 4;
 
-    public fun add_asset(
-        oracle: &mut LendingOracle,
-        asset_type: String,
-        pyth_feed_id: ID,
-        supra_pair_index: u64,
-        twap_pool_id: ID,
-        decimals: u8,
-        initial_price: u64,
-    ) {
-        oracle.assets.push_back(AssetOracle {
+public fun create(max_staleness_ms: u64, max_deviation_bps: u64, ctx: &mut TxContext) {
+    let oracle = LendingOracle {
+        id: object::new(ctx),
+        assets: vector::empty(),
+        max_staleness_ms,
+        max_deviation_bps,
+        max_pyth_supra_deviation_bps: 300,
+        last_prices: vector::empty(),
+        fallback_prices: vector::empty(),
+        paused: false,
+        admin: ctx.sender(),
+    };
+    transfer::share_object(oracle);
+}
+
+public fun add_asset(
+    oracle: &mut LendingOracle,
+    asset_type: String,
+    pyth_feed_id: ID,
+    supra_pair_index: u64,
+    twap_pool_id: ID,
+    decimals: u8,
+    initial_price: u64,
+) {
+    oracle
+        .assets
+        .push_back(AssetOracle {
             asset_type,
             pyth_feed_id,
             supra_pair_index,
             twap_pool_id,
             decimals,
         });
-        oracle.last_prices.push_back(initial_price);
-        oracle.fallback_prices.push_back(initial_price);
-    }
+    oracle.last_prices.push_back(initial_price);
+    oracle.fallback_prices.push_back(initial_price);
+}
 
-    public fun get_price(
-        oracle: &mut LendingOracle,
-        asset_index: u64,
-        pyth_price: u64,
-        pyth_timestamp_ms: u64,
-        supra_price: u64,
-        supra_timestamp_ms: u64,
-        twap_price: u64,
-        clock: &Clock,
-    ): u64 {
-        assert!(!oracle.paused, EPaused);
-        let now = clock.timestamp_ms();
-        let last_price = *oracle.last_prices.borrow(asset_index);
+public fun get_price(
+    oracle: &mut LendingOracle,
+    asset_index: u64,
+    pyth_price: u64,
+    pyth_timestamp_ms: u64,
+    supra_price: u64,
+    supra_timestamp_ms: u64,
+    twap_price: u64,
+    clock: &Clock,
+): u64 {
+    assert!(!oracle.paused, EPaused);
+    let now = clock.timestamp_ms();
+    let last_price = *oracle.last_prices.borrow(asset_index);
 
-        let pyth_fresh = now - pyth_timestamp_ms < oracle.max_staleness_ms;
-        let supra_fresh = now - supra_timestamp_ms < oracle.max_staleness_ms;
+    let pyth_fresh = now - pyth_timestamp_ms < oracle.max_staleness_ms;
+    let supra_fresh = now - supra_timestamp_ms < oracle.max_staleness_ms;
 
-        if (pyth_fresh && supra_fresh) {
-            let dev = if (pyth_price > supra_price) {
-                (pyth_price - supra_price) * 10000 / supra_price
-            } else {
-                (supra_price - pyth_price) * 10000 / pyth_price
-            };
-            if (dev <= oracle.max_pyth_supra_deviation_bps) {
-                let price = (pyth_price + supra_price) / 2;
-                update_price(oracle, asset_index, price, SOURCE_PYTH, now);
-                price
-            } else {
-                let median = get_median(pyth_price, supra_price, twap_price);
-                update_price(oracle, asset_index, median, SOURCE_TWAP, now);
-                median
-            }
-        } else if (pyth_fresh) {
-            update_price(oracle, asset_index, pyth_price, SOURCE_PYTH, now);
-            pyth_price
-        } else if (supra_fresh) {
-            update_price(oracle, asset_index, supra_price, SOURCE_SUPRA, now);
-            supra_price
+    if (pyth_fresh && supra_fresh) {
+        let dev = if (pyth_price > supra_price) {
+            (pyth_price - supra_price) * 10000 / supra_price
         } else {
-            update_price(oracle, asset_index, twap_price, SOURCE_TWAP, now);
-            twap_price
-        }
-    }
-
-    fun update_price(
-        oracle: &mut LendingOracle,
-        asset_index: u64,
-        new_price: u64,
-        source: u8,
-        timestamp_ms: u64,
-    ) {
-        let last = *oracle.last_prices.borrow(asset_index);
-        let dev = if (new_price > last) {
-            (new_price - last) * 10000 / last
-        } else {
-            (last - new_price) * 10000 / new_price
+            (supra_price - pyth_price) * 10000 / pyth_price
         };
-        assert!(dev <= oracle.max_deviation_bps, EDeviation);
-        *oracle.last_prices.borrow_mut(asset_index) = new_price;
-        *oracle.fallback_prices.borrow_mut(asset_index) = new_price;
-        let asset = oracle.assets.borrow(asset_index);
-        event::emit(PriceRead {
-            asset: asset.asset_type,
-            price: new_price,
-            source,
-            timestamp_ms,
-        });
-    }
-
-    fun get_median(a: u64, b: u64, c: u64): u64 {
-        if (a >= b) {
-            if (b >= c) { b }
-            else if (a >= c) { c }
-            else { a }
+        if (dev <= oracle.max_pyth_supra_deviation_bps) {
+            let price = (pyth_price + supra_price) / 2;
+            update_price(oracle, asset_index, price, SOURCE_PYTH, now);
+            price
         } else {
-            if (a >= c) { a }
-            else if (b >= c) { c }
-            else { b }
+            let median = get_median(pyth_price, supra_price, twap_price);
+            update_price(oracle, asset_index, median, SOURCE_TWAP, now);
+            median
         }
+    } else if (pyth_fresh) {
+        update_price(oracle, asset_index, pyth_price, SOURCE_PYTH, now);
+        pyth_price
+    } else if (supra_fresh) {
+        update_price(oracle, asset_index, supra_price, SOURCE_SUPRA, now);
+        supra_price
+    } else {
+        update_price(oracle, asset_index, twap_price, SOURCE_TWAP, now);
+        twap_price
     }
+}
 
-    public fun emergency_pause(oracle: &mut LendingOracle, ctx: &mut TxContext) {
-        assert!(ctx.sender() == oracle.admin, EUnauthorized);
-        oracle.paused = true;
-    }
+fun update_price(
+    oracle: &mut LendingOracle,
+    asset_index: u64,
+    new_price: u64,
+    source: u8,
+    timestamp_ms: u64,
+) {
+    let last = *oracle.last_prices.borrow(asset_index);
+    let dev = if (new_price > last) {
+        (new_price - last) * 10000 / last
+    } else {
+        (last - new_price) * 10000 / new_price
+    };
+    assert!(dev <= oracle.max_deviation_bps, EDeviation);
+    *oracle.last_prices.borrow_mut(asset_index) = new_price;
+    *oracle.fallback_prices.borrow_mut(asset_index) = new_price;
+    let asset = oracle.assets.borrow(asset_index);
+    event::emit(PriceRead {
+        asset: asset.asset_type,
+        price: new_price,
+        source,
+        timestamp_ms,
+    });
+}
 
-    public fun emergency_unpause(oracle: &mut LendingOracle, ctx: &mut TxContext) {
-        assert!(ctx.sender() == oracle.admin, EUnauthorized);
-        oracle.paused = false;
+fun get_median(a: u64, b: u64, c: u64): u64 {
+    if (a >= b) {
+        if (b >= c) { b } else if (a >= c) { c } else { a }
+    } else {
+        if (a >= c) { a } else if (b >= c) { c } else { b }
     }
+}
 
-    public fun get_last_price(oracle: &LendingOracle, asset_index: u64): u64 {
-        *oracle.last_prices.borrow(asset_index)
-    }
+public fun emergency_pause(oracle: &mut LendingOracle, ctx: &mut TxContext) {
+    assert!(ctx.sender() == oracle.admin, EUnauthorized);
+    oracle.paused = true;
+}
+
+public fun emergency_unpause(oracle: &mut LendingOracle, ctx: &mut TxContext) {
+    assert!(ctx.sender() == oracle.admin, EUnauthorized);
+    oracle.paused = false;
+}
+
+public fun get_last_price(oracle: &LendingOracle, asset_index: u64): u64 {
+    *oracle.last_prices.borrow(asset_index)
+}
 ```
 
 ## Step 4：测试

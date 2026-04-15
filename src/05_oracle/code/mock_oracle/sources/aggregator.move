@@ -2,6 +2,7 @@
 /// Multi-source oracle aggregator for DeFi educational purposes (Chapter 5).
 /// Collects prices from N independent sources and returns the median.
 module mock_oracle::aggregator;
+
 use mock_oracle::price_oracle::aggregate_prices;
 
 // ===== Error codes =====
@@ -156,7 +157,9 @@ public fun active_source_count(aggregator: &Aggregator): u64 {
 // ===== Accessors =====
 
 public fun source_id(src: &Source): u64 { src.source_id }
+
 public fun source_price(src: &Source): u64 { src.price }
+
 public fun source_timestamp(src: &Source): u64 { src.timestamp_ms }
 
 // ===== Cleanup for tests =====

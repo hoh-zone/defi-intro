@@ -1,10 +1,11 @@
 #[test_only]
 module dutch_auction::dutch_auction_test;
+
 use dutch_auction::dutch_auction;
+use sui::clock;
 use sui::coin;
 use sui::sui::SUI;
 use sui::test_scenario;
-use sui::clock;
 
 const ADMIN: address = @0xAD;
 const USER1: address = @0xB0;
@@ -30,7 +31,14 @@ fun test_start_and_price_decay() {
     let ctx = scenario.ctx();
 
     let treasury = coin::create_treasury_cap_for_testing<dutch_auction::DUTCH_AUCTION>(ctx);
-    dutch_auction::create_for_testing(treasury, START_PRICE, END_PRICE, DURATION_MS, TOTAL_SUPPLY, ctx);
+    dutch_auction::create_for_testing(
+        treasury,
+        START_PRICE,
+        END_PRICE,
+        DURATION_MS,
+        TOTAL_SUPPLY,
+        ctx,
+    );
 
     scenario.next_tx(ADMIN);
 
@@ -91,7 +99,14 @@ fun test_buy_and_claim() {
     let ctx = scenario.ctx();
 
     let treasury = coin::create_treasury_cap_for_testing<dutch_auction::DUTCH_AUCTION>(ctx);
-    dutch_auction::create_for_testing(treasury, START_PRICE, END_PRICE, DURATION_MS, TOTAL_SUPPLY, ctx);
+    dutch_auction::create_for_testing(
+        treasury,
+        START_PRICE,
+        END_PRICE,
+        DURATION_MS,
+        TOTAL_SUPPLY,
+        ctx,
+    );
 
     // Start auction at t=0
     scenario.next_tx(ADMIN);
@@ -146,7 +161,14 @@ fun test_multiple_buyers_different_prices() {
     let ctx = scenario.ctx();
 
     let treasury = coin::create_treasury_cap_for_testing<dutch_auction::DUTCH_AUCTION>(ctx);
-    dutch_auction::create_for_testing(treasury, START_PRICE, END_PRICE, DURATION_MS, TOTAL_SUPPLY, ctx);
+    dutch_auction::create_for_testing(
+        treasury,
+        START_PRICE,
+        END_PRICE,
+        DURATION_MS,
+        TOTAL_SUPPLY,
+        ctx,
+    );
 
     // Start auction
     scenario.next_tx(ADMIN);

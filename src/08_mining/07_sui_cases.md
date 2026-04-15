@@ -23,30 +23,31 @@ veCETUS 锁仓：
 
 ```move
 module cetus::incentive;
-    public struct IncentivePool has key {
-        reward_funds: Bag,
-        stake_positions: Table<ID, PositionStake>,
-        global_reward_accumulators: Table<Type, Accumulator>,
-    }
 
-    public struct PositionStake has store {
-        liquidity: u128,
-        tick_lower: int32,
-        tick_upper: int32,
-        reward_debts: Bag,
-    }
+public struct IncentivePool has key {
+    reward_funds: Bag,
+    stake_positions: Table<ID, PositionStake>,
+    global_reward_accumulators: Table<Type, Accumulator>,
+}
 
-    public fun collect_fees_and_rewards(
-        pool: &mut Pool,
-        position_id: ID,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ): (Coin<SUI>, vector<Coin<CETUS>>) {
-        let position = pool.positions.borrow_mut(position_id);
-        let fees = collect_fees(pool, position);
-        let rewards = collect_rewards(pool, position, clock);
-        (fees, rewards)
-    }
+public struct PositionStake has store {
+    liquidity: u128,
+    tick_lower: int32,
+    tick_upper: int32,
+    reward_debts: Bag,
+}
+
+public fun collect_fees_and_rewards(
+    pool: &mut Pool,
+    position_id: ID,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): (Coin<SUI>, vector<Coin<CETUS>>) {
+    let position = pool.positions.borrow_mut(position_id);
+    let fees = collect_fees(pool, position);
+    let rewards = collect_rewards(pool, position, clock);
+    (fees, rewards)
+}
 ```
 
 **关键点**：Cetus 的 LP 仓位是 NFT（包含价格区间信息），挖矿奖励按区间内的 `liquidity` 大小分配，不是按 NFT 数量。这与传统 Uniswap V2 风格的 LP Token 质押完全不同。
@@ -178,15 +179,15 @@ public fun bad_acc(pool: &mut Pool, elapsed: u64) {
 
 ## 风险总结
 
-| 风险类别 | 具体风险 | 影响程度 |
-|---|---|---|
-| 经济模型 | 通胀螺旋：高 APR → 增发 → 价格跌 → 更高 APR | 致命 |
-| 经济模型 | Mercenary capital：补贴停 TVL 跑 | 高 |
-| 合约安全 | 奖励计算精度丢失 | 中 |
-| 合约安全 | 累加器溢出 | 高 |
-| 治理 | Gauge bribery 与 vote buying | 高 |
-| 治理 | 权重操控导致奖励集中 | 中 |
-| 协议设计 | 借款激励 > 利息导致负利率 | 高 |
-| 流动性 | 激励代币流动性不足，无法卖出 | 中 |
+| 风险类别 | 具体风险                                    | 影响程度 |
+| -------- | ------------------------------------------- | -------- |
+| 经济模型 | 通胀螺旋：高 APR → 增发 → 价格跌 → 更高 APR | 致命     |
+| 经济模型 | Mercenary capital：补贴停 TVL 跑            | 高       |
+| 合约安全 | 奖励计算精度丢失                            | 中       |
+| 合约安全 | 累加器溢出                                  | 高       |
+| 治理     | Gauge bribery 与 vote buying                | 高       |
+| 治理     | 权重操控导致奖励集中                        | 中       |
+| 协议设计 | 借款激励 > 利息导致负利率                   | 高       |
+| 流动性   | 激励代币流动性不足，无法卖出                | 中       |
 
 本章的每一行代码都对应一个真实的风险点。流动性挖矿看似简单——"质押领奖"——但其背后的数学和工程实现直接决定了协议的生死。

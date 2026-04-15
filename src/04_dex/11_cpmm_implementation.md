@@ -39,6 +39,7 @@ public struct Pool<phantom A, phantom B> has key {
 ```
 
 注意 `balance_a` 和 `reserve_a` 的区别：
+
 - `balance_a` 是实际的 `Balance<A>` 对象，持有真实代币
 - `reserve_a` 是 u64 追踪值，用于 AMM 计算
 - 两者在正常情况下应该相等，但协议费机制可能导致微小差异
@@ -183,16 +184,16 @@ public fun remove_liquidity<A, B>(
 
 完整测试在 `tests/pool_test.move` 中，覆盖以下场景：
 
-| 测试 | 验证内容 |
-|------|---------|
-| create_pool | 池创建、管理员权限分配 |
-| add_liquidity_first_lp | 首次 LP 份额 = sqrt(a×b) |
+| 测试                     | 验证内容                               |
+| ------------------------ | -------------------------------------- |
+| create_pool              | 池创建、管理员权限分配                 |
+| add_liquidity_first_lp   | 首次 LP 份额 = sqrt(a×b)               |
 | add_liquidity_subsequent | 后续 LP 份额 = min(shares_a, shares_b) |
-| swap_a_to_b | Swap 输出量与 amount_out 公式一致 |
-| swap_b_to_a | 双向 Swap 正确性 |
-| remove_liquidity | 提取量与份额比例一致 |
-| slippage_protection | min_output 保护生效 |
-| full_lifecycle | 创建→添加→Swap→移除完整流程 |
+| swap_a_to_b              | Swap 输出量与 amount_out 公式一致      |
+| swap_b_to_a              | 双向 Swap 正确性                       |
+| remove_liquidity         | 提取量与份额比例一致                   |
+| slippage_protection      | min_output 保护生效                    |
+| full_lifecycle           | 创建→添加→Swap→移除完整流程            |
 
 ### 运行测试
 
@@ -220,6 +221,7 @@ fun mint_protocol_fee<A, B>(pool: &mut Pool<A, B>) {
 ```
 
 这种设计的巧妙之处：
+
 - 不需要在每笔 Swap 中计算和分配协议费
 - 只在添加/移除流动性时触发
 - 协议费份额留在池中，代表协议的所有权

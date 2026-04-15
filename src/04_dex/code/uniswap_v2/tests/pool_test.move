@@ -1,12 +1,10 @@
 #[test_only]
 module uniswap_v2::test_coin_a {
     public struct COINA has copy, drop, store {}
-
 }
 #[test_only]
 module uniswap_v2::test_coin_b {
     public struct COINB has copy, drop, store {}
-
 }
 #[test_only]
 module uniswap_v2::pool_test {
@@ -43,8 +41,9 @@ module uniswap_v2::pool_test {
 
     /// Cleanup: transfer treasury caps to sender.
     fun teardown(
-        treasury_a: TreasuryCap<COINA>, treasury_b: TreasuryCap<COINB>,
-        ctx: &mut TxContext
+        treasury_a: TreasuryCap<COINA>,
+        treasury_b: TreasuryCap<COINB>,
+        ctx: &mut TxContext,
     ) {
         cleanup_treasury(treasury_a, ctx);
         cleanup_treasury(treasury_b, ctx);
@@ -527,5 +526,4 @@ module uniswap_v2::pool_test {
 
         scenario.end();
     }
-
 }

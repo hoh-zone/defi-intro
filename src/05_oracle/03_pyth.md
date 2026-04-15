@@ -64,73 +64,64 @@ Pull 模式（Pyth 风格）：
 
 ```move
 module defi::pyth_integration;
-    use sui::coin::Coin;
-    use sui::sui::SUI;
-    use sui::clock::Clock;
-    use pyth::price_feed::{Self, PriceFeed};
 
-    #[error]
-    const EStale_PRICE: vector<u8> = b"Stale_PRICE";
-    #[error]
-    const EPriceTooLow: vector<u8> = b"Price Too Low";
-    #[error]
-    const EConfidenceTooWide: vector<u8> = b"Confidence Too Wide";
-    #[error]
-    const ENegativePrice: vector<u8> = b"Negative Price";
+use pyth::price_feed::{Self, PriceFeed};
+use sui::clock::Clock;
+use sui::coin::Coin;
+use sui::sui::SUI;
 
-    const MAX_STALENESS_MS: u64 = 60_000;
-    const MAX_CONFIDENCE_RATIO_BPS: u64 = 500;
-    const PRICE_SCALE: u64 = 1_000_000_000;
+#[error]
+const EStale_PRICE: vector<u8> = b"Stale_PRICE";
+#[error]
+const EPriceTooLow: vector<u8> = b"Price Too Low";
+#[error]
+const EConfidenceTooWide: vector<u8> = b"Confidence Too Wide";
+#[error]
+const ENegativePrice: vector<u8> = b"Negative Price";
 
-    public struct PriceData has store {
-        price: u64,
-        confidence: u64,
-        publish_time_ms: u64,
-        ema_price: u64,
-    }
+const MAX_STALENESS_MS: u64 = 60_000;
+const MAX_CONFIDENCE_RATIO_BPS: u64 = 500;
+const PRICE_SCALE: u64 = 1_000_000_000;
 
-    public fun update_feed(
-        feed: &mut PriceFeed,
-        update_data: vector<vector<u8>>,
-        ctx: &mut TxContext,
-    ) {
-        pyth::update_price_feeds(update_data, ctx);
-    }
+public struct PriceData has store {
+    price: u64,
+    confidence: u64,
+    publish_time_ms: u64,
+    ema_price: u64,
+}
 
-    public fun safe_read_price(
-        feed: &PriceFeed,
-        clock: &Clock,
-    ): PriceData {
-        let (price, conf, publish_time, ema_price) = price_feed::get_price(feed);
-        assert!(price >= 0, ENegativePrice);
-        let now = clock.timestamp_ms();
-        assert!(now - publish_time < MAX_STALENESS_MS, EStale_PRICE);
-        assert!(conf * 10000 < price * MAX_CONFIDENCE_RATIO_BPS, EConfidenceTooWide);
-        PriceData { price, confidence: conf, publish_time_ms: publish_time, ema_price }
-    }
+public fun update_feed(feed: &mut PriceFeed, update_data: vector<vector<u8>>, ctx: &mut TxContext) {
+    pyth::update_price_feeds(update_data, ctx);
+}
 
-    public fun get_usd_price(data: &PriceData): u64 {
-        data.price
-    }
+public fun safe_read_price(feed: &PriceFeed, clock: &Clock): PriceData {
+    let (price, conf, publish_time, ema_price) = price_feed::get_price(feed);
+    assert!(price >= 0, ENegativePrice);
+    let now = clock.timestamp_ms();
+    assert!(now - publish_time < MAX_STALENESS_MS, EStale_PRICE);
+    assert!(conf * 10000 < price * MAX_CONFIDENCE_RATIO_BPS, EConfidenceTooWide);
+    PriceData { price, confidence: conf, publish_time_ms: publish_time, ema_price }
+}
 
-    public fun get_price_with_confidence(data: &PriceData): (u64, u64) {
-        (data.price, data.confidence)
-    }
+public fun get_usd_price(data: &PriceData): u64 {
+    data.price
+}
 
-    public fun get_twap_price(data: &PriceData): u64 {
-        data.ema_price
-    }
+public fun get_price_with_confidence(data: &PriceData): (u64, u64) {
+    (data.price, data.confidence)
+}
 
-    public fun convert_to_sui_amount(
-        usd_amount: u64,
-        sui_price: &PriceData,
-    ): u64 {
-        usd_amount * PRICE_SCALE / sui_price.price
-    }
+public fun get_twap_price(data: &PriceData): u64 {
+    data.ema_price
+}
 
-    public fun is_price_fresh(data: &PriceData, clock: &Clock): bool {
-        clock.timestamp_ms() - data.publish_time_ms < MAX_STALENESS_MS
-    }
+public fun convert_to_sui_amount(usd_amount: u64, sui_price: &PriceData): u64 {
+    usd_amount * PRICE_SCALE / sui_price.price
+}
+
+public fun is_price_fresh(data: &PriceData, clock: &Clock): bool {
+    clock.timestamp_ms() - data.publish_time_ms < MAX_STALENESS_MS
+}
 ```
 
 ## PTB 中的使用方式
@@ -148,7 +139,7 @@ async function borrowWithPyth(feedId: string) {
     const tx = new Transaction();
     tx.moveCall({
         target: "0xpyth::price_feed::update_price_feeds",
-        arguments: [tx.pure.vector('vector<u8>', updateData)],
+        arguments: [tx.pure.vector("vector<u8>", updateData)],
     });
 
     tx.moveCall({
@@ -156,7 +147,7 @@ async function borrowWithPyth(feedId: string) {
         arguments: [
             tx.object(MARKET_ID),
             tx.object(PRICE_FEED_ID),
-            tx.pure.vector('vector<u8>', updateData),
+            tx.pure.vector("vector<u8>", updateData),
             tx.pure.u64(borrowAmount),
         ],
     });
@@ -186,19 +177,19 @@ async function borrowWithPyth(feedId: string) {
 
 ## 关键参数
 
-| 参数 | 含义 | 典型值 |
-|---|---|---|
-| `price` | 当前价格（带精度） | 取决于 feed，通常 10^8 精度 |
-| `conf` | 置信区间（±） | 价格的 0.1%-2% |
-| `publish_time` | 价格发布时间戳 | Unix ms |
-| `ema_price` | 指数移动平均价格 | 用于 TWAP 场景 |
-| `expo` | 价格的指数（负数表示小数） | 通常 -8 |
+| 参数           | 含义                       | 典型值                      |
+| -------------- | -------------------------- | --------------------------- |
+| `price`        | 当前价格（带精度）         | 取决于 feed，通常 10^8 精度 |
+| `conf`         | 置信区间（±）              | 价格的 0.1%-2%              |
+| `publish_time` | 价格发布时间戳             | Unix ms                     |
+| `ema_price`    | 指数移动平均价格           | 用于 TWAP 场景              |
+| `expo`         | 价格的指数（负数表示小数） | 通常 -8                     |
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 依赖 Hermes API | 如果 Hermes 宕机，无法获取更新数据 |
-| 置信区间过宽 | 在高波动时 conf 可能很大，意味着价格不确定 |
-| 发布者串通 | 如果足够多的发布者提供虚假价格 |
-| 更新成本 | Pull 模式下用户需要额外 gas 来更新价格 |
+| 风险            | 描述                                       |
+| --------------- | ------------------------------------------ |
+| 依赖 Hermes API | 如果 Hermes 宕机，无法获取更新数据         |
+| 置信区间过宽    | 在高波动时 conf 可能很大，意味着价格不确定 |
+| 发布者串通      | 如果足够多的发布者提供虚假价格             |
+| 更新成本        | Pull 模式下用户需要额外 gas 来更新价格     |

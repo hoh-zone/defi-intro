@@ -4,14 +4,14 @@
 
 全书分为六篇，按依赖关系排列：
 
-| 篇 | 主题 | 核心 |
-|----|------|------|
-| 第一篇 | 认知地基 | 对象模型、Move 精要、DeFi 抽象、风险语言 |
-| 第二篇 | 价格基础设施 | DEX（AMM + 集中流动性 + 订单簿）、预言机、聚合器 |
-| 第三篇 | 信用与货币 | 借贷、流动性挖矿、CDP、稳定币 |
-| 第四篇 | 收益与杠杆 | LSD、做市策略、衍生品、现货杠杆、套利、Launchpad、跨链与保险 |
-| 第五篇 | 警惕 | 攻击模式、协议工程、审计准备 |
-| 附录 | 工具箱 | 术语表、公式、CLI、延展阅读、代码索引 |
+| 篇     | 主题         | 核心                                                         |
+| ------ | ------------ | ------------------------------------------------------------ |
+| 第一篇 | 认知地基     | 对象模型、Move 精要、DeFi 抽象、风险语言                     |
+| 第二篇 | 价格基础设施 | DEX（AMM + 集中流动性 + 订单簿）、预言机、聚合器             |
+| 第三篇 | 信用与货币   | 借贷、流动性挖矿、CDP、稳定币                                |
+| 第四篇 | 收益与杠杆   | LSD、做市策略、衍生品、现货杠杆、套利、Launchpad、跨链与保险 |
+| 第五篇 | 警惕         | 攻击模式、协议工程、审计准备                                 |
+| 附录   | 工具箱       | 术语表、公式、CLI、延展阅读、代码索引                        |
 
 依赖关系是严格线性的：第二篇需要第一篇的基础，第三篇需要第二篇的价格基础设施，第四篇需要第三篇的信用层，第五篇贯穿所有协议类型。
 
@@ -31,36 +31,37 @@
 
 ```move
 module defi_book::amm_example;
-    use sui::coin::{Self, Coin};
 
-    public struct Pool<phantom A, phantom B> has key {
-        id: UID,
-        reserve_a: Coin<A>,
-        reserve_b: Coin<B>,
-        fee_bps: u64,
-    }
+use sui::coin::{Self, Coin};
 
-    public struct LPReceipt has key, store {
-        id: UID,
-        pool_id: ID,
-        shares: u64,
-    }
+public struct Pool<phantom A, phantom B> has key {
+    id: UID,
+    reserve_a: Coin<A>,
+    reserve_b: Coin<B>,
+    fee_bps: u64,
+}
 
-    public entry fun add_liquidity<A, B>(
-        pool: &mut Pool<A, B>,
-        coin_a: Coin<A>,
-        coin_b: Coin<B>,
-        ctx: &mut TxContext,
+public struct LPReceipt has key, store {
+    id: UID,
+    pool_id: ID,
+    shares: u64,
+}
+
+public entry fun add_liquidity<A, B>(
+    pool: &mut Pool<A, B>,
+    coin_a: Coin<A>,
+    coin_b: Coin<B>,
+    ctx: &mut TxContext,
 ): LPReceipt {
-        let shares = coin_a.value(&coin_a);
-        coin::join(&mut pool.reserve_a, coin_a);
-        coin::join(&mut pool.reserve_b, coin_b);
-        LPReceipt {
-            id: object::new(ctx),
-            pool_id: object::id(pool),
-            shares,
-        }
+    let shares = coin_a.value(&coin_a);
+    coin::join(&mut pool.reserve_a, coin_a);
+    coin::join(&mut pool.reserve_b, coin_b);
+    LPReceipt {
+        id: object::new(ctx),
+        pool_id: object::id(pool),
+        shares,
     }
+}
 ```
 
 对这段代码的四步分析：

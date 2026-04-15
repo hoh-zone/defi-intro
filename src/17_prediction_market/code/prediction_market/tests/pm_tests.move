@@ -5,12 +5,12 @@ module prediction_market::test_coin {
 
 #[test_only]
 module prediction_market::pm_tests {
-    use sui::coin;
-    use sui::test_scenario;
-    use sui::clock;
-    use sui::transfer;
     use prediction_market::pm::{Self, Market};
     use prediction_market::test_coin::TCOIN;
+    use sui::clock;
+    use sui::coin;
+    use sui::test_scenario;
+    use sui::transfer;
 
     #[test]
     fun cost_state_is_monotone_in_q_yes() {

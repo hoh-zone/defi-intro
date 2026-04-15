@@ -50,13 +50,13 @@
 
 每一章都遵循同一套分析框架：
 
-| 模块 | 内容 |
-|------|------|
-| 业务问题 | 这个协议解决什么问题？ |
-| 资产流 | 资产如何流转？谁可以动？ |
-| Move 实现 | 完整的可运行代码 |
+| 模块         | 内容                                         |
+| ------------ | -------------------------------------------- |
+| 业务问题     | 这个协议解决什么问题？                       |
+| 资产流       | 资产如何流转？谁可以动？                     |
+| Move 实现    | 完整的可运行代码                             |
 | Sui 案例分析 | Cetus / DeepBook / Navi / Scallop 等真实协议 |
-| 风险分析 | 什么会出错？怎么防？ |
+| 风险分析     | 什么会出错？怎么防？                         |
 
 ## 本地构建
 
@@ -75,32 +75,34 @@ mdbook serve --open
 
 代码块中的 **Move / Sui Move** 语法高亮使用 [highlightjs-sui](https://github.com/hoh-zone/highlightjs-sui)。预构建脚本已提交在 `theme/highlight-sui-move.bundle.js`，一般无需安装 Node。若你升级了 `highlightjs-sui` 或修改了 `scripts/mdbook-sui-bridge.js`，请在仓库根目录执行 `npm install && npm run build:highlight` 再 `mdbook build`。
 
+正文里的 ` ```move ` 代码块与仓库内 `.move` 源文件统一使用 Mysten 的 **[@mysten/prettier-plugin-move](https://www.npmjs.com/package/@mysten/prettier-plugin-move)**（与 VS Code 扩展 **Move Formatter** 一致）。安装依赖后执行 `npm run format` 可批量格式化；编辑器侧建议安装扩展 `mysten.prettier-move` 与 `esbenp.prettier-vscode`，并启用保存时格式化（仓库已含 `.vscode/settings.json`）。
+
 ## 章节速查
 
-| 篇 | 章 | 主题 | 核心代码 |
-|----|----|------|----------|
-| 一 | 1 | DeFi 全景与 Sui 定位 | — |
-| 一 | 2 | Move 语言精要 | Object · Ability · PTB |
-| 一 | 3 | 核心抽象与风险语言 | Pool · Position · APR |
-| 二 | 4 | DEX 全类型 | FixedRate · AMM · V2 · V3 · DLMM · StableSwap · Orderbook |
-| 二 | 5 | 预言机 | PriceGuard · TWAP |
-| 二 | 6 | DEX 聚合器 | Router · SplitOrder |
-| 三 | 7 | 借贷 | Savings · Lending · FlashLoan |
-| 三 | 8 | 流动性挖矿 | RewardAccumulator · Decay · VeToken |
-| 三 | 9 | 稳定币 | Fiat · CDP · Algo |
-| 四 | 10 | LSD | StakedSUI · LST |
-| 四 | 11 | 自动做市 | GridBot · YieldVault · DeltaNeutral |
-| 四 | 12 | 衍生品 | PerpMarket · Margin |
-| 四 | 13 | 现货杠杆 | LeverageLoop |
-| 四 | 14 | 套利 | SpreadArb · MEV |
-| 四 | 15 | Launchpad | StateMachine · Vesting |
-| 四 | 16 | 跨链与保险 | Bridge · Insurance · PredictionMarket |
-| 四 | 17 | 预测市场 | CTF · LMSR · Oracle · Claim |
-| 五 | 18 | 攻击模式 | OracleAttack · FlashLoanAttack · GovernanceAttack |
-| 五 | 19 | 协议工程化 | AdminCap · PauseState · FuzzTest |
-| 五 | 20 | 审计准备 | PermissionMatrix · Governance |
-| 五 | 21 | Move 安全实践 | Capability · SafeMath · Multisig · Checklist |
-| 五 | 22 | 风险控制全景 | LTV · 清算 · 挤兑 · 治理 · Launch Checklist |
+| 篇  | 章  | 主题                 | 核心代码                                                  |
+| --- | --- | -------------------- | --------------------------------------------------------- |
+| 一  | 1   | DeFi 全景与 Sui 定位 | —                                                         |
+| 一  | 2   | Move 语言精要        | Object · Ability · PTB                                    |
+| 一  | 3   | 核心抽象与风险语言   | Pool · Position · APR                                     |
+| 二  | 4   | DEX 全类型           | FixedRate · AMM · V2 · V3 · DLMM · StableSwap · Orderbook |
+| 二  | 5   | 预言机               | PriceGuard · TWAP                                         |
+| 二  | 6   | DEX 聚合器           | Router · SplitOrder                                       |
+| 三  | 7   | 借贷                 | Savings · Lending · FlashLoan                             |
+| 三  | 8   | 流动性挖矿           | RewardAccumulator · Decay · VeToken                       |
+| 三  | 9   | 稳定币               | Fiat · CDP · Algo                                         |
+| 四  | 10  | LSD                  | StakedSUI · LST                                           |
+| 四  | 11  | 自动做市             | GridBot · YieldVault · DeltaNeutral                       |
+| 四  | 12  | 衍生品               | PerpMarket · Margin                                       |
+| 四  | 13  | 现货杠杆             | LeverageLoop                                              |
+| 四  | 14  | 套利                 | SpreadArb · MEV                                           |
+| 四  | 15  | Launchpad            | StateMachine · Vesting                                    |
+| 四  | 16  | 跨链与保险           | Bridge · Insurance · PredictionMarket                     |
+| 四  | 17  | 预测市场             | CTF · LMSR · Oracle · Claim                               |
+| 五  | 18  | 攻击模式             | OracleAttack · FlashLoanAttack · GovernanceAttack         |
+| 五  | 19  | 协议工程化           | AdminCap · PauseState · FuzzTest                          |
+| 五  | 20  | 审计准备             | PermissionMatrix · Governance                             |
+| 五  | 21  | Move 安全实践        | Capability · SafeMath · Multisig · Checklist              |
+| 五  | 22  | 风险控制全景         | LTV · 清算 · 挤兑 · 治理 · Launch Checklist               |
 
 ## 技术栈
 

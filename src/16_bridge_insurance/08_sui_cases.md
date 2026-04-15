@@ -66,35 +66,30 @@ Wormhole 在 Sui 上的集成架构：
 
 ```move
 module my_app::cross_chain;
-    use wormhole::vaa;
-    use wormhole::state;
 
-    public fun handle_vaa(
-        vaa: &vaa::VAA,
-        wormhole_state: &state::Wormhole,
-    ) {
-        let payload = vaa::payload(vaa);
-        let emitter_chain = vaa::emitter_chain(vaa);
-        let emitter_address = vaa::emitter_address(vaa);
-        vaa::verify(vaa, wormhole_state);
-        process_payload(emitter_chain, emitter_address, payload);
-    }
+use wormhole::state;
+use wormhole::vaa;
 
-    fun process_payload(
-        chain: u16,
-        _emitter: vector<u8>,
-        payload: vector<u8>,
-    ) {
-        let action = *payload.borrow(0);
-        if (action == 1) {
-            handle_transfer(payload);
-        } else if (action == 2) {
-            handle_message(payload);
-        };
-    }
+public fun handle_vaa(vaa: &vaa::VAA, wormhole_state: &state::Wormhole) {
+    let payload = vaa::payload(vaa);
+    let emitter_chain = vaa::emitter_chain(vaa);
+    let emitter_address = vaa::emitter_address(vaa);
+    vaa::verify(vaa, wormhole_state);
+    process_payload(emitter_chain, emitter_address, payload);
+}
 
-    fun handle_transfer(_payload: vector<u8>) {}
-    fun handle_message(_payload: vector<u8>) {}
+fun process_payload(chain: u16, _emitter: vector<u8>, payload: vector<u8>) {
+    let action = *payload.borrow(0);
+    if (action == 1) {
+        handle_transfer(payload);
+    } else if (action == 2) {
+        handle_message(payload);
+    };
+}
+
+fun handle_transfer(_payload: vector<u8>) {}
+
+fun handle_message(_payload: vector<u8>) {}
 ```
 
 ## Sui 上的保险协议现状
@@ -124,64 +119,59 @@ Sui 生态的链上保险仍在早期阶段：
 
 ```move
 module protocol::safety_fund;
-    use sui::coin::{Self, Coin};
-    use sui::balance::{Self, Balance};
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::clock::Clock;
 
-    #[error]
-    const EUnauthorized: vector<u8> = b"Unauthorized";
+use sui::balance::{Self, Balance};
+use sui::clock::Clock;
+use sui::coin::{Self, Coin};
+use sui::object::{Self, UID};
+use sui::tx_context::TxContext;
 
-    public struct SafetyFund<phantom CoinType> has key {
-        id: UID,
-        balance: Balance<CoinType>,
-        fee_rate_bps: u64,
-        total_collected: u64,
-        total_disbursed: u64,
-        admin: address,
-    }
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
 
-    public fun create<CoinType>(
-        fee_rate_bps: u64,
-        ctx: &mut TxContext,
-    ) {
-        let fund = SafetyFund<CoinType> {
-            id: object::new(ctx),
-            balance: balance::zero(),
-            fee_rate_bps,
-            total_collected: 0,
-            total_disbursed: 0,
-            admin: ctx.sender(),
-        };
-        transfer::share_object(fund);
-    }
+public struct SafetyFund<phantom CoinType> has key {
+    id: UID,
+    balance: Balance<CoinType>,
+    fee_rate_bps: u64,
+    total_collected: u64,
+    total_disbursed: u64,
+    admin: address,
+}
 
-    public fun collect<CoinType>(
-        fund: &mut SafetyFund<CoinType>,
-        fee: Coin<CoinType>,
-    ) {
-        let amount = coin::value(&fee);
-        balance::join(&mut fund.balance, coin::into_balance(fee));
-        fund.total_collected = fund.total_collected + amount;
-    }
+public fun create<CoinType>(fee_rate_bps: u64, ctx: &mut TxContext) {
+    let fund = SafetyFund<CoinType> {
+        id: object::new(ctx),
+        balance: balance::zero(),
+        fee_rate_bps,
+        total_collected: 0,
+        total_disbursed: 0,
+        admin: ctx.sender(),
+    };
+    transfer::share_object(fund);
+}
 
-    public fun disburse<CoinType>(
-        fund: &mut SafetyFund<CoinType>,
-        amount: u64,
-        recipient: address,
-        ctx: &mut TxContext,
-    ) {
-        assert!(ctx.sender() == fund.admin, EUnauthorized);
-        assert!(balance::value(&fund.balance) >= amount, 1);
-        let coin = coin::take(&mut fund.balance, amount, ctx);
-        fund.total_disbursed = fund.total_disbursed + amount;
-        transfer::public_transfer(coin, recipient);
-    }
+public fun collect<CoinType>(fund: &mut SafetyFund<CoinType>, fee: Coin<CoinType>) {
+    let amount = coin::value(&fee);
+    balance::join(&mut fund.balance, coin::into_balance(fee));
+    fund.total_collected = fund.total_collected + amount;
+}
 
-    public fun fund_balance<CoinType>(fund: &SafetyFund<CoinType>): u64 {
-        balance::value(&fund.balance)
-    }
+public fun disburse<CoinType>(
+    fund: &mut SafetyFund<CoinType>,
+    amount: u64,
+    recipient: address,
+    ctx: &mut TxContext,
+) {
+    assert!(ctx.sender() == fund.admin, EUnauthorized);
+    assert!(balance::value(&fund.balance) >= amount, 1);
+    let coin = coin::take(&mut fund.balance, amount, ctx);
+    fund.total_disbursed = fund.total_disbursed + amount;
+    transfer::public_transfer(coin, recipient);
+}
+
+public fun fund_balance<CoinType>(fund: &SafetyFund<CoinType>): u64 {
+    balance::value(&fund.balance)
+}
 ```
 
 ## 跨链 + 保险的组合风险
@@ -237,10 +227,10 @@ module protocol::safety_fund;
 
 ## 风险分析
 
-| 维度 | 跨链桥 | 链上保险 |
-|---|---|---|
-| 技术风险 | 合约漏洞、签名伪造 | 定价错误、赔付逻辑漏洞 |
-| 经济风险 | 资金池耗尽 | 保险池不足 |
-| 治理风险 | 验证者串通 | 理赔争议 |
+| 维度       | 跨链桥                 | 链上保险               |
+| ---------- | ---------------------- | ---------------------- |
+| 技术风险   | 合约漏洞、签名伪造     | 定价错误、赔付逻辑漏洞 |
+| 经济风险   | 资金池耗尽             | 保险池不足             |
+| 治理风险   | 验证者串通             | 理赔争议               |
 | 系统性风险 | 桥攻击影响所有依赖协议 | 多协议同时索赔耗尽保险 |
-| 发展阶段 | 相对成熟但仍有重大事故 | 早期实验阶段 |
+| 发展阶段   | 相对成熟但仍有重大事故 | 早期实验阶段           |

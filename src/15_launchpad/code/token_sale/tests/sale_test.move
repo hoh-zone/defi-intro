@@ -1,9 +1,10 @@
 #[test_only]
 module token_sale::sale_test;
-use token_sale::sale;
+
 use sui::coin;
 use sui::sui::SUI;
 use sui::test_scenario;
+use token_sale::sale;
 
 const ADMIN: address = @0xAD;
 const USER1: address = @0xB0;

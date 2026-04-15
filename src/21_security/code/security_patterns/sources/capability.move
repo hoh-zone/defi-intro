@@ -1,6 +1,7 @@
 module security_patterns::capability;
-use sui::coin::{Self, Coin};
+
 use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin};
 use sui::object::{Self, UID, ID};
 use sui::transfer;
 use sui::tx_context::{Self, TxContext};
@@ -36,14 +37,23 @@ public fun deposit<T>(vault: &mut ProtectedVault<T>, coin: Coin<T>) {
 }
 
 /// Only cap holder can withdraw
-public fun withdraw<T>(cap: &VaultCap, vault: &mut ProtectedVault<T>, amount: u64, ctx: &mut TxContext): Coin<T> {
+public fun withdraw<T>(
+    cap: &VaultCap,
+    vault: &mut ProtectedVault<T>,
+    amount: u64,
+    ctx: &mut TxContext,
+): Coin<T> {
     assert!(object::id(vault) == cap.vault_id, EUnauthorized);
     assert!(balance::value(&vault.balance) >= amount, EInsufficientBalance);
     coin::take(&mut vault.balance, amount, ctx)
 }
 
 /// Emergency drain (requires cap)
-public fun emergency_withdraw<T>(cap: &VaultCap, vault: &mut ProtectedVault<T>, ctx: &mut TxContext): Coin<T> {
+public fun emergency_withdraw<T>(
+    cap: &VaultCap,
+    vault: &mut ProtectedVault<T>,
+    ctx: &mut TxContext,
+): Coin<T> {
     assert!(object::id(vault) == cap.vault_id, EUnauthorized);
     let amount = balance::value(&vault.balance);
     coin::take(&mut vault.balance, amount, ctx)

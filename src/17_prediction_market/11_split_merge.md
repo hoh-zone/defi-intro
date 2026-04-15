@@ -149,13 +149,13 @@ Alice Merge 300:
 
 ## 边界情况
 
-| 操作 | 预期结果 | 保护机制 |
-|------|---------|---------|
-| Split 0 USDC | 失败 | `assert!(amt > 0)` |
-| Merge 超过持有 | 失败 | `assert!(pos.yes >= amount)` |
-| 用 A 市场 Position 操作 B 市场 | 失败 | `market_id` 检查 |
-| vault 不足以支付 Merge | 失败 | `balance::split` 会 abort |
-| 已结算后 Split/Merge | 未限制（教学版） | 生产应加状态检查 |
+| 操作                           | 预期结果         | 保护机制                     |
+| ------------------------------ | ---------------- | ---------------------------- |
+| Split 0 USDC                   | 失败             | `assert!(amt > 0)`           |
+| Merge 超过持有                 | 失败             | `assert!(pos.yes >= amount)` |
+| 用 A 市场 Position 操作 B 市场 | 失败             | `market_id` 检查             |
+| vault 不足以支付 Merge         | 失败             | `balance::split` 会 abort    |
+| 已结算后 Split/Merge           | 未限制（教学版） | 生产应加状态检查             |
 
 ### 生产改进建议
 

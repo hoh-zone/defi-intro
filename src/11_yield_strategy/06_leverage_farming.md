@@ -55,140 +55,142 @@
 
 ```move
 module yield_strategy::leverage_farming;
-    use sui::coin::{Self, Coin};
-    use sui::balance::{Self, Balance};
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::event;
 
-    #[error]
-    const ENotOwner: vector<u8> = b"Not Owner";
-    #[error]
-    const ECollateralRatio: vector<u8> = b"Collateral Ratio";
-    #[error]
-    const EZeroAmount: vector<u8> = b"Zero Amount";
-    #[error]
-    const EMaxLeverage: vector<u8> = b"Max Leverage";
-    const PRECISION: u64 = 1_000_000_000;
+use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin};
+use sui::event;
+use sui::object::{Self, UID};
+use sui::tx_context::TxContext;
 
-    public struct LeveragedPosition has key {
-        id: UID,
-        owner: address,
-        deposited_base: Balance<BaseCoin>,
-        borrowed_quote: Balance<QuoteCoin>,
-        lp_shares: u64,
-        leverage: u64,
-        entry_base_price: u64,
-        liquidation_threshold_bps: u64,
-    }
+#[error]
+const ENotOwner: vector<u8> = b"Not Owner";
+#[error]
+const ECollateralRatio: vector<u8> = b"Collateral Ratio";
+#[error]
+const EZeroAmount: vector<u8> = b"Zero Amount";
+#[error]
+const EMaxLeverage: vector<u8> = b"Max Leverage";
+const PRECISION: u64 = 1_000_000_000;
 
-    public struct PositionOpened has copy, drop {
-        owner: address,
-        base_deposited: u64,
-        quote_borrowed: u64,
-        leverage: u64,
-    }
+public struct LeveragedPosition has key {
+    id: UID,
+    owner: address,
+    deposited_base: Balance<BaseCoin>,
+    borrowed_quote: Balance<QuoteCoin>,
+    lp_shares: u64,
+    leverage: u64,
+    entry_base_price: u64,
+    liquidation_threshold_bps: u64,
+}
 
-    public struct Liquidated has copy, drop {
-        position: address,
-        base_seized: u64,
-        debt_repaid: u64,
-        remaining: u64,
-    }
+public struct PositionOpened has copy, drop {
+    owner: address,
+    base_deposited: u64,
+    quote_borrowed: u64,
+    leverage: u64,
+}
 
-    public fun open_position<BaseCoin, QuoteCoin>(
-        base_collateral: Coin<BaseCoin>,
-        target_leverage_bps: u64,
-        base_price_in_quote: u64,
-        ctx: &mut TxContext,
-    ) {
-        let collateral_amount = base_collateral.value();
-        assert!(collateral_amount > 0, EZeroAmount);
-        assert!(target_leverage_bps > PRECISION && target_leverage_bps <= 5 * PRECISION, EMaxLeverage);
-        let leverage = target_leverage_bps / PRECISION;
-        let total_base = collateral_amount * leverage;
-        let borrow_base_equivalent = total_base - collateral_amount;
-        let borrow_quote = borrow_base_equivalent * base_price_in_quote / PRECISION;
-        let position = LeveragedPosition {
-            id: object::new(ctx),
-            owner: ctx.sender(),
-            deposited_base: coin::into_balance(base_collateral),
-            borrowed_quote: balance::zero(),
-            lp_shares: 0,
-            leverage: leverage,
-            entry_base_price: base_price_in_quote,
-            liquidation_threshold_bps: 7500,
-        };
-        event::emit(PositionOpened {
-            owner: ctx.sender(),
-            base_deposited: collateral_amount,
-            quote_borrowed: borrow_quote,
-            leverage,
-        });
-        transfer::transfer(position, ctx.sender());
-    }
+public struct Liquidated has copy, drop {
+    position: address,
+    base_seized: u64,
+    debt_repaid: u64,
+    remaining: u64,
+}
 
-    public fun health_factor(
-        position: &LeveragedPosition,
-        current_base_price: u64,
-    ): u64 {
-        let base_value = position.deposited_base.value() * current_base_price / PRECISION;
-        let debt = position.borrowed_quote.value();
-        if (debt == 0) { return PRECISION * 10 };
-        base_value * position.liquidation_threshold_bps / (debt * 100)
-    }
+public fun open_position<BaseCoin, QuoteCoin>(
+    base_collateral: Coin<BaseCoin>,
+    target_leverage_bps: u64,
+    base_price_in_quote: u64,
+    ctx: &mut TxContext,
+) {
+    let collateral_amount = base_collateral.value();
+    assert!(collateral_amount > 0, EZeroAmount);
+    assert!(target_leverage_bps > PRECISION && target_leverage_bps <= 5 * PRECISION, EMaxLeverage);
+    let leverage = target_leverage_bps / PRECISION;
+    let total_base = collateral_amount * leverage;
+    let borrow_base_equivalent = total_base - collateral_amount;
+    let borrow_quote = borrow_base_equivalent * base_price_in_quote / PRECISION;
+    let position = LeveragedPosition {
+        id: object::new(ctx),
+        owner: ctx.sender(),
+        deposited_base: coin::into_balance(base_collateral),
+        borrowed_quote: balance::zero(),
+        lp_shares: 0,
+        leverage: leverage,
+        entry_base_price: base_price_in_quote,
+        liquidation_threshold_bps: 7500,
+    };
+    event::emit(PositionOpened {
+        owner: ctx.sender(),
+        base_deposited: collateral_amount,
+        quote_borrowed: borrow_quote,
+        leverage,
+    });
+    transfer::transfer(position, ctx.sender());
+}
 
-    public fun is_liquidatable(
-        position: &LeveragedPosition,
-        current_base_price: u64,
-    ): bool {
-        health_factor(position, current_base_price) < PRECISION
-    }
+public fun health_factor(position: &LeveragedPosition, current_base_price: u64): u64 {
+    let base_value = position.deposited_base.value() * current_base_price / PRECISION;
+    let debt = position.borrowed_quote.value();
+    if (debt == 0) { return PRECISION * 10 };
+    base_value * position.liquidation_threshold_bps / (debt * 100)
+}
 
-    public fun calculate_max_leverage(
-        collateral: u64,
-        liquidation_threshold_bps: u64,
-        price: u64,
-    ): u64 {
-        let max_borrow = collateral * price / PRECISION * liquidation_threshold_bps / 10000;
-        (collateral * price / PRECISION + max_borrow) * PRECISION / (collateral * price / PRECISION)
-    }
+public fun is_liquidatable(position: &LeveragedPosition, current_base_price: u64): bool {
+    health_factor(position, current_base_price) < PRECISION
+}
 
-    public fun estimated_liquidation_price(
-        position: &LeveragedPosition,
-    ): u64 {
-        let debt = position.borrowed_quote.value();
-        let collateral = position.deposited_base.value();
-        if (collateral == 0) { return 0 };
-        debt * 10000 / (collateral * position.liquidation_threshold_bps / PRECISION)
-    }
+public fun calculate_max_leverage(
+    collateral: u64,
+    liquidation_threshold_bps: u64,
+    price: u64,
+): u64 {
+    let max_borrow = collateral * price / PRECISION * liquidation_threshold_bps / 10000;
+    (collateral * price / PRECISION + max_borrow) * PRECISION / (collateral * price / PRECISION)
+}
 
-    public fun add_collateral<BaseCoin, QuoteCoin>(
-        position: &mut LeveragedPosition<BaseCoin, QuoteCoin>,
-        more: Coin<BaseCoin>,
-        ctx: &mut TxContext,
-    ) {
-        assert!(ctx.sender() == position.owner, ENotOwner);
-        balance::join(&mut position.deposited_base, coin::into_balance(more));
-    }
+public fun estimated_liquidation_price(position: &LeveragedPosition): u64 {
+    let debt = position.borrowed_quote.value();
+    let collateral = position.deposited_base.value();
+    if (collateral == 0) { return 0 };
+    debt * 10000 / (collateral * position.liquidation_threshold_bps / PRECISION)
+}
 
-    public fun close_position<BaseCoin, QuoteCoin>(
-        position: LeveragedPosition<BaseCoin, QuoteCoin>,
-        repayment: Coin<QuoteCoin>,
-        ctx: &mut TxContext,
-    ): Coin<BaseCoin> {
-        assert!(ctx.sender() == position.owner, ENotOwner);
-        let debt = position.borrowed_quote.value();
-        let repaid = repaid.value();
-        assert!(repaid >= debt, ECollateralRatio);
-        let remaining_base = position.deposited_base.value();
-        let base = coin::from_balance(position.deposited_base, ctx);
-        coin::destroy_zero(coin::from_balance(position.borrowed_quote, ctx));
-        coin::destroy_zero(repayment);
-        let LeveragedPosition { id, owner: _, deposited_base: _, borrowed_quote: _, lp_shares: _, leverage: _, entry_base_price: _, liquidation_threshold_bps: _ } = position;
-        id.delete();
-        base
-    }
+public fun add_collateral<BaseCoin, QuoteCoin>(
+    position: &mut LeveragedPosition<BaseCoin, QuoteCoin>,
+    more: Coin<BaseCoin>,
+    ctx: &mut TxContext,
+) {
+    assert!(ctx.sender() == position.owner, ENotOwner);
+    balance::join(&mut position.deposited_base, coin::into_balance(more));
+}
+
+public fun close_position<BaseCoin, QuoteCoin>(
+    position: LeveragedPosition<BaseCoin, QuoteCoin>,
+    repayment: Coin<QuoteCoin>,
+    ctx: &mut TxContext,
+): Coin<BaseCoin> {
+    assert!(ctx.sender() == position.owner, ENotOwner);
+    let debt = position.borrowed_quote.value();
+    let repaid = repaid.value();
+    assert!(repaid >= debt, ECollateralRatio);
+    let remaining_base = position.deposited_base.value();
+    let base = coin::from_balance(position.deposited_base, ctx);
+    coin::destroy_zero(coin::from_balance(position.borrowed_quote, ctx));
+    coin::destroy_zero(repayment);
+    let LeveragedPosition {
+        id,
+        owner: _,
+        deposited_base: _,
+        borrowed_quote: _,
+        lp_shares: _,
+        leverage: _,
+        entry_base_price: _,
+        liquidation_threshold_bps: _,
+    } = position;
+    id.delete();
+    base
+}
 ```
 
 ## 杠杆挖矿的不同场景
@@ -239,11 +241,11 @@ module yield_strategy::leverage_farming;
 
 ## 风险分析
 
-| 风险 | 描述 | 严重程度 |
-|---|---|---|
-| 清算 | 价格下跌到清算阈值，仓位被强制平仓，损失清算罚金 | 致命 |
-| 级联清算 | 大量杠杆仓位同时被清算，价格进一步下跌 | 致命 |
-| 利率飙升 | 借款需求增加导致利率上升，挖矿收益被利息吃掉 | 高 |
-| 激励下降 | 挖矿奖励减少但杠杆成本不变，净收益转负 | 高 |
-| 通胀螺旋 | 激励代币被杠杆挖矿者卖出，价格持续下跌 | 高 |
-| 合约风险 | 循环操作涉及多个协议，任一出问题都可能导致资金损失 | 中 |
+| 风险     | 描述                                               | 严重程度 |
+| -------- | -------------------------------------------------- | -------- |
+| 清算     | 价格下跌到清算阈值，仓位被强制平仓，损失清算罚金   | 致命     |
+| 级联清算 | 大量杠杆仓位同时被清算，价格进一步下跌             | 致命     |
+| 利率飙升 | 借款需求增加导致利率上升，挖矿收益被利息吃掉       | 高       |
+| 激励下降 | 挖矿奖励减少但杠杆成本不变，净收益转负             | 高       |
+| 通胀螺旋 | 激励代币被杠杆挖矿者卖出，价格持续下跌             | 高       |
+| 合约风险 | 循环操作涉及多个协议，任一出问题都可能导致资金损失 | 中       |

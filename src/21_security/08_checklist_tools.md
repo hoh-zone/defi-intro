@@ -6,61 +6,61 @@
 
 ### 一、资金安全（P0 — 必须零缺陷）
 
-| # | 检查项 | 验证方法 |
-|---|--------|----------|
-| 1 | 每条存取路径都有 roundtrip 测试 | 单元测试：存入 N → 取出 N |
-| 2 | Coin/Balance 不存在未处理的值 | 编译器保证（线性类型） |
-| 3 | 所有算术使用 u256 中间精度 | grep `* /` 检查 |
-| 4 | 先乘后除（不先除后乘） | 代码审查 |
-| 5 | 金额范围检查（min/max） | assert 检查 |
-| 6 | 累加器精度足够 | 测试：小额长期累加 |
+| #   | 检查项                          | 验证方法                  |
+| --- | ------------------------------- | ------------------------- |
+| 1   | 每条存取路径都有 roundtrip 测试 | 单元测试：存入 N → 取出 N |
+| 2   | Coin/Balance 不存在未处理的值   | 编译器保证（线性类型）    |
+| 3   | 所有算术使用 u256 中间精度      | grep `* /` 检查           |
+| 4   | 先乘后除（不先除后乘）          | 代码审查                  |
+| 5   | 金额范围检查（min/max）         | assert 检查               |
+| 6   | 累加器精度足够                  | 测试：小额长期累加        |
 
 ### 二、权限安全（P0 — 必须零缺陷）
 
-| # | 检查项 | 验证方法 |
-|---|--------|----------|
-| 7 | 所有 shared 对象入口函数有鉴权 | 逐一审查函数签名 |
-| 8 | Admin/Oper Capability 分离 | 架构审查 |
-| 9 | Capability 没有 drop ability | struct 定义检查 |
-| 10 | 关键 Capability 在多签地址 | 链上验证 |
-| 11 | UpgradeCap 在高门槛多签 | 部署验证 |
+| #   | 检查项                         | 验证方法         |
+| --- | ------------------------------ | ---------------- |
+| 7   | 所有 shared 对象入口函数有鉴权 | 逐一审查函数签名 |
+| 8   | Admin/Oper Capability 分离     | 架构审查         |
+| 9   | Capability 没有 drop ability   | struct 定义检查  |
+| 10  | 关键 Capability 在多签地址     | 链上验证         |
+| 11  | UpgradeCap 在高门槛多签        | 部署验证         |
 
 ### 三、预言机安全（P1 — 高优先级）
 
-| # | 检查项 | 验证方法 |
-|---|--------|----------|
-| 12 | 价格有新鲜度检查 | 时间戳验证 |
-| 13 | 价格有偏离检查 | 与预期范围比较 |
-| 14 | 多预言机聚合有仲裁逻辑 | 代码审查 |
-| 15 | 预言机失效时有降级方案 | 场景测试 |
+| #   | 检查项                 | 验证方法       |
+| --- | ---------------------- | -------------- |
+| 12  | 价格有新鲜度检查       | 时间戳验证     |
+| 13  | 价格有偏离检查         | 与预期范围比较 |
+| 14  | 多预言机聚合有仲裁逻辑 | 代码审查       |
+| 15  | 预言机失效时有降级方案 | 场景测试       |
 
 ### 四、清算与风控（P1 — 高优先级）
 
-| # | 检查项 | 验证方法 |
-|---|--------|----------|
-| 16 | 健康因子计算正确 | 边界值测试 |
-| 17 | 清算在极端价格下仍能执行 | 压力测试 |
-| 18 | 清算激励足够覆盖 gas | 模拟计算 |
-| 19 | 级联清算有熔断机制 | 场景测试 |
+| #   | 检查项                   | 验证方法   |
+| --- | ------------------------ | ---------- |
+| 16  | 健康因子计算正确         | 边界值测试 |
+| 17  | 清算在极端价格下仍能执行 | 压力测试   |
+| 18  | 清算激励足够覆盖 gas     | 模拟计算   |
+| 19  | 级联清算有熔断机制       | 场景测试   |
 
 ### 五、升级与治理（P1 — 高优先级）
 
-| # | 检查项 | 验证方法 |
-|---|--------|----------|
-| 20 | 升级策略为 compatible 或 additive | Move.toml 检查 |
-| 21 | 升级有版本号记录 | 事件验证 |
-| 22 | 关键参数变更有时间锁 | 流程审查 |
-| 23 | 紧急暂停可分级触发 | 功能测试 |
-| 24 | 恢复暂停的门槛 > 暂停的门槛 | 权限设计审查 |
+| #   | 检查项                            | 验证方法       |
+| --- | --------------------------------- | -------------- |
+| 20  | 升级策略为 compatible 或 additive | Move.toml 检查 |
+| 21  | 升级有版本号记录                  | 事件验证       |
+| 22  | 关键参数变更有时间锁              | 流程审查       |
+| 23  | 紧急暂停可分级触发                | 功能测试       |
+| 24  | 恢复暂停的门槛 > 暂停的门槛       | 权限设计审查   |
 
 ### 六、DoS 防护（P2 — 中优先级）
 
-| # | 检查项 | 验证方法 |
-|---|--------|----------|
-| 25 | 共享对象无无限循环 | 静态分析 |
-| 26 | 向量操作有上限 | 参数检查 |
-| 27 | 动态字段代替大向量 | 架构审查 |
-| 28 | Gas 消耗在合理范围 | 基准测试 |
+| #   | 检查项             | 验证方法 |
+| --- | ------------------ | -------- |
+| 25  | 共享对象无无限循环 | 静态分析 |
+| 26  | 向量操作有上限     | 参数检查 |
+| 27  | 动态字段代替大向量 | 架构审查 |
+| 28  | Gas 消耗在合理范围 | 基准测试 |
 
 ## Sui CLI 安全检查
 
@@ -115,32 +115,25 @@ Move Prover 是 Move 的形式化验证工具。它可以用逻辑规约（speci
 
 ```move
 module defi::prover_example;
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
 
-    public struct Vault has key {
-        id: UID,
-        balance: Coin<SUI>,
-    }
+use sui::coin::{Self, Coin};
+use sui::sui::SUI;
 
-    public fun deposit(vault: &mut Vault, coin: Coin<SUI>) {
-        coin::join(&mut vault.balance, coin);
-    }
+public struct Vault has key {
+    id: UID,
+    balance: Coin<SUI>,
+}
 
-    public fun withdraw(
-        vault: &mut Vault,
-        amount: u64,
-        ctx: &mut TxContext,
-    ): Coin<SUI> {
-        coin::take(&mut vault.balance, amount, ctx)
-    }
+public fun deposit(vault: &mut Vault, coin: Coin<SUI>) {
+    coin::join(&mut vault.balance, coin);
+}
 
-    #[spec(prove)]
-    spec deposit {
-        let pre_balance = coin::value(balance(vault));
-        let deposit_amount = coin::value(coin);
-        ensures coin::value(balance(vault)) == pre_balance + deposit_amount;
-    }
+public fun withdraw(vault: &mut Vault, amount: u64, ctx: &mut TxContext): Coin<SUI> {
+    coin::take(&mut vault.balance, amount, ctx)
+}
+
+#[spec(prove)]
+spec_block
 ```
 
 ### 运行 Prover
@@ -155,13 +148,13 @@ sui move prove --module defi::prover_example
 
 ### Prover 的适用场景
 
-| 场景 | 推荐程度 | 说明 |
-|------|----------|------|
-| 核心资金操作 | 强烈推荐 | 存取款的金额守恒 |
-| 数学公式正确性 | 推荐 | AMM invariant、利率计算 |
-| 权限不变量 | 推荐 | "只有 AdminCap 持有者能调参" |
-| 复杂状态机 | 可选 | Launchpad 状态转换 |
-| 简单 getter | 不需要 | 成本高于收益 |
+| 场景           | 推荐程度 | 说明                         |
+| -------------- | -------- | ---------------------------- |
+| 核心资金操作   | 强烈推荐 | 存取款的金额守恒             |
+| 数学公式正确性 | 推荐     | AMM invariant、利率计算      |
+| 权限不变量     | 推荐     | "只有 AdminCap 持有者能调参" |
+| 复杂状态机     | 可选     | Launchpad 状态转换           |
+| 简单 getter    | 不需要   | 成本高于收益                 |
 
 ## 静态分析工具
 

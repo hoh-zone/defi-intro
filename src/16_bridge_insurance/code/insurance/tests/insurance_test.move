@@ -1,6 +1,7 @@
 /// Tests for the insurance module.
 #[test_only]
 module insurance::insurance_test;
+
 use insurance::insurance;
 use sui::coin::{Self, Coin};
 use sui::sui::SUI;
@@ -219,7 +220,14 @@ fun test_claim_payout() {
     {
         let mut pool = test_scenario::take_shared<insurance::InsurancePool<SUI>>(&scenario);
         let premium_coin = mint_sui(scenario.ctx(), expected_premium);
-        insurance::purchase_policy(&mut pool, coverage, premium_coin, duration_ms, 1000, scenario.ctx());
+        insurance::purchase_policy(
+            &mut pool,
+            coverage,
+            premium_coin,
+            duration_ms,
+            1000,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(pool);
     };
 
@@ -288,7 +296,14 @@ fun test_full_claim_deactivates_policy() {
     {
         let mut pool = test_scenario::take_shared<insurance::InsurancePool<SUI>>(&scenario);
         let premium_coin = mint_sui(scenario.ctx(), expected_premium);
-        insurance::purchase_policy(&mut pool, coverage, premium_coin, duration_ms, 1000, scenario.ctx());
+        insurance::purchase_policy(
+            &mut pool,
+            coverage,
+            premium_coin,
+            duration_ms,
+            1000,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(pool);
     };
 
@@ -383,7 +398,14 @@ fun test_claim_exceeds_coverage() {
     {
         let mut pool = test_scenario::take_shared<insurance::InsurancePool<SUI>>(&scenario);
         let premium_coin = mint_sui(scenario.ctx(), expected_premium);
-        insurance::purchase_policy(&mut pool, coverage, premium_coin, duration_ms, 1000, scenario.ctx());
+        insurance::purchase_policy(
+            &mut pool,
+            coverage,
+            premium_coin,
+            duration_ms,
+            1000,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(pool);
     };
 
@@ -431,7 +453,14 @@ fun test_withdraw_premiums() {
     {
         let mut pool = test_scenario::take_shared<insurance::InsurancePool<SUI>>(&scenario);
         let premium_coin = mint_sui(scenario.ctx(), expected_premium);
-        insurance::purchase_policy(&mut pool, coverage, premium_coin, duration_ms, 1000, scenario.ctx());
+        insurance::purchase_policy(
+            &mut pool,
+            coverage,
+            premium_coin,
+            duration_ms,
+            1000,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(pool);
     };
 
@@ -488,7 +517,14 @@ fun test_policy_expiry() {
     {
         let mut pool = test_scenario::take_shared<insurance::InsurancePool<SUI>>(&scenario);
         let premium_coin = mint_sui(scenario.ctx(), expected_premium);
-        insurance::purchase_policy(&mut pool, coverage, premium_coin, duration_ms, 1000, scenario.ctx());
+        insurance::purchase_policy(
+            &mut pool,
+            coverage,
+            premium_coin,
+            duration_ms,
+            1000,
+            scenario.ctx(),
+        );
         assert!(insurance::total_coverage(&pool) == coverage);
         test_scenario::return_shared(pool);
     };
@@ -544,7 +580,14 @@ fun test_cannot_expire_before_duration() {
     {
         let mut pool = test_scenario::take_shared<insurance::InsurancePool<SUI>>(&scenario);
         let premium_coin = mint_sui(scenario.ctx(), expected_premium);
-        insurance::purchase_policy(&mut pool, coverage, premium_coin, duration_ms, 1000, scenario.ctx());
+        insurance::purchase_policy(
+            &mut pool,
+            coverage,
+            premium_coin,
+            duration_ms,
+            1000,
+            scenario.ctx(),
+        );
         test_scenario::return_shared(pool);
     };
 

@@ -24,115 +24,112 @@
 
 ```move
 module defi::separated_architecture;
-    use sui::object::{Self, UID, ID};
-    use sui::clock::Clock;
-    use sui::tx_context::TxContext;
-    use sui::event;
 
-    public struct Market has key {
-        id: UID,
-        oracle_config_id: ID,
-        reserves: vector<Reserve>,
-        paused: bool,
-        admin: address,
-    }
+use sui::clock::Clock;
+use sui::event;
+use sui::object::{Self, UID, ID};
+use sui::tx_context::TxContext;
 
-    public struct Reserve has store {
-        coin_type: String,
-        total_deposits: u64,
-        total_borrows: u64,
-        collateral_factor_bps: u64,
-        liquidation_threshold_bps: u64,
-    }
+public struct Market has key {
+    id: UID,
+    oracle_config_id: ID,
+    reserves: vector<Reserve>,
+    paused: bool,
+    admin: address,
+}
 
-    public struct OracleConfig has key {
-        id: UID,
-        market_id: ID,
-        primary_oracle_type: u8,
-        primary_oracle_id: ID,
-        fallback_oracle_type: u8,
-        fallback_oracle_id: ID,
-        max_staleness_ms: u64,
-        max_deviation_bps: u64,
-        emergency_admin: address,
-    }
+public struct Reserve has store {
+    coin_type: String,
+    total_deposits: u64,
+    total_borrows: u64,
+    collateral_factor_bps: u64,
+    liquidation_threshold_bps: u64,
+}
 
-    public struct OracleSwitched has copy, drop {
-        market_id: address,
-        old_type: u8,
-        new_type: u8,
-    }
+public struct OracleConfig has key {
+    id: UID,
+    market_id: ID,
+    primary_oracle_type: u8,
+    primary_oracle_id: ID,
+    fallback_oracle_type: u8,
+    fallback_oracle_id: ID,
+    max_staleness_ms: u64,
+    max_deviation_bps: u64,
+    emergency_admin: address,
+}
 
-    public fun create_market(
-        primary_oracle_type: u8,
-        primary_oracle_id: ID,
-        ctx: &mut TxContext,
-    ) {
-        let market = Market {
-            id: object::new(ctx),
-            oracle_config_id: object::id(&oracle_config),
-            reserves: vector::empty(),
-            paused: false,
-            admin: ctx.sender(),
-        };
-        let oracle_config = OracleConfig {
-            id: object::new(ctx),
-            market_id: object::id(&market),
-            primary_oracle_type,
-            primary_oracle_id,
-            fallback_oracle_type: 0,
-            fallback_oracle_id: object::id_from_address(@0x0),
-            max_staleness_ms: 60_000,
-            max_deviation_bps: 300,
-            emergency_admin: ctx.sender(),
-        };
-        transfer::share_object(market);
-        transfer::share_object(oracle_config);
-    }
+public struct OracleSwitched has copy, drop {
+    market_id: address,
+    old_type: u8,
+    new_type: u8,
+}
 
-    public fun get_price(
-        market: &Market,
-        oracle_config: &OracleConfig,
-        asset: address,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ): u64 {
-        assert!(!market.paused, 0);
-        read_safe_price(oracle_config, asset, clock, ctx)
-    }
+public fun create_market(primary_oracle_type: u8, primary_oracle_id: ID, ctx: &mut TxContext) {
+    let market = Market {
+        id: object::new(ctx),
+        oracle_config_id: object::id(&oracle_config),
+        reserves: vector::empty(),
+        paused: false,
+        admin: ctx.sender(),
+    };
+    let oracle_config = OracleConfig {
+        id: object::new(ctx),
+        market_id: object::id(&market),
+        primary_oracle_type,
+        primary_oracle_id,
+        fallback_oracle_type: 0,
+        fallback_oracle_id: object::id_from_address(@0x0),
+        max_staleness_ms: 60_000,
+        max_deviation_bps: 300,
+        emergency_admin: ctx.sender(),
+    };
+    transfer::share_object(market);
+    transfer::share_object(oracle_config);
+}
 
-    fun read_safe_price(
-        config: &OracleConfig,
-        asset: address,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ): u64 {
-        0
-    }
+public fun get_price(
+    market: &Market,
+    oracle_config: &OracleConfig,
+    asset: address,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): u64 {
+    assert!(!market.paused, 0);
+    read_safe_price(oracle_config, asset, clock, ctx)
+}
 
-    public fun emergency_switch_oracle(
-        oracle_config: &mut OracleConfig,
-        new_type: u8,
-        new_id: ID,
-        ctx: &mut TxContext,
-    ) {
-        assert!(ctx.sender() == oracle_config.emergency_admin, 0);
-        let old_type = oracle_config.primary_oracle_type;
-        oracle_config.fallback_oracle_type = old_type;
-        oracle_config.fallback_oracle_id = oracle_config.primary_oracle_id;
-        oracle_config.primary_oracle_type = new_type;
-        oracle_config.primary_oracle_id = new_id;
-        event::emit(OracleSwitched {
-            market_id: object::uid_to_address(&oracle_config.market_id),
-            old_type,
-            new_type,
-        });
-    }
+fun read_safe_price(
+    config: &OracleConfig,
+    asset: address,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): u64 {
+    0
+}
 
-    public fun pause_market(market: &mut Market, ctx: &mut TxContext) {
-        assert!(ctx.sender() == market.admin, 0);
-        market.paused = true;
-    }
+public fun emergency_switch_oracle(
+    oracle_config: &mut OracleConfig,
+    new_type: u8,
+    new_id: ID,
+    ctx: &mut TxContext,
+) {
+    assert!(ctx.sender() == oracle_config.emergency_admin, 0);
+    let old_type = oracle_config.primary_oracle_type;
+    oracle_config.fallback_oracle_type = old_type;
+    oracle_config.fallback_oracle_id = oracle_config.primary_oracle_id;
+    oracle_config.primary_oracle_type = new_type;
+    oracle_config.primary_oracle_id = new_id;
+    event::emit(OracleSwitched {
+        market_id: object::uid_to_address(&oracle_config.market_id),
+        old_type,
+        new_type,
+    });
+}
+
+public fun pause_market(market: &mut Market, ctx: &mut TxContext) {
+    assert!(ctx.sender() == market.admin, 0);
+    market.paused = true;
+}
 ```
 
 ## 紧急切换流程
@@ -179,9 +176,9 @@ module defi::separated_architecture;
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 对象引用断裂 | 如果 oracle_config_id 指向错误的对象 |
-| 紧急权限滥用 | emergency_admin 可以即时切换预言机 |
-| 切换延迟 | 在切换期间，协议可能使用旧（错误）的价格 |
-| 对象所有权 | 谁拥有 OracleConfig 对象？共享对象 vs 拥有对象 |
+| 风险         | 描述                                           |
+| ------------ | ---------------------------------------------- |
+| 对象引用断裂 | 如果 oracle_config_id 指向错误的对象           |
+| 紧急权限滥用 | emergency_admin 可以即时切换预言机             |
+| 切换延迟     | 在切换期间，协议可能使用旧（错误）的价格       |
+| 对象所有权   | 谁拥有 OracleConfig 对象？共享对象 vs 拥有对象 |

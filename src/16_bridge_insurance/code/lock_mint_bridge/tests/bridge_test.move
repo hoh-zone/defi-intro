@@ -1,6 +1,7 @@
 /// Tests for the lock_mint_bridge module.
 #[test_only]
 module lock_mint_bridge::bridge_test;
+
 use lock_mint_bridge::bridge;
 use sui::coin::{Self, Coin};
 use sui::sui::SUI;

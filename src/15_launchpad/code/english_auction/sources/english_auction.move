@@ -1,13 +1,13 @@
 module english_auction::english_auction;
 
-use sui::coin::{Self, Coin, TreasuryCap};
+use std::option;
 use sui::balance::{Self, Balance};
+use sui::clock::{Self, Clock};
+use sui::coin::{Self, Coin, TreasuryCap};
+use sui::event;
 use sui::object::{Self, UID, ID};
 use sui::transfer;
-use sui::event;
 use sui::tx_context::TxContext;
-use sui::clock::{Self, Clock};
-use std::option;
 
 // States
 const STATE_CREATED: u8 = 0;
@@ -40,15 +40,15 @@ public struct EnglishAuctionRound has key {
     id: UID,
     treasury_cap: TreasuryCap<ENGLISH_AUCTION>,
     state: u8,
-    reserve_price: u64,         // minimum starting bid (MIST)
-    min_bid_increment: u64,     // minimum raise over current bid (MIST)
-    token_amount: u64,          // how many tokens being auctioned
-    start_time: u64,            // auction start timestamp_ms
-    duration_ms: u64,           // auction duration
-    highest_bid: u64,           // current highest bid amount (MIST)
-    highest_bidder: address,    // current highest bidder
-    bid_count: u64,             // total number of bids
-    winner_claimed: bool,       // whether winner has claimed tokens
+    reserve_price: u64, // minimum starting bid (MIST)
+    min_bid_increment: u64, // minimum raise over current bid (MIST)
+    token_amount: u64, // how many tokens being auctioned
+    start_time: u64, // auction start timestamp_ms
+    duration_ms: u64, // auction duration
+    highest_bid: u64, // current highest bid amount (MIST)
+    highest_bidder: address, // current highest bidder
+    bid_count: u64, // total number of bids
+    winner_claimed: bool, // whether winner has claimed tokens
     // Track all bidders' deposits: address -> deposited amount
     deposits: sui::table::Table<address, u64>,
     // Collected balance (winner's payment)
@@ -61,9 +61,17 @@ public struct AdminCap has key, store {
 }
 
 // Events
-public struct AuctionStarted has copy, drop { auction_id: ID, reserve_price: u64, token_amount: u64 }
+public struct AuctionStarted has copy, drop {
+    auction_id: ID,
+    reserve_price: u64,
+    token_amount: u64,
+}
 public struct BidPlaced has copy, drop { bidder: address, amount: u64, bid_count: u64 }
-public struct Outbid has copy, drop { previous_bidder: address, new_bidder: address, new_amount: u64 }
+public struct Outbid has copy, drop {
+    previous_bidder: address,
+    new_bidder: address,
+    new_amount: u64,
+}
 public struct AuctionEnded has copy, drop { auction_id: ID, winner: address, winning_bid: u64 }
 public struct Claimed has copy, drop { winner: address, token_amount: u64 }
 
@@ -81,11 +89,11 @@ fun init(witness: ENGLISH_AUCTION, ctx: &mut TxContext) {
         id: object::new(ctx),
         treasury_cap,
         state: STATE_CREATED,
-        reserve_price: 1_000_000_000,       // 1 SUI minimum
-        min_bid_increment: 500_000_000,     // 0.5 SUI minimum raise
-        token_amount: 1_000_000_000_000,    // 1M tokens
+        reserve_price: 1_000_000_000, // 1 SUI minimum
+        min_bid_increment: 500_000_000, // 0.5 SUI minimum raise
+        token_amount: 1_000_000_000_000, // 1M tokens
         start_time: 0,
-        duration_ms: 3_600_000,             // 1 hour
+        duration_ms: 3_600_000, // 1 hour
         highest_bid: 0,
         highest_bidder: @0x0,
         bid_count: 0,
@@ -275,19 +283,21 @@ public fun withdraw_winning_payment(
 // --- View helpers ---
 
 public fun state(auction: &EnglishAuctionRound): u8 { auction.state }
+
 public fun highest_bid(auction: &EnglishAuctionRound): u64 { auction.highest_bid }
+
 public fun highest_bidder(auction: &EnglishAuctionRound): address { auction.highest_bidder }
+
 public fun bid_count(auction: &EnglishAuctionRound): u64 { auction.bid_count }
+
 public fun reserve_price(auction: &EnglishAuctionRound): u64 { auction.reserve_price }
+
 public fun token_amount(auction: &EnglishAuctionRound): u64 { auction.token_amount }
 
 // --- Test helpers ---
 
 #[test_only]
-public fun create_for_testing(
-    treasury_cap: TreasuryCap<ENGLISH_AUCTION>,
-    ctx: &mut TxContext,
-) {
+public fun create_for_testing(treasury_cap: TreasuryCap<ENGLISH_AUCTION>, ctx: &mut TxContext) {
     let auction = EnglishAuctionRound {
         id: object::new(ctx),
         treasury_cap,

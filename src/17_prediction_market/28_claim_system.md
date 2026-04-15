@@ -112,13 +112,13 @@ Carol claim:
 
 ## 边界情况
 
-| 场景 | 结果 | 原因 |
-|------|------|------|
-| 未结算时 claim | 失败 | `resolved != STATUS_RESOLVED` |
-| 输家 claim | 失败 | `pos.yes/no == 0` |
-| 赢家 claim 两次 | 第二次失败 | 第一次已清零 |
-| vault 不足 | abort | `balance::split` 失败 |
-| Position 来自其他市场 | 失败 | `market_id` 不匹配 |
+| 场景                  | 结果       | 原因                          |
+| --------------------- | ---------- | ----------------------------- |
+| 未结算时 claim        | 失败       | `resolved != STATUS_RESOLVED` |
+| 输家 claim            | 失败       | `pos.yes/no == 0`             |
+| 赢家 claim 两次       | 第二次失败 | 第一次已清零                  |
+| vault 不足            | abort      | `balance::split` 失败         |
+| Position 来自其他市场 | 失败       | `market_id` 不匹配            |
 
 ## 舍入问题
 

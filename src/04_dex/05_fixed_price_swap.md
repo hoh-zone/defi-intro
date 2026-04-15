@@ -38,8 +38,9 @@ Alice 有 100 SUI，她想要 USDC。Bob 有 USDC，他想要 SUI。他们如何
 /// 固定汇率兑换池
 /// 1 SUI = rate USDC，汇率由管理员设定
 module fixed_swap::fixed_swap;
-use sui::coin::{Self, Coin};
+
 use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin};
 use sui::object::{Self, UID, ID};
 
 // ===== 错误码 =====
@@ -78,9 +79,9 @@ public struct LiquidityEvent has copy, drop {
 /// 例: rate_a_to_b = 2_000_000_000 表示 1 A = 2 B
 public struct Pool<phantom A, phantom B> has key {
     id: UID,
-    balance_a: Balance<A>,  // 池中的 A 代币
-    balance_b: Balance<B>,  // 池中的 B 代币
-    rate_a_to_b: u64,       // 固定汇率: 1 A = rate B
+    balance_a: Balance<A>, // 池中的 A 代币
+    balance_b: Balance<B>, // 池中的 B 代币
+    rate_a_to_b: u64, // 固定汇率: 1 A = rate B
 }
 
 /// 管理员能力
@@ -94,10 +95,7 @@ public struct AdminCap<phantom A, phantom B> has key, store {
 /// 创建新的固定汇率池
 /// rate_a_to_b: 1 A = rate B（单位：1e9 精度）
 /// 例: rate = 2_000_000_000 → 1 A = 2 B
-public fun create_pool<A, B>(
-    rate_a_to_b: u64,
-    ctx: &mut TxContext,
-) {
+public fun create_pool<A, B>(rate_a_to_b: u64, ctx: &mut TxContext) {
     assert!(rate_a_to_b > 0, EInvalidRate);
 
     let pool = Pool<A, B> {
@@ -121,10 +119,7 @@ public fun create_pool<A, B>(
 
 /// 向池子存入 A 代币
 /// 任何人都可以调用，为池子提供流动性
-public fun add_liquidity_a<A, B>(
-    pool: &mut Pool<A, B>,
-    coin: Coin<A>,
-) {
+public fun add_liquidity_a<A, B>(pool: &mut Pool<A, B>, coin: Coin<A>) {
     let amount = coin::value(&coin);
     assert!(amount > 0, EInvalidAmount);
     balance::join(&mut pool.balance_a, coin::into_balance(coin));
@@ -132,10 +127,7 @@ public fun add_liquidity_a<A, B>(
 }
 
 /// 向池子存入 B 代币
-public fun add_liquidity_b<A, B>(
-    pool: &mut Pool<A, B>,
-    coin: Coin<B>,
-) {
+public fun add_liquidity_b<A, B>(pool: &mut Pool<A, B>, coin: Coin<B>) {
     let amount = coin::value(&coin);
     assert!(amount > 0, EInvalidAmount);
     balance::join(&mut pool.balance_b, coin::into_balance(coin));
@@ -143,11 +135,7 @@ public fun add_liquidity_b<A, B>(
 }
 
 /// 同时存入 A 和 B（可选）
-public fun add_liquidity<A, B>(
-    pool: &mut Pool<A, B>,
-    coin_a: Coin<A>,
-    coin_b: Coin<B>,
-) {
+public fun add_liquidity<A, B>(pool: &mut Pool<A, B>, coin_a: Coin<A>, coin_b: Coin<B>) {
     let amount_a = coin::value(&coin_a);
     let amount_b = coin::value(&coin_b);
     assert!(amount_a > 0 || amount_b > 0, EInvalidAmount);
@@ -245,11 +233,7 @@ public fun swap_b_to_a<A, B>(
 // ===== 管理员操作 =====
 
 /// 修改汇率
-public fun set_rate<A, B>(
-    _cap: &AdminCap<A, B>,
-    pool: &mut Pool<A, B>,
-    new_rate: u64,
-) {
+public fun set_rate<A, B>(_cap: &AdminCap<A, B>, pool: &mut Pool<A, B>, new_rate: u64) {
     assert!(new_rate > 0, EInvalidRate);
     pool.rate_a_to_b = new_rate;
 }
@@ -416,12 +400,12 @@ rate(pool)
 
 虽然不适合通用 DEX，但固定汇率在某些场景下仍然有用：
 
-| 场景 | 为什么用固定汇率 |
-|------|----------------|
+| 场景       | 为什么用固定汇率       |
+| ---------- | ---------------------- |
 | 稳定币互换 | USDC/USDT 应该接近 1:1 |
-| 测试环境 | 简单可预测的定价 |
-| 包装代币 | wSUI ↔ SUI 应该 1:1 |
-| 场外交易 | 双方约定价格 |
+| 测试环境   | 简单可预测的定价       |
+| 包装代币   | wSUI ↔ SUI 应该 1:1    |
+| 场外交易   | 双方约定价格           |
 
 ## 总结
 

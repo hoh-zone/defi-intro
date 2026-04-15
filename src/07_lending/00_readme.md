@@ -39,10 +39,10 @@ Part 8 — 风险与组装（7.28-7.30）
 
 本章包含 3 个可运行的 Move 代码包：
 
-| 代码包 | 路径 | 说明 |
-|--------|------|------|
-| sui_savings | `code/sui_savings/` | 储蓄池（Share Token、deposit/withdraw、interest） |
+| 代码包         | 路径                   | 说明                                                                |
+| -------------- | ---------------------- | ------------------------------------------------------------------- |
+| sui_savings    | `code/sui_savings/`    | 储蓄池（Share Token、deposit/withdraw、interest）                   |
 | lending_market | `code/lending_market/` | 完整借贷市场（collateral、borrow、repay、liquidation、kinked rate） |
-| flash_loan | `code/flash_loan/` | 闪电贷（hot potato 模式） |
+| flash_loan     | `code/flash_loan/`     | 闪电贷（hot potato 模式）                                           |
 
 所有代码包均可独立编译和测试，章节内容会逐步引用这些实现。

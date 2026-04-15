@@ -27,256 +27,259 @@ DEX 挖矿激励用户**提供流动性**（质押 LP Token）。借贷挖矿同
 
 ```move
 module liquidity_mining::lending_mining;
-    use sui::coin::{Self, Coin};
-    use sui::clock::Clock;
-    use sui::bag::{Self, Bag};
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::table::{Self, Table};
-    use sui::math;
 
-    #[error]
-    const EUnauthorized: vector<u8> = b"Unauthorized";
-    #[error]
-    const EZeroAmount: vector<u8> = b"Zero Amount";
-    #[error]
-    const ENotFound: vector<u8> = b"Not Found";
-    const PRECISION: u64 = 1_000_000_000;
+use sui::bag::{Self, Bag};
+use sui::clock::Clock;
+use sui::coin::{Self, Coin};
+use sui::math;
+use sui::object::{Self, UID};
+use sui::table::{Self, Table};
+use sui::tx_context::TxContext;
 
-    public struct LendingMiningMaster<phantom RewardCoin> has key {
-        id: UID,
-        reward_rate_per_ms: u64,
-        last_update_ms: u64,
-        markets: Table<address, MarketInfo>,
-        reward_balance: Coin<RewardCoin>,
-        admin: address,
-    }
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EZeroAmount: vector<u8> = b"Zero Amount";
+#[error]
+const ENotFound: vector<u8> = b"Not Found";
+const PRECISION: u64 = 1_000_000_000;
 
-    public struct MarketInfo has store {
-        supply_stake: u64,
-        borrow_stake: u64,
-        supply_weight: u64,
-        borrow_weight: u64,
-        supply_acc_per_share: u64,
-        borrow_acc_per_share: u64,
-        last_supply_acc_per_weight: u64,
-        last_borrow_acc_per_weight: u64,
-        supply_positions: Bag,
-        borrow_positions: Bag,
-    }
+public struct LendingMiningMaster<phantom RewardCoin> has key {
+    id: UID,
+    reward_rate_per_ms: u64,
+    last_update_ms: u64,
+    markets: Table<address, MarketInfo>,
+    reward_balance: Coin<RewardCoin>,
+    admin: address,
+}
 
-    public struct SupplyPosition has store {
-        amount: u64,
-        reward_debt: u64,
-    }
+public struct MarketInfo has store {
+    supply_stake: u64,
+    borrow_stake: u64,
+    supply_weight: u64,
+    borrow_weight: u64,
+    supply_acc_per_share: u64,
+    borrow_acc_per_share: u64,
+    last_supply_acc_per_weight: u64,
+    last_borrow_acc_per_weight: u64,
+    supply_positions: Bag,
+    borrow_positions: Bag,
+}
 
-    public struct BorrowPosition has store {
-        amount: u64,
-        reward_debt: u64,
-    }
+public struct SupplyPosition has store {
+    amount: u64,
+    reward_debt: u64,
+}
 
-    public struct GlobalAccumulator has store {
-        supply_acc_per_weight: u64,
-        borrow_acc_per_weight: u64,
-        total_supply_weight: u64,
-        total_borrow_weight: u64,
-    }
+public struct BorrowPosition has store {
+    amount: u64,
+    reward_debt: u64,
+}
 
-    public fun initialize<RewardCoin>(
-        reward: Coin<RewardCoin>,
-        duration_ms: u64,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ) {
-        let rate = coin::value(&reward) / duration_ms;
-        let master = LendingMiningMaster<RewardCoin> {
-            id: object::new(ctx),
-            reward_rate_per_ms: rate,
-            last_update_ms: clock.timestamp_ms(),
-            markets: table::new(ctx),
-            reward_balance: reward,
-            admin: ctx.sender(),
-        };
-        transfer::share_object(master);
-    }
+public struct GlobalAccumulator has store {
+    supply_acc_per_weight: u64,
+    borrow_acc_per_weight: u64,
+    total_supply_weight: u64,
+    total_borrow_weight: u64,
+}
 
-    public fun add_market<RewardCoin>(
-        master: &mut LendingMiningMaster<RewardCoin>,
-        market_id: address,
-        supply_weight: u64,
-        borrow_weight: u64,
-        ctx: &mut TxContext,
-    ) {
-        assert!(ctx.sender() == master.admin, EUnauthorized);
-        let market = MarketInfo {
-            supply_stake: 0,
-            borrow_stake: 0,
-            supply_weight,
-            borrow_weight,
-            supply_acc_per_share: 0,
-            borrow_acc_per_share: 0,
-            last_supply_acc_per_weight: 0,
-            last_borrow_acc_per_weight: 0,
-            supply_positions: bag::new(ctx),
-            borrow_positions: bag::new(ctx),
-        };
-        table::add(&mut master.markets, market_id, market);
-    }
+public fun initialize<RewardCoin>(
+    reward: Coin<RewardCoin>,
+    duration_ms: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    let rate = coin::value(&reward) / duration_ms;
+    let master = LendingMiningMaster<RewardCoin> {
+        id: object::new(ctx),
+        reward_rate_per_ms: rate,
+        last_update_ms: clock.timestamp_ms(),
+        markets: table::new(ctx),
+        reward_balance: reward,
+        admin: ctx.sender(),
+    };
+    transfer::share_object(master);
+}
 
-    fun update_market<RewardCoin>(
-        master: &mut LendingMiningMaster<RewardCoin>,
-        market_id: address,
-        clock: &Clock,
-    ) {
-        let now = clock.timestamp_ms();
-        if (now <= master.last_update_ms) { return };
-        let elapsed = now - master.last_update_ms;
-        let reward_delta = master.reward_rate_per_ms * elapsed * PRECISION;
+public fun add_market<RewardCoin>(
+    master: &mut LendingMiningMaster<RewardCoin>,
+    market_id: address,
+    supply_weight: u64,
+    borrow_weight: u64,
+    ctx: &mut TxContext,
+) {
+    assert!(ctx.sender() == master.admin, EUnauthorized);
+    let market = MarketInfo {
+        supply_stake: 0,
+        borrow_stake: 0,
+        supply_weight,
+        borrow_weight,
+        supply_acc_per_share: 0,
+        borrow_acc_per_share: 0,
+        last_supply_acc_per_weight: 0,
+        last_borrow_acc_per_weight: 0,
+        supply_positions: bag::new(ctx),
+        borrow_positions: bag::new(ctx),
+    };
+    table::add(&mut master.markets, market_id, market);
+}
 
-        let mut total_supply_weight = 0u64;
-        let mut total_borrow_weight = 0u64;
-        let mut i = 0;
-        let keys = table::keys(&master.markets);
-        while (i < keys.length()) {
-            let mkt = table::borrow(&master.markets, *keys.element_at(i));
-            total_supply_weight = total_supply_weight + mkt.supply_weight;
-            total_borrow_weight = total_borrow_weight + mkt.borrow_weight;
-            i = i + 1;
-        };
+fun update_market<RewardCoin>(
+    master: &mut LendingMiningMaster<RewardCoin>,
+    market_id: address,
+    clock: &Clock,
+) {
+    let now = clock.timestamp_ms();
+    if (now <= master.last_update_ms) { return };
+    let elapsed = now - master.last_update_ms;
+    let reward_delta = master.reward_rate_per_ms * elapsed * PRECISION;
 
-        let supply_acc_delta = if (total_supply_weight > 0) { reward_delta / 2 / total_supply_weight } else { 0 };
-        let borrow_acc_delta = if (total_borrow_weight > 0) { reward_delta / 2 / total_borrow_weight } else { 0 };
+    let mut total_supply_weight = 0u64;
+    let mut total_borrow_weight = 0u64;
+    let mut i = 0;
+    let keys = table::keys(&master.markets);
+    while (i < keys.length()) {
+        let mkt = table::borrow(&master.markets, *keys.element_at(i));
+        total_supply_weight = total_supply_weight + mkt.supply_weight;
+        total_borrow_weight = total_borrow_weight + mkt.borrow_weight;
+        i = i + 1;
+    };
 
-        let pool = table::borrow_mut(&mut master.markets, market_id);
-        if (pool.supply_stake > 0 && pool.supply_weight > 0) {
-            let delta = supply_acc_delta * pool.supply_weight;
-            pool.supply_acc_per_share = pool.supply_acc_per_share + delta / pool.supply_stake;
-        };
-        pool.last_supply_acc_per_weight = pool.last_supply_acc_per_weight + supply_acc_delta;
-        if (pool.borrow_stake > 0 && pool.borrow_weight > 0) {
-            let delta = borrow_acc_delta * pool.borrow_weight;
-            pool.borrow_acc_per_share = pool.borrow_acc_per_share + delta / pool.borrow_stake;
-        };
-        pool.last_borrow_acc_per_weight = pool.last_borrow_acc_per_weight + borrow_acc_delta;
-        master.last_update_ms = now;
-    }
+    let supply_acc_delta = if (total_supply_weight > 0) { reward_delta / 2 / total_supply_weight }
+    else { 0 };
+    let borrow_acc_delta = if (total_borrow_weight > 0) { reward_delta / 2 / total_borrow_weight }
+    else { 0 };
 
-    public fun deposit_supply<RewardCoin>(
-        master: &mut LendingMiningMaster<RewardCoin>,
-        market_id: address,
-        amount: u64,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ) {
-        assert!(amount > 0, EZeroAmount);
-        update_market(master, market_id, clock);
-        let user = ctx.sender();
-        let market = table::borrow_mut(&mut master.markets, market_id);
-        if (bag::contains(&market.supply_positions, user)) {
-            let pos = bag::borrow_mut<SupplyPosition>(&mut market.supply_positions, user);
-            pos.reward_debt = (pos.amount + amount) * market.supply_acc_per_share / PRECISION;
-            pos.amount = pos.amount + amount;
-        } else {
-            bag::add<SupplyPosition>(
-                &mut market.supply_positions,
-                user,
-                SupplyPosition {
-                    amount,
-                    reward_debt: amount * market.supply_acc_per_share / PRECISION,
-                },
-            );
-        };
-        market.supply_stake = market.supply_stake + amount;
-    }
+    let pool = table::borrow_mut(&mut master.markets, market_id);
+    if (pool.supply_stake > 0 && pool.supply_weight > 0) {
+        let delta = supply_acc_delta * pool.supply_weight;
+        pool.supply_acc_per_share = pool.supply_acc_per_share + delta / pool.supply_stake;
+    };
+    pool.last_supply_acc_per_weight = pool.last_supply_acc_per_weight + supply_acc_delta;
+    if (pool.borrow_stake > 0 && pool.borrow_weight > 0) {
+        let delta = borrow_acc_delta * pool.borrow_weight;
+        pool.borrow_acc_per_share = pool.borrow_acc_per_share + delta / pool.borrow_stake;
+    };
+    pool.last_borrow_acc_per_weight = pool.last_borrow_acc_per_weight + borrow_acc_delta;
+    master.last_update_ms = now;
+}
 
-    public fun withdraw_supply<RewardCoin>(
-        master: &mut LendingMiningMaster<RewardCoin>,
-        market_id: address,
-        amount: u64,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ) {
-        update_market(master, market_id, clock);
-        let user = ctx.sender();
-        let market = table::borrow_mut(&mut master.markets, market_id);
-        assert!(bag::contains(&market.supply_positions, user), ENotFound);
+public fun deposit_supply<RewardCoin>(
+    master: &mut LendingMiningMaster<RewardCoin>,
+    market_id: address,
+    amount: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(amount > 0, EZeroAmount);
+    update_market(master, market_id, clock);
+    let user = ctx.sender();
+    let market = table::borrow_mut(&mut master.markets, market_id);
+    if (bag::contains(&market.supply_positions, user)) {
         let pos = bag::borrow_mut<SupplyPosition>(&mut market.supply_positions, user);
-        assert!(pos.amount >= amount, EZeroAmount);
-        pos.amount = pos.amount - amount;
-        pos.reward_debt = pos.amount * market.supply_acc_per_share / PRECISION;
-        market.supply_stake = market.supply_stake - amount;
-    }
+        pos.reward_debt = (pos.amount + amount) * market.supply_acc_per_share / PRECISION;
+        pos.amount = pos.amount + amount;
+    } else {
+        bag::add<SupplyPosition>(
+            &mut market.supply_positions,
+            user,
+            SupplyPosition {
+                amount,
+                reward_debt: amount * market.supply_acc_per_share / PRECISION,
+            },
+        );
+    };
+    market.supply_stake = market.supply_stake + amount;
+}
 
-    public fun deposit_borrow<RewardCoin>(
-        master: &mut LendingMiningMaster<RewardCoin>,
-        market_id: address,
-        amount: u64,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ) {
-        assert!(amount > 0, EZeroAmount);
-        update_market(master, market_id, clock);
-        let user = ctx.sender();
-        let market = table::borrow_mut(&mut master.markets, market_id);
-        if (bag::contains(&market.borrow_positions, user)) {
-            let pos = bag::borrow_mut<BorrowPosition>(&mut market.borrow_positions, user);
-            pos.reward_debt = (pos.amount + amount) * market.borrow_acc_per_share / PRECISION;
-            pos.amount = pos.amount + amount;
-        } else {
-            bag::add<BorrowPosition>(
-                &mut market.borrow_positions,
-                user,
-                BorrowPosition {
-                    amount,
-                    reward_debt: amount * market.borrow_acc_per_share / PRECISION,
-                },
-            );
-        };
-        market.borrow_stake = market.borrow_stake + amount;
-    }
+public fun withdraw_supply<RewardCoin>(
+    master: &mut LendingMiningMaster<RewardCoin>,
+    market_id: address,
+    amount: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    update_market(master, market_id, clock);
+    let user = ctx.sender();
+    let market = table::borrow_mut(&mut master.markets, market_id);
+    assert!(bag::contains(&market.supply_positions, user), ENotFound);
+    let pos = bag::borrow_mut<SupplyPosition>(&mut market.supply_positions, user);
+    assert!(pos.amount >= amount, EZeroAmount);
+    pos.amount = pos.amount - amount;
+    pos.reward_debt = pos.amount * market.supply_acc_per_share / PRECISION;
+    market.supply_stake = market.supply_stake - amount;
+}
 
-    public fun withdraw_borrow<RewardCoin>(
-        master: &mut LendingMiningMaster<RewardCoin>,
-        market_id: address,
-        amount: u64,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ) {
-        update_market(master, market_id, clock);
-        let user = ctx.sender();
-        let market = table::borrow_mut(&mut master.markets, market_id);
-        assert!(bag::contains(&market.borrow_positions, user), ENotFound);
+public fun deposit_borrow<RewardCoin>(
+    master: &mut LendingMiningMaster<RewardCoin>,
+    market_id: address,
+    amount: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(amount > 0, EZeroAmount);
+    update_market(master, market_id, clock);
+    let user = ctx.sender();
+    let market = table::borrow_mut(&mut master.markets, market_id);
+    if (bag::contains(&market.borrow_positions, user)) {
         let pos = bag::borrow_mut<BorrowPosition>(&mut market.borrow_positions, user);
-        assert!(pos.amount >= amount, EZeroAmount);
-        pos.amount = pos.amount - amount;
-        pos.reward_debt = pos.amount * market.borrow_acc_per_share / PRECISION;
-        market.borrow_stake = market.borrow_stake - amount;
-    }
+        pos.reward_debt = (pos.amount + amount) * market.borrow_acc_per_share / PRECISION;
+        pos.amount = pos.amount + amount;
+    } else {
+        bag::add<BorrowPosition>(
+            &mut market.borrow_positions,
+            user,
+            BorrowPosition {
+                amount,
+                reward_debt: amount * market.borrow_acc_per_share / PRECISION,
+            },
+        );
+    };
+    market.borrow_stake = market.borrow_stake + amount;
+}
 
-    public fun claim<RewardCoin>(
-        master: &mut LendingMiningMaster<RewardCoin>,
-        market_id: address,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ): Coin<RewardCoin> {
-        update_market(master, market_id, clock);
-        let user = ctx.sender();
-        let market = table::borrow_mut(&mut master.markets, market_id);
-        let mut total_pending = 0u64;
-        if (bag::contains(&market.supply_positions, user)) {
-            let pos = bag::borrow_mut<SupplyPosition>(&mut market.supply_positions, user);
-            let pending = pos.amount * market.supply_acc_per_share / PRECISION - pos.reward_debt;
-            pos.reward_debt = pos.amount * market.supply_acc_per_share / PRECISION;
-            total_pending = total_pending + pending;
-        };
-        if (bag::contains(&market.borrow_positions, user)) {
-            let pos = bag::borrow_mut<BorrowPosition>(&mut market.borrow_positions, user);
-            let pending = pos.amount * market.borrow_acc_per_share / PRECISION - pos.reward_debt;
-            pos.reward_debt = pos.amount * market.borrow_acc_per_share / PRECISION;
-            total_pending = total_pending + pending;
-        };
-        coin::take(&mut master.reward_balance, total_pending, ctx)
-    }
+public fun withdraw_borrow<RewardCoin>(
+    master: &mut LendingMiningMaster<RewardCoin>,
+    market_id: address,
+    amount: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    update_market(master, market_id, clock);
+    let user = ctx.sender();
+    let market = table::borrow_mut(&mut master.markets, market_id);
+    assert!(bag::contains(&market.borrow_positions, user), ENotFound);
+    let pos = bag::borrow_mut<BorrowPosition>(&mut market.borrow_positions, user);
+    assert!(pos.amount >= amount, EZeroAmount);
+    pos.amount = pos.amount - amount;
+    pos.reward_debt = pos.amount * market.borrow_acc_per_share / PRECISION;
+    market.borrow_stake = market.borrow_stake - amount;
+}
+
+public fun claim<RewardCoin>(
+    master: &mut LendingMiningMaster<RewardCoin>,
+    market_id: address,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): Coin<RewardCoin> {
+    update_market(master, market_id, clock);
+    let user = ctx.sender();
+    let market = table::borrow_mut(&mut master.markets, market_id);
+    let mut total_pending = 0u64;
+    if (bag::contains(&market.supply_positions, user)) {
+        let pos = bag::borrow_mut<SupplyPosition>(&mut market.supply_positions, user);
+        let pending = pos.amount * market.supply_acc_per_share / PRECISION - pos.reward_debt;
+        pos.reward_debt = pos.amount * market.supply_acc_per_share / PRECISION;
+        total_pending = total_pending + pending;
+    };
+    if (bag::contains(&market.borrow_positions, user)) {
+        let pos = bag::borrow_mut<BorrowPosition>(&mut market.borrow_positions, user);
+        let pending = pos.amount * market.borrow_acc_per_share / PRECISION - pos.reward_debt;
+        pos.reward_debt = pos.amount * market.borrow_acc_per_share / PRECISION;
+        total_pending = total_pending + pending;
+    };
+    coin::take(&mut master.reward_balance, total_pending, ctx)
+}
 ```
 
 ## 借贷挖矿的关键设计
@@ -317,9 +320,9 @@ Navi 使用 `emission_rate` 参数控制每个市场的代币释放速度，并�
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 过度借款激励 | 如果借款激励 > 借款利息，实际借款利率为负，用户会无限循环借贷 |
-| 激励套利 | 存入资产获得存款激励 → 抵押借出同一资产 → 借款也获得激励 → 净赚双份奖励 |
-| 坏账积累 | 激励驱动的借款可能忽视清算风险，市场暴跌时产生大量坏账 |
-| 代币通胀 | 持续高激励导致代币大量增发，价格下行压力 |
+| 风险         | 描述                                                                    |
+| ------------ | ----------------------------------------------------------------------- |
+| 过度借款激励 | 如果借款激励 > 借款利息，实际借款利率为负，用户会无限循环借贷           |
+| 激励套利     | 存入资产获得存款激励 → 抵押借出同一资产 → 借款也获得激励 → 净赚双份奖励 |
+| 坏账积累     | 激励驱动的借款可能忽视清算风险，市场暴跌时产生大量坏账                  |
+| 代币通胀     | 持续高激励导致代币大量增发，价格下行压力                                |

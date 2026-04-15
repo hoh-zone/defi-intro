@@ -1,12 +1,13 @@
 #[test_only]
 module security_patterns::security_test;
+
+use security_patterns::asset_safety;
 use security_patterns::capability;
 use security_patterns::integer_safety;
-use security_patterns::asset_safety;
+use std::unit_test::assert_eq;
 use sui::coin;
 use sui::sui::SUI;
 use sui::test_scenario;
-use std::unit_test::assert_eq;
 
 const ADMIN: address = @0xAD;
 

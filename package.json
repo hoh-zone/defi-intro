@@ -8,6 +8,8 @@
   },
   "scripts": {
     "build:highlight": "esbuild scripts/mdbook-sui-bridge.js --bundle --platform=browser --format=iife --outfile=theme/highlight-sui-move.bundle.js",
+    "format": "prettier --write \"src/**/*.{move,md}\" \".claude/**/*.move\" \"README.md\"",
+    "format:check": "prettier --check \"src/**/*.{move,md}\" \".claude/**/*.move\" \"README.md\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -23,8 +25,10 @@
   },
   "homepage": "https://github.com/hoh-zone/defi-intro#readme",
   "devDependencies": {
+    "@mysten/prettier-plugin-move": "^0.3.5",
     "esbuild": "^0.28.0",
     "highlight.js": "^11.11.1",
-    "highlightjs-sui": "github:hoh-zone/highlightjs-sui"
+    "highlightjs-sui": "github:hoh-zone/highlightjs-sui",
+    "prettier": "^3.8.3"
   }
 }

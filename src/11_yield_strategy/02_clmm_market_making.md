@@ -65,99 +65,91 @@ CLMM（Concentrated Liquidity Market Maker）做市只有一个核心决策：**
 
 ```move
 module yield_strategy::auto_rebalance;
-    use sui::coin::{Self, Coin};
-    use sui::clock::Clock;
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
 
-    #[error]
-    const ENotOwner: vector<u8> = b"Not Owner";
-    #[error]
-    const EOutOfRange: vector<u8> = b"Out Of Range";
-    #[error]
-    const EAlreadyInRange: vector<u8> = b"Already In Range";
-    const PRECISION: u64 = 1_000_000_000;
+use sui::clock::Clock;
+use sui::coin::{Self, Coin};
+use sui::object::{Self, UID};
+use sui::tx_context::TxContext;
 
-    public struct RebalanceParams has store {
-        tick_range_bps: u64,
-        min_liquidity: u64,
-        max_gas_budget: u64,
-    }
+#[error]
+const ENotOwner: vector<u8> = b"Not Owner";
+#[error]
+const EOutOfRange: vector<u8> = b"Out Of Range";
+#[error]
+const EAlreadyInRange: vector<u8> = b"Already In Range";
+const PRECISION: u64 = 1_000_000_000;
 
-    public struct AutoRebalanceVault has key {
-        id: UID,
-        position_id: UID,
-        current_tick_lower: int32,
-        current_tick_upper: int32,
-        params: RebalanceParams,
-        rebalance_count: u64,
-        last_rebalance_ms: u64,
-        total_fees_collected: u64,
-        owner: address,
-    }
+public struct RebalanceParams has store {
+    tick_range_bps: u64,
+    min_liquidity: u64,
+    max_gas_budget: u64,
+}
 
-    public fun create_vault(
-        position_id: UID,
-        tick_range_bps: u64,
-        ctx: &mut TxContext,
-    ) {
-        let vault = AutoRebalanceVault {
-            id: object::new(ctx),
-            position_id,
-            current_tick_lower: 0,
-            current_tick_upper: 0,
-            params: RebalanceParams {
-                tick_range_bps,
-                min_liquidity: 100_000_000,
-                max_gas_budget: 50_000_000,
-            },
-            rebalance_count: 0,
-            last_rebalance_ms: 0,
-            total_fees_collected: 0,
-            owner: ctx.sender(),
-        };
-        transfer::transfer(vault, ctx.sender());
-    }
+public struct AutoRebalanceVault has key {
+    id: UID,
+    position_id: UID,
+    current_tick_lower: int32,
+    current_tick_upper: int32,
+    params: RebalanceParams,
+    rebalance_count: u64,
+    last_rebalance_ms: u64,
+    total_fees_collected: u64,
+    owner: address,
+}
 
-    public fun should_rebalance(
-        vault: &AutoRebalanceVault,
-        current_tick: int32,
-    ): bool {
-        let in_range = current_tick >= vault.current_tick_lower
+public fun create_vault(position_id: UID, tick_range_bps: u64, ctx: &mut TxContext) {
+    let vault = AutoRebalanceVault {
+        id: object::new(ctx),
+        position_id,
+        current_tick_lower: 0,
+        current_tick_upper: 0,
+        params: RebalanceParams {
+            tick_range_bps,
+            min_liquidity: 100_000_000,
+            max_gas_budget: 50_000_000,
+        },
+        rebalance_count: 0,
+        last_rebalance_ms: 0,
+        total_fees_collected: 0,
+        owner: ctx.sender(),
+    };
+    transfer::transfer(vault, ctx.sender());
+}
+
+public fun should_rebalance(vault: &AutoRebalanceVault, current_tick: int32): bool {
+    let in_range =
+        current_tick >= vault.current_tick_lower
             && current_tick <= vault.current_tick_upper;
-        if (in_range) { return false };
-        let range = (vault.current_tick_upper - vault.current_tick_lower) as u64;
-        let margin = range * vault.params.tick_range_bps / 10000;
-        let distance = if (current_tick < vault.current_tick_lower) {
-            (vault.current_tick_lower - current_tick) as u64
-        } else {
-            (current_tick - vault.current_tick_upper) as u64
-        };
-        distance > margin
-    }
+    if (in_range) { return false };
+    let range = (vault.current_tick_upper - vault.current_tick_lower) as u64;
+    let margin = range * vault.params.tick_range_bps / 10000;
+    let distance = if (current_tick < vault.current_tick_lower) {
+        (vault.current_tick_lower - current_tick) as u64
+    } else {
+        (current_tick - vault.current_tick_upper) as u64
+    };
+    distance > margin
+}
 
-    public fun compute_new_range(
-        vault: &AutoRebalanceVault,
-        current_tick: int32,
-    ): (int32, int32) {
-        let half_range = ((vault.current_tick_upper - vault.current_tick_lower) / 2);
-        let tick_spacing = 10;
-        let aligned_tick = (current_tick / tick_spacing) * tick_spacing;
-        let lower = aligned_tick - half_range;
-        let upper = aligned_tick + half_range;
-        (lower, upper)
-    }
+public fun compute_new_range(vault: &AutoRebalanceVault, current_tick: int32): (int32, int32) {
+    let half_range = ((vault.current_tick_upper - vault.current_tick_lower) / 2);
+    let tick_spacing = 10;
+    let aligned_tick = (current_tick / tick_spacing) * tick_spacing;
+    let lower = aligned_tick - half_range;
+    let upper = aligned_tick + half_range;
+    (lower, upper)
+}
 
-    public fun update_params(
-        vault: &mut AutoRebalanceVault,
-        tick_range_bps: u64,
-        min_liquidity: u64,
-        ctx: &mut TxContext,
-    ) {
-        assert!(ctx.sender() == vault.owner, ENotOwner);
-        vault.params.tick_range_bps = tick_range_bps;
-        vault.params.min_liquidity = min_liquidity;
-    }
+public fun update_params(
+    vault: &mut AutoRebalanceVault,
+    tick_range_bps: u64,
+    min_liquidity: u64,
+    ctx: &mut TxContext,
+) {
+    assert!(ctx.sender() == vault.owner, ENotOwner);
+    vault.params.tick_range_bps = tick_range_bps;
+    vault.params.min_liquidity = min_liquidity;
+}
 ```
 
 ## 区间宽度的权衡
@@ -191,15 +183,16 @@ Cetus 使用 CLMM，tick spacing 决定最小区间粒度：
 ```
 
 做市时选择合适的费率档位：
+
 - 稳定币对：选 0.01%，窄区间，赚小价差
 - 主流代币对：选 0.05%，中等区间，平衡收益和风险
 - meme 币对：选 1%，宽区间，主要靠激励而非手续费
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
+| 风险           | 描述                                               |
+| -------------- | -------------------------------------------------- |
 | 再平衡频率过高 | 震荡行情中频繁穿出区间，每次再平衡都产生滑点和 gas |
-| 单边持仓 | 价格单向突破后，仓位 100% 转为弱势资产 |
-| 自动化失败 | 自动再平衡合约如果出现 bug，可能在错误的区间开仓 |
-| 资金效率幻觉 | 看似高 APR，但 IL 可能吃掉大部分收益 |
+| 单边持仓       | 价格单向突破后，仓位 100% 转为弱势资产             |
+| 自动化失败     | 自动再平衡合约如果出现 bug，可能在错误的区间开仓   |
+| 资金效率幻觉   | 看似高 APR，但 IL 可能吃掉大部分收益               |

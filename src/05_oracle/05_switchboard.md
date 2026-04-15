@@ -47,41 +47,39 @@ Switchboard 模型：
 
 ```move
 module defi::switchboard_integration;
-    use sui::clock::Clock;
 
-    #[error]
-    const EStale_PRICE: vector<u8> = b"Stale_PRICE";
-    #[error]
-    const EInvalidAggregator: vector<u8> = b"Invalid Aggregator";
-    const MAX_STALENESS_MS: u64 = 120_000;
+use sui::clock::Clock;
 
-    public struct SwitchboardPrice has store {
-        value: u64,
-        timestamp_ms: u64,
-        decimals: u8,
+#[error]
+const EStale_PRICE: vector<u8> = b"Stale_PRICE";
+#[error]
+const EInvalidAggregator: vector<u8> = b"Invalid Aggregator";
+const MAX_STALENESS_MS: u64 = 120_000;
+
+public struct SwitchboardPrice has store {
+    value: u64,
+    timestamp_ms: u64,
+    decimals: u8,
+}
+
+public fun read_aggregator(aggregator: &Aggregator, clock: &Clock): SwitchboardPrice {
+    let result = switchboard::get_result(aggregator);
+    let timestamp = switchboard::get_latest_timestamp(aggregator);
+    assert!(clock.timestamp_ms() - timestamp < MAX_STALENESS_MS, EStale_PRICE);
+    SwitchboardPrice {
+        value: result,
+        timestamp_ms: timestamp,
+        decimals: 8,
     }
+}
 
-    public fun read_aggregator(
-        aggregator: &Aggregator,
-        clock: &Clock,
-    ): SwitchboardPrice {
-        let result = switchboard::get_result(aggregator);
-        let timestamp = switchboard::get_latest_timestamp(aggregator);
-        assert!(clock.timestamp_ms() - timestamp < MAX_STALENESS_MS, EStale_PRICE);
-        SwitchboardPrice {
-            value: result,
-            timestamp_ms: timestamp,
-            decimals: 8,
-        }
-    }
+public fun get_price_value(data: &SwitchboardPrice): u64 {
+    data.value
+}
 
-    public fun get_price_value(data: &SwitchboardPrice): u64 {
-        data.value
-    }
-
-    public fun is_fresh(data: &SwitchboardPrice, clock: &Clock): bool {
-        clock.timestamp_ms() - data.timestamp_ms < MAX_STALENESS_MS
-    }
+public fun is_fresh(data: &SwitchboardPrice, clock: &Clock): bool {
+    clock.timestamp_ms() - data.timestamp_ms < MAX_STALENESS_MS
+}
 ```
 
 ## 自定义数据 Feed
@@ -104,79 +102,80 @@ Oracle 队列：10 个节点竞争提供数据
 
 ```move
 module defi::custom_feed;
-    use sui::coin::Coin;
-    use sui::sui::SUI;
 
-    public fun create_tvl_aggregator(
-        queue: &mut OracleQueue,
-        reward: Coin<SUI>,
-        ctx: &mut TxContext,
-    ): Aggregator {
-        let mut jobs = vector::empty();
-        jobs.push_back(create_job(
+use sui::coin::Coin;
+use sui::sui::SUI;
+
+public fun create_tvl_aggregator(
+    queue: &mut OracleQueue,
+    reward: Coin<SUI>,
+    ctx: &mut TxContext,
+): Aggregator {
+    let mut jobs = vector::empty();
+    jobs.push_back(
+        create_job(
             string::utf8(b"https://api.llama.fi/v2/historicalChainTvl/Sui"),
             string::utf8(b"$[0].tvl"),
-        ));
-        switchboard::create_aggregator(
-            queue,
-            jobs,
-            10,
-            60_000,
-            500,
-            reward,
-            ctx,
-        )
-    }
+        ),
+    );
+    switchboard::create_aggregator(
+        queue,
+        jobs,
+        10,
+        60_000,
+        500,
+        reward,
+        ctx,
+    )
+}
 
-    fun create_job(url: String, selector: String): Job {
-        Job { url, selector }
-    }
+fun create_job(url: String, selector: String): Job {
+    Job { url, selector }
+}
 ```
 
 ## Switchboard VRF（可验证随机函数）
 
 ```move
 module defi::switchboard_vrf;
-    use sui::coin::Coin;
-    use sui::sui::SUI;
 
-    public struct VrfRequest has key {
-        id: UID,
-        seed: vector<u8>,
-        callback: String,
-    }
+use sui::coin::Coin;
+use sui::sui::SUI;
 
-    public struct VrfResult has store {
-        randomness: vector<u8>,
-        proof: vector<u8>,
-    }
+public struct VrfRequest has key {
+    id: UID,
+    seed: vector<u8>,
+    callback: String,
+}
 
-    public fun request_randomness(
-        vrf: &mut VrfAccount,
-        seed: vector<u8>,
-        reward: Coin<SUI>,
-        ctx: &mut TxContext,
-    ) {
-        switchboard::request_randomness(vrf, seed, reward, ctx);
-    }
+public struct VrfResult has store {
+    randomness: vector<u8>,
+    proof: vector<u8>,
+}
 
-    public fun consume_randomness(
-        vrf_account: &mut VrfAccount,
-        result: VrfResult,
-    ): u64 {
-        let bytes = result.randomness;
-        let mut value = 0u64;
-        let mut i = 0;
-        while (i < 8 && i < bytes.length()) {
-            value = value + ((*bytes.borrow(i) as u64) << (i * 8));
-            i = i + 1;
-        };
-        value
-    }
+public fun request_randomness(
+    vrf: &mut VrfAccount,
+    seed: vector<u8>,
+    reward: Coin<SUI>,
+    ctx: &mut TxContext,
+) {
+    switchboard::request_randomness(vrf, seed, reward, ctx);
+}
 
-    public fun random_in_range(random: u64, min: u64, max: u64): u64 {
-        min + random % (max - min + 1)
-    }
+public fun consume_randomness(vrf_account: &mut VrfAccount, result: VrfResult): u64 {
+    let bytes = result.randomness;
+    let mut value = 0u64;
+    let mut i = 0;
+    while (i < 8 && i < bytes.length()) {
+        value = value + ((*bytes.borrow(i) as u64) << (i * 8));
+        i = i + 1;
+    };
+    value
+}
+
+public fun random_in_range(random: u64, min: u64, max: u64): u64 {
+    min + random % (max - min + 1)
+}
 ```
 
 ## 三大预言机集成复杂度对比
@@ -202,9 +201,9 @@ Switchboard 集成步骤：
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 队列质量 | 自定义 Feed 的质量取决于队列中 Oracle 节点的质量 |
-| 数据延迟 | 聚合器更新需要队列调度，可能有延迟 |
-| Feed 维护 | 自定义 Feed 需要持续维护（奖励、参数） |
-| 节点不足 | 如果队列中活跃节点太少，聚合结果不可靠 |
+| 风险      | 描述                                             |
+| --------- | ------------------------------------------------ |
+| 队列质量  | 自定义 Feed 的质量取决于队列中 Oracle 节点的质量 |
+| 数据延迟  | 聚合器更新需要队列调度，可能有延迟               |
+| Feed 维护 | 自定义 Feed 需要持续维护（奖励、参数）           |
+| 节点不足  | 如果队列中活跃节点太少，聚合结果不可靠           |

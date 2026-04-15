@@ -41,12 +41,12 @@
 
 ## 每个阶段允许什么操作
 
-| 阶段 | 允许 | 禁止 |
-|------|------|------|
-| TRADING | buy, sell, split, merge | submit_result, claim |
-| CLOSED | submit_result | buy, sell |
-| PROPOSED | challenge_result | buy, sell |
-| RESOLVED | claim | buy, sell, submit_result |
+| 阶段     | 允许                    | 禁止                     |
+| -------- | ----------------------- | ------------------------ |
+| TRADING  | buy, sell, split, merge | submit_result, claim     |
+| CLOSED   | submit_result           | buy, sell                |
+| PROPOSED | challenge_result        | buy, sell                |
+| RESOLVED | claim                   | buy, sell, submit_result |
 
 ## 数值时间线示例
 

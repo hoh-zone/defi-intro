@@ -6,6 +6,11 @@
 #[allow(lint(self_transfer), lint(public_entry), duplicate_alias, implicit_const_copy)]
 module sui_price_prediction::market;
 
+use pyth::i64::{Self as pyth_i64, I64};
+use pyth::price::{Self as pyth_price, Price};
+use pyth::price_identifier;
+use pyth::price_info as price_info;
+use pyth::pyth;
 use sui::balance::{Self, Balance};
 use sui::clock::{Self, Clock};
 use sui::coin::{Self, Coin};
@@ -13,12 +18,6 @@ use sui::event;
 use sui::object::{Self, ID, UID};
 use sui::sui::SUI;
 use sui::table::{Self, Table};
-
-use pyth::i64::{Self as pyth_i64, I64};
-use pyth::price::{Self as pyth_price, Price};
-use pyth::price_identifier;
-use pyth::price_info::{Self as price_info};
-use pyth::pyth;
 
 // ---------------------------------------------------------------------------
 // Constants

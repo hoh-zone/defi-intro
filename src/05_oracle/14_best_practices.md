@@ -47,48 +47,49 @@ Step 5：确定随机数需求
 
 ```move
 module defi::oracle_template;
-    use sui::object::{Self, UID};
-    use sui::clock::Clock;
-    use sui::tx_context::TxContext;
-    use sui::event;
 
-    public struct OracleConfig has key {
-        id: UID,
-        max_staleness_ms: u64,
-        max_deviation_bps: u64,
-        last_good_price: u64,
-        fallback_price: u64,
-        paused: bool,
-        admin: address,
-    }
+use sui::clock::Clock;
+use sui::event;
+use sui::object::{Self, UID};
+use sui::tx_context::TxContext;
 
-    public fun read_price_safe(
-        config: &mut OracleConfig,
-        oracle_price: u64,
-        oracle_confidence: u64,
-        oracle_timestamp_ms: u64,
-        clock: &Clock,
-    ): u64 {
-        assert!(!config.paused, 0);
-        let now = clock.timestamp_ms();
-        if (now > oracle_timestamp_ms + config.max_staleness_ms) {
-            event::emit(PriceRejected { reason: 0 });
-            return config.fallback_price
-        };
-        let dev = if (oracle_price > config.last_good_price) {
-            (oracle_price - config.last_good_price) * 10000 / config.last_good_price
-        } else {
-            (config.last_good_price - oracle_price) * 10000 / config.last_good_price
-        };
-        if (dev > config.max_deviation_bps) {
-            event::emit(PriceRejected { reason: 1 });
-            return config.last_good_price
-        };
-        config.last_good_price = oracle_price;
-        oracle_price
-    }
+public struct OracleConfig has key {
+    id: UID,
+    max_staleness_ms: u64,
+    max_deviation_bps: u64,
+    last_good_price: u64,
+    fallback_price: u64,
+    paused: bool,
+    admin: address,
+}
 
-    public struct PriceRejected has copy, drop { reason: u64 }
+public fun read_price_safe(
+    config: &mut OracleConfig,
+    oracle_price: u64,
+    oracle_confidence: u64,
+    oracle_timestamp_ms: u64,
+    clock: &Clock,
+): u64 {
+    assert!(!config.paused, 0);
+    let now = clock.timestamp_ms();
+    if (now > oracle_timestamp_ms + config.max_staleness_ms) {
+        event::emit(PriceRejected { reason: 0 });
+        return config.fallback_price
+    };
+    let dev = if (oracle_price > config.last_good_price) {
+        (oracle_price - config.last_good_price) * 10000 / config.last_good_price
+    } else {
+        (config.last_good_price - oracle_price) * 10000 / config.last_good_price
+    };
+    if (dev > config.max_deviation_bps) {
+        event::emit(PriceRejected { reason: 1 });
+        return config.last_good_price
+    };
+    config.last_good_price = oracle_price;
+    oracle_price
+}
+
+public struct PriceRejected has copy, drop { reason: u64 }
 ```
 
 ## 测试策略
@@ -150,9 +151,9 @@ module defi::oracle_template;
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 过度工程 | 三预言机 + TWAP 对于小额协议来说太复杂 |
-| 监控疲劳 | 如果告警太频繁，团队可能忽略真正的异常 |
-| 测试覆盖不足 | 预言机失效场景容易被忽视 |
-| 文档缺失 | 如果没有记录预言机配置参数，切换时可能出错 |
+| 风险         | 描述                                       |
+| ------------ | ------------------------------------------ |
+| 过度工程     | 三预言机 + TWAP 对于小额协议来说太复杂     |
+| 监控疲劳     | 如果告警太频繁，团队可能忽略真正的异常     |
+| 测试覆盖不足 | 预言机失效场景容易被忽视                   |
+| 文档缺失     | 如果没有记录预言机配置参数，切换时可能出错 |

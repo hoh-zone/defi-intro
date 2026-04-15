@@ -16,7 +16,7 @@ public struct YES_TOKEN_42 has drop {}
 fun init(witness: YES_TOKEN_42, ctx: &mut TxContext) {
     let (treasury, metadata) = coin::create_currency(
         witness,
-        9,           // decimals
+        9, // decimals
         b"YES-42",
         b"YES Market 42",
         b"",

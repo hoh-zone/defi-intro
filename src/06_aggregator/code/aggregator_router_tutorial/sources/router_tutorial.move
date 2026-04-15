@@ -98,8 +98,5 @@ public fun confirm_swap<CoinIn, CoinOut>(
     } = sc;
     object::delete(id);
     assert!(balance::value(&out_acc) >= min_out, EBelowMinOut);
-    (
-        coin::from_balance(pending_in, ctx),
-        coin::from_balance(out_acc, ctx),
-    )
+    (coin::from_balance(pending_in, ctx), coin::from_balance(out_acc, ctx))
 }

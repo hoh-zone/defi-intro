@@ -3,10 +3,10 @@
 /// Locks native tokens on the source chain and tracks wrapped token operations via events.
 module lock_mint_bridge::bridge;
 
-use sui::coin::{Self, Coin};
 use sui::balance::{Self, Balance};
-use sui::table::{Self, Table};
+use sui::coin::{Self, Coin};
 use sui::event;
+use sui::table::{Self, Table};
 
 // ===== Phantom type for wrapped token =====
 
@@ -33,7 +33,7 @@ public struct BridgeVault<phantom Native> has key {
 }
 
 /// A pending or completed cross-chain bridge transfer record.
-public struct BridgeTransfer has store, copy, drop {
+public struct BridgeTransfer has copy, drop, store {
     /// Destination chain identifier (application-specific).
     to_chain: u64,
     /// Amount of tokens being transferred.

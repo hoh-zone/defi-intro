@@ -1,6 +1,7 @@
 module sui_savings::savings;
-use sui::coin::{Self, Coin, TreasuryCap};
+
 use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin, TreasuryCap};
 use sui::object::{Self, UID, ID};
 use sui::transfer;
 use sui::tx_context::{Self, TxContext};
@@ -140,20 +141,12 @@ public fun claim_interest<T>(
 }
 
 // Admin: add rewards to pool
-public fun add_rewards<T>(
-    _cap: &AdminCap<T>,
-    pool: &mut SavingsPool<T>,
-    reward: Coin<T>,
-) {
+public fun add_rewards<T>(_cap: &AdminCap<T>, pool: &mut SavingsPool<T>, reward: Coin<T>) {
     balance::join(&mut pool.reward_pool, coin::into_balance(reward));
 }
 
 // Admin: set interest rate
-public fun set_interest_rate<T>(
-    _cap: &AdminCap<T>,
-    pool: &mut SavingsPool<T>,
-    new_rate_bps: u64,
-) {
+public fun set_interest_rate<T>(_cap: &AdminCap<T>, pool: &mut SavingsPool<T>, new_rate_bps: u64) {
     pool.interest_rate_bps = new_rate_bps;
 }
 
@@ -185,10 +178,7 @@ public fun is_paused<T>(pool: &SavingsPool<T>): bool {
 
 // Test helper: create, share pool and transfer admin cap
 #[test_only]
-public fun test_init<T>(
-    interest_rate_bps: u64,
-    ctx: &mut TxContext,
-) {
+public fun test_init<T>(interest_rate_bps: u64, ctx: &mut TxContext) {
     let pool = SavingsPool<T> {
         id: object::new(ctx),
         principal: balance::zero(),
@@ -222,7 +212,14 @@ public fun destroy_receipt<T>(receipt: SavingsReceipt<T>) {
 // Test helper: destroy pool (must have zero balances)
 #[test_only]
 public fun destroy_pool<T>(pool: SavingsPool<T>) {
-    let SavingsPool { id, principal, reward_pool, total_shares: _, interest_rate_bps: _, paused: _ } = pool;
+    let SavingsPool {
+        id,
+        principal,
+        reward_pool,
+        total_shares: _,
+        interest_rate_bps: _,
+        paused: _,
+    } = pool;
     balance::destroy_zero(principal);
     balance::destroy_zero(reward_pool);
     id.delete();

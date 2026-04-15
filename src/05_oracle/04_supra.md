@@ -36,63 +36,53 @@ DORA 流程：
 
 ```move
 module defi::supra_integration;
-    use sui::clock::Clock;
 
-    #[error]
-    const EStale_PRICE: vector<u8> = b"Stale_PRICE";
-    #[error]
-    const EInvalidPair: vector<u8> = b"Invalid Pair";
+use sui::clock::Clock;
 
-    const MAX_STALENESS_MS: u64 = 60_000;
+#[error]
+const EStale_PRICE: vector<u8> = b"Stale_PRICE";
+#[error]
+const EInvalidPair: vector<u8> = b"Invalid Pair";
 
-    public struct SupraPrice has store {
-        price: u64,
-        decimals: u8,
-        last_updated_ms: u64,
-    }
+const MAX_STALENESS_MS: u64 = 60_000;
 
-    public fun get_price(
-        supra_oracle: &SupraOracle,
-        pair_index: u64,
-        clock: &Clock,
-    ): SupraPrice {
-        let (price, decimals, timestamp) = supra::get_price(supra_oracle, pair_index);
-        assert!(clock.timestamp_ms() - timestamp < MAX_STALENESS_MS, EStale_PRICE);
-        SupraPrice { price, decimals, last_updated_ms: timestamp }
-    }
+public struct SupraPrice has store {
+    price: u64,
+    decimals: u8,
+    last_updated_ms: u64,
+}
 
-    public fun get_sui_usd_price(
-        oracle: &SupraOracle,
-        clock: &Clock,
-    ): u64 {
-        let data = get_price(oracle, SUI_USD_PAIR_INDEX, clock);
-        data.price
-    }
+public fun get_price(supra_oracle: &SupraOracle, pair_index: u64, clock: &Clock): SupraPrice {
+    let (price, decimals, timestamp) = supra::get_price(supra_oracle, pair_index);
+    assert!(clock.timestamp_ms() - timestamp < MAX_STALENESS_MS, EStale_PRICE);
+    SupraPrice { price, decimals, last_updated_ms: timestamp }
+}
 
-    const SUI_USD_PAIR_INDEX: u64 = 0;
-    #[error]
-    const ETH_USD_PAIR_INDEX: vector<u8> = b"TH_USD_PAIR_INDEX";
-    const BTC_USD_PAIR_INDEX: u64 = 2;
-    const USDC_USD_PAIR_INDEX: u64 = 3;
+public fun get_sui_usd_price(oracle: &SupraOracle, clock: &Clock): u64 {
+    let data = get_price(oracle, SUI_USD_PAIR_INDEX, clock);
+    data.price
+}
 
-    public fun convert_amount(
-        amount: u64,
-        from_price: &SupraPrice,
-        to_price: &SupraPrice,
-    ): u64 {
-        let from_decimals = from_price.decimals;
-        let to_decimals = to_price.decimals;
-        let adjusted_amount = if (from_decimals > to_decimals) {
-            amount / (10 ^ (from_decimals - to_decimals))
-        } else {
-            amount * (10 ^ (to_decimals - from_decimals))
-        };
-        adjusted_amount * from_price.price / to_price.price
-    }
+const SUI_USD_PAIR_INDEX: u64 = 0;
+#[error]
+const ETH_USD_PAIR_INDEX: vector<u8> = b"TH_USD_PAIR_INDEX";
+const BTC_USD_PAIR_INDEX: u64 = 2;
+const USDC_USD_PAIR_INDEX: u64 = 3;
 
-    public fun is_fresh(data: &SupraPrice, clock: &Clock): bool {
-        clock.timestamp_ms() - data.last_updated_ms < MAX_STALENESS_MS
-    }
+public fun convert_amount(amount: u64, from_price: &SupraPrice, to_price: &SupraPrice): u64 {
+    let from_decimals = from_price.decimals;
+    let to_decimals = to_price.decimals;
+    let adjusted_amount = if (from_decimals > to_decimals) {
+        amount / (10 ^ (from_decimals - to_decimals))
+    } else {
+        amount * (10 ^ (to_decimals - from_decimals))
+    };
+    adjusted_amount * from_price.price / to_price.price
+}
+
+public fun is_fresh(data: &SupraPrice, clock: &Clock): bool {
+    clock.timestamp_ms() - data.last_updated_ms < MAX_STALENESS_MS
+}
 ```
 
 ## Supra 的 dSTREAM 自动化流水线
@@ -120,54 +110,55 @@ dSTREAM 模式：
 
 ## Supra vs Pyth 实际对比
 
-| 场景 | Supra 优势 | Pyth 优势 |
-|---|---|---|
-| 借贷协议 | dSTREAM 自动推送，用户无感 | 价格 feeds 更多 |
-| 衍生品 | 极低延迟，原生集成 | 多发布者交叉验证 |
-| 长尾代币 | 覆盖较少 | 覆盖更多交易对 |
-| 集成复杂度 | 更简单（某些模式不需要 PTB） | 需要 Hermes + PTB |
-| 随机数 | 原生 VRF | Entropy commit-reveal |
-| Gas 成本 | 较低（原生集成） | 需要额外 update 步骤 |
+| 场景       | Supra 优势                   | Pyth 优势             |
+| ---------- | ---------------------------- | --------------------- |
+| 借贷协议   | dSTREAM 自动推送，用户无感   | 价格 feeds 更多       |
+| 衍生品     | 极低延迟，原生集成           | 多发布者交叉验证      |
+| 长尾代币   | 覆盖较少                     | 覆盖更多交易对        |
+| 集成复杂度 | 更简单（某些模式不需要 PTB） | 需要 Hermes + PTB     |
+| 随机数     | 原生 VRF                     | Entropy commit-reveal |
+| Gas 成本   | 较低（原生集成）             | 需要额外 update 步骤  |
 
 ## 在同一协议中同时使用 Supra 和 Pyth
 
 ```move
 module defi::multi_oracle;
-    use sui::clock::Clock;
 
-    public struct OraclePrice has store {
-        price: u64,
-        source: String,
-        timestamp_ms: u64,
-    }
+use sui::clock::Clock;
 
-    public fun read_pyth_price(feed: &PriceFeed, clock: &Clock): OraclePrice {
-        let (price, _, ts, _) = price_feed::get_price(feed);
-        assert!(clock.timestamp_ms() - ts < 60_000, 0);
-        OraclePrice { price, source: string::utf8(b"pyth"), timestamp_ms: ts }
-    }
+public struct OraclePrice has store {
+    price: u64,
+    source: String,
+    timestamp_ms: u64,
+}
 
-    public fun read_supra_price(oracle: &SupraOracle, pair: u64, clock: &Clock): OraclePrice {
-        let (price, _, ts) = supra::get_price(oracle, pair);
-        assert!(clock.timestamp_ms() - ts < 60_000, 0);
-        OraclePrice { price, source: string::utf8(b"supra"), timestamp_ms: ts }
-    }
+public fun read_pyth_price(feed: &PriceFeed, clock: &Clock): OraclePrice {
+    let (price, _, ts, _) = price_feed::get_price(feed);
+    assert!(clock.timestamp_ms() - ts < 60_000, 0);
+    OraclePrice { price, source: string::utf8(b"pyth"), timestamp_ms: ts }
+}
 
-    public fun compare_prices(p1: &OraclePrice, p2: &OraclePrice, max_deviation_bps: u64): bool {
-        let deviation = if (p1.price > p2.price) {
-            (p1.price - p2.price) * 10000 / p2.price
-        } else {
-            (p2.price - p1.price) * 10000 / p1.price
-        };
-        deviation <= max_deviation_bps
-    }
+public fun read_supra_price(oracle: &SupraOracle, pair: u64, clock: &Clock): OraclePrice {
+    let (price, _, ts) = supra::get_price(oracle, pair);
+    assert!(clock.timestamp_ms() - ts < 60_000, 0);
+    OraclePrice { price, source: string::utf8(b"supra"), timestamp_ms: ts }
+}
+
+public fun compare_prices(p1: &OraclePrice, p2: &OraclePrice, max_deviation_bps: u64): bool {
+    let deviation = if (p1.price > p2.price) {
+        (p1.price - p2.price) * 10000 / p2.price
+    } else {
+        (p2.price - p1.price) * 10000 / p1.price
+    };
+    deviation <= max_deviation_bps
+}
 ```
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 依赖 Supra 链 | 如果 Supra 链出问题，价格更新会中断 |
-| 原生集成深度 | 过度依赖可能导致迁移困难 |
-| 推送频率 | dSTREAM 的推送频率可能不适合所有场景 |
-| 覆盖范围 | 相比 Pyth 支持的交易对较少 |
+| 风险          | 描述                                 |
+| ------------- | ------------------------------------ |
+| 依赖 Supra 链 | 如果 Supra 链出问题，价格更新会中断  |
+| 原生集成深度  | 过度依赖可能导致迁移困难             |
+| 推送频率      | dSTREAM 的推送频率可能不适合所有场景 |
+| 覆盖范围      | 相比 Pyth 支持的交易对较少           |

@@ -1,13 +1,13 @@
 module token_sale::sale;
 
-use sui::coin::{Self, Coin, TreasuryCap};
-use sui::balance::{Self, Balance};
-use sui::object::{Self, UID, ID};
-use sui::bag;
-use sui::transfer;
-use sui::event;
-use sui::tx_context::TxContext;
 use std::option;
+use sui::bag;
+use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin, TreasuryCap};
+use sui::event;
+use sui::object::{Self, UID, ID};
+use sui::transfer;
+use sui::tx_context::TxContext;
 
 // States
 const STATE_CREATED: u8 = 0;
@@ -42,13 +42,13 @@ public struct SaleRound has key {
     treasury_cap: TreasuryCap<SALE>,
     payment_collected: Balance<sui::sui::SUI>,
     state: u8,
-    price: u64,              // payment per sale token
+    price: u64, // payment per sale token
     min_purchase: u64,
     max_purchase: u64,
     hard_cap: u64,
     total_sold: u64,
-    whitelisted: sui::bag::Bag,        // address -> bool
-    purchases: sui::bag::Bag,          // address -> PurchaseRecord
+    whitelisted: sui::bag::Bag, // address -> bool
+    purchases: sui::bag::Bag, // address -> PurchaseRecord
 }
 
 public struct PurchaseRecord has store {
@@ -193,7 +193,11 @@ public fun purchase(sale: &mut SaleRound, payment: Coin<sui::sui::SUI>, ctx: &mu
     assert!(sale.total_sold + purchase_amount <= sale.hard_cap, EHardCapExceeded);
 
     // Record purchase
-    bag::add(&mut sale.purchases, buyer, PurchaseRecord { amount: purchase_amount, claimed: false });
+    bag::add(
+        &mut sale.purchases,
+        buyer,
+        PurchaseRecord { amount: purchase_amount, claimed: false },
+    );
     sale.total_sold = sale.total_sold + purchase_amount;
 
     balance::join(&mut sale.payment_collected, coin::into_balance(payment));
@@ -219,7 +223,11 @@ public fun claim(sale: &mut SaleRound, ctx: &mut TxContext): Coin<SALE> {
 
 // --- Admin withdraw ---
 
-public fun withdraw_payments(cap: &AdminCap, sale: &mut SaleRound, ctx: &mut TxContext): Coin<sui::sui::SUI> {
+public fun withdraw_payments(
+    cap: &AdminCap,
+    sale: &mut SaleRound,
+    ctx: &mut TxContext,
+): Coin<sui::sui::SUI> {
     assert!(object::id(sale) == cap.sale_id, EUnauthorized);
     assert!(sale.state == STATE_ENDED || sale.state == STATE_DISTRIBUTED, EWrongState);
     let amount = balance::value(&sale.payment_collected);
@@ -229,10 +237,13 @@ public fun withdraw_payments(cap: &AdminCap, sale: &mut SaleRound, ctx: &mut TxC
 // --- View ---
 
 public fun state(sale: &SaleRound): u8 { sale.state }
+
 public fun total_sold(sale: &SaleRound): u64 { sale.total_sold }
+
 public fun is_whitelisted(sale: &SaleRound, addr: address): bool {
     bag::contains(&sale.whitelisted, addr)
 }
+
 public fun has_purchased(sale: &SaleRound, addr: address): bool {
     bag::contains(&sale.purchases, addr)
 }

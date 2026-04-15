@@ -1,7 +1,7 @@
 module perp_market::perp;
 
-use sui::coin::{Self, Coin};
 use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin};
 use sui::object::{Self, UID, ID};
 use sui::transfer;
 use sui::tx_context::{Self, TxContext};
@@ -227,7 +227,8 @@ public fun open_position<Base, Quote>(
     let effective_margin = margin_amount - fee;
 
     // Initial margin requirement: effective_margin >= size * mark_price * (2 * maintenance_margin_bps) / BPS_BASE
-    let initial_margin_required = size * market.mark_price * (2 * market.maintenance_margin_bps) / BPS_BASE;
+    let initial_margin_required =
+        size * market.mark_price * (2 * market.maintenance_margin_bps) / BPS_BASE;
     assert!(effective_margin >= initial_margin_required, EInsufficientMargin);
 
     // Update open interest.
@@ -314,13 +315,16 @@ public fun remove_margin<Base, Quote>(
     let new_margin = position.margin - amount;
     // effective_margin = new_margin + pnl (with sign)
     let (effective_margin, effective_is_positive) = signed_add_unsigned(
-        pnl_abs, pnl_is_profit, new_margin
+        pnl_abs,
+        pnl_is_profit,
+        new_margin,
     );
     // effective_margin must be positive.
     assert!(effective_is_positive, EInsufficientMargin);
 
     // Must still satisfy initial margin: effective_margin >= size * mark_price * (2 * maintenance_bps) / BPS_BASE
-    let initial_required = position.size * market.mark_price * (2 * market.maintenance_margin_bps) / BPS_BASE;
+    let initial_required =
+        position.size * market.mark_price * (2 * market.maintenance_margin_bps) / BPS_BASE;
     assert!(effective_margin >= initial_required, EInsufficientMargin);
 
     assert!(balance::value(&market.quote_reserve) >= amount, EInsufficientReserve);
@@ -351,7 +355,17 @@ public fun close_position<Base, Quote>(
     assert!(!market.paused, EMktPaused);
     assert!(object::id(market) == position.market_id, EPositionMismatch);
 
-    let Position { id, market_id: _, owner: _, size, entry_price, margin, is_long, unrealized_pnl_abs: _, unrealized_pnl_is_profit: _ } = position;
+    let Position {
+        id,
+        market_id: _,
+        owner: _,
+        size,
+        entry_price,
+        margin,
+        is_long,
+        unrealized_pnl_abs: _,
+        unrealized_pnl_is_profit: _,
+    } = position;
 
     // Calculate PnL at current mark price.
     let (pnl_abs, pnl_is_profit) = calculate_pnl(entry_price, market.mark_price, size, is_long);
@@ -442,14 +456,26 @@ public fun liquidate<Base, Quote>(
 ): Coin<Quote> {
     assert!(object::id(market) == position.market_id, EPositionMismatch);
 
-    let Position { id, market_id: _, owner, size, entry_price, margin, is_long, unrealized_pnl_abs: _, unrealized_pnl_is_profit: _ } = position;
+    let Position {
+        id,
+        market_id: _,
+        owner,
+        size,
+        entry_price,
+        margin,
+        is_long,
+        unrealized_pnl_abs: _,
+        unrealized_pnl_is_profit: _,
+    } = position;
 
     // Calculate current PnL.
     let (pnl_abs, pnl_is_profit) = calculate_pnl(entry_price, market.mark_price, size, is_long);
 
     // Calculate effective margin.
     let (effective_margin, effective_is_positive) = signed_add_unsigned(
-        pnl_abs, pnl_is_profit, margin
+        pnl_abs,
+        pnl_is_profit,
+        margin,
     );
 
     // Calculate margin ratio.
@@ -568,12 +594,7 @@ public fun update_funding<Base, Quote>(market: &mut PerpMarket<Base, Quote>) {
 ///
 /// Returns (pnl_abs, pnl_is_profit) where pnl_abs is the absolute
 /// value of the PnL in quote units, and pnl_is_profit indicates profit.
-public fun calculate_pnl(
-    entry_price: u64,
-    exit_price: u64,
-    size: u64,
-    is_long: bool,
-): (u64, bool) {
+public fun calculate_pnl(entry_price: u64, exit_price: u64, size: u64, is_long: bool): (u64, bool) {
     if (is_long) {
         if (exit_price >= entry_price) {
             let pnl = (exit_price - entry_price) * size;
@@ -600,11 +621,7 @@ public fun calculate_pnl(
 /// Add an unsigned value to a signed value represented as (abs, is_positive).
 /// Returns (result_abs, result_is_positive).
 /// Computes: result = (pnl_abs if pnl_is_profit else -pnl_abs) + unsigned_val
-public fun signed_add_unsigned(
-    pnl_abs: u64,
-    pnl_is_profit: bool,
-    unsigned_val: u64,
-): (u64, bool) {
+public fun signed_add_unsigned(pnl_abs: u64, pnl_is_profit: bool, unsigned_val: u64): (u64, bool) {
     if (pnl_is_profit) {
         // Both positive: result = pnl_abs + unsigned_val
         (pnl_abs + unsigned_val, true)
@@ -640,7 +657,9 @@ public fun health_factor<Base, Quote>(
     );
 
     let (effective_margin, effective_is_positive) = signed_add_unsigned(
-        pnl_abs, pnl_is_profit, position.margin
+        pnl_abs,
+        pnl_is_profit,
+        position.margin,
     );
 
     if (!effective_is_positive) {
@@ -673,10 +692,7 @@ public fun fund_insurance<Base, Quote>(
 // ============================================================
 
 /// Pause the market (no new positions or closes).
-public fun pause<Base, Quote>(
-    _cap: &AdminCap<Base, Quote>,
-    market: &mut PerpMarket<Base, Quote>,
-) {
+public fun pause<Base, Quote>(_cap: &AdminCap<Base, Quote>, market: &mut PerpMarket<Base, Quote>) {
     market.paused = true;
 }
 
@@ -781,15 +797,22 @@ public fun destroy_market<Base, Quote>(market: PerpMarket<Base, Quote>) {
 
 #[test_only]
 public fun destroy_position<Base, Quote>(position: Position<Base, Quote>) {
-    let Position { id, market_id: _, owner: _, size: _, entry_price: _, margin: _, is_long: _, unrealized_pnl_abs: _, unrealized_pnl_is_profit: _ } = position;
+    let Position {
+        id,
+        market_id: _,
+        owner: _,
+        size: _,
+        entry_price: _,
+        margin: _,
+        is_long: _,
+        unrealized_pnl_abs: _,
+        unrealized_pnl_is_profit: _,
+    } = position;
     id.delete();
 }
 
 /// Test helper: directly set the mark price without admin cap.
 #[test_only]
-public fun set_mark_price_test<Base, Quote>(
-    market: &mut PerpMarket<Base, Quote>,
-    new_price: u64,
-) {
+public fun set_mark_price_test<Base, Quote>(market: &mut PerpMarket<Base, Quote>, new_price: u64) {
     market.mark_price = new_price;
 }

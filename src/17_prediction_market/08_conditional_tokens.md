@@ -175,12 +175,12 @@ public fun merge<T>(
 
 ## 安全检查清单
 
-| 检查项 | 原因 | 代码位置 |
-|--------|------|---------|
-| `market_id` 匹配 | 防止跨市场篡改余额 | `split`, `merge`, `claim` |
-| `amount > 0` | 防止零值操作浪费 gas | `split`, `merge` |
-| `yes >= amount && no >= amount` | Merge 必须两侧都够 | `merge` |
-| 金库余额 >= 赎回量 | 防止金库不足（理论上不会发生） | `merge`, `claim` |
+| 检查项                          | 原因                           | 代码位置                  |
+| ------------------------------- | ------------------------------ | ------------------------- |
+| `market_id` 匹配                | 防止跨市场篡改余额             | `split`, `merge`, `claim` |
+| `amount > 0`                    | 防止零值操作浪费 gas           | `split`, `merge`          |
+| `yes >= amount && no >= amount` | Merge 必须两侧都够             | `merge`                   |
+| 金库余额 >= 赎回量              | 防止金库不足（理论上不会发生） | `merge`, `claim`          |
 
 ## 自检
 

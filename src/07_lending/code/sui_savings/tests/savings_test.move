@@ -1,21 +1,16 @@
 #[test_only]
 module sui_savings::test_coin {
     public struct TESTCOIN has copy, drop, store {}
-
 }
 #[test_only]
 module sui_savings::savings_test {
-    use sui::coin;
-    use sui::coin::TreasuryCap;
+    use sui::coin::{Self, TreasuryCap};
     use sui::test_scenario;
-    use sui_savings::savings;
-    use sui_savings::savings::{SavingsPool, SavingsReceipt, AdminCap};
+    use sui_savings::savings::{Self, SavingsPool, SavingsReceipt, AdminCap};
     use sui_savings::test_coin::TESTCOIN;
 
     // Helper: create a test treasury cap
-    fun setup_treasury(
-        ctx: &mut sui::tx_context::TxContext,
-    ): TreasuryCap<TESTCOIN> {
+    fun setup_treasury(ctx: &mut sui::tx_context::TxContext): TreasuryCap<TESTCOIN> {
         coin::create_treasury_cap_for_testing<TESTCOIN>(ctx)
     }
 
@@ -389,5 +384,4 @@ module sui_savings::savings_test {
 
         scenario.end();
     }
-
 }

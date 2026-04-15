@@ -80,38 +80,28 @@ function buildArbitragePTB(
     cetusPoolId: string,
     deepBookId: string,
     amountIn: number,
-    minProfit: number
+    minProfit: number,
 ): Transaction {
     const tx = new Transaction();
 
     // Step 1: 在 Cetus 买入 SUI
     const [suiCoin] = tx.moveCall({
         target: `${CETUS}::pool::swap_a_to_b`,
-        arguments: [
-            tx.object(cetusPoolId),
-            tx.pure.u64(amountIn),
-        ],
+        arguments: [tx.object(cetusPoolId), tx.pure.u64(amountIn)],
         typeArguments: [USDC_TYPE, SUI_TYPE],
     });
 
     // Step 2: 在 DeepBook 卖出 SUI
     const [usdcOut, change] = tx.moveCall({
         target: `${DEEPBOOK}::orderbook::market_sell`,
-        arguments: [
-            tx.object(deepBookId),
-            suiCoin,
-        ],
+        arguments: [tx.object(deepBookId), suiCoin],
         typeArguments: [SUI_TYPE, USDC_TYPE],
     });
 
     // Step 3: 验证利润
     tx.moveCall({
         target: `${ARBITRAGE}::verify_profit`,
-        arguments: [
-            usdcOut,
-            tx.pure.u64(amountIn),
-            tx.pure.u64(minProfit),
-        ],
+        arguments: [usdcOut, tx.pure.u64(amountIn), tx.pure.u64(minProfit)],
     });
 
     return tx;

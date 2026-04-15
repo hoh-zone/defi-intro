@@ -2,7 +2,6 @@
 module perp_market::test_coins {
     public struct BASE has copy, drop, store {}
     public struct QUOTE has copy, drop, store {}
-
 }
 #[test_only]
 module perp_market::perp_test {
@@ -79,5 +78,4 @@ module perp_market::perp_test {
         assert!(result == 0);
         assert!(is_pos == false);
     }
-
 }

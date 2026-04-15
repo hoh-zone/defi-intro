@@ -52,11 +52,13 @@ fun record_observation<A, B>(pool: &mut SafePool<A, B>, timestamp: u64) {
     let elapsed = if (timestamp > last.timestamp) { timestamp - last.timestamp } else { 0 };
     let new_cum = last.cumulative_price + (spot_price as u128) * (elapsed as u128);
 
-    pool.observations.push_back(Observation {
-        timestamp,
-        price: spot_price,
-        cumulative_price: new_cum,
-    });
+    pool
+        .observations
+        .push_back(Observation {
+            timestamp,
+            price: spot_price,
+            cumulative_price: new_cum,
+        });
 
     // Keep only last 100 observations
     if (pool.observations.length() > 100) {
@@ -89,9 +91,15 @@ public fun get_twap_price<A, B>(pool: &SafePool<A, B>, period_ms: u64, current_m
 }
 
 /// Validate that spot price doesn't deviate too much from TWAP
-public fun validate_price_deviation(twap_price: u64, spot_price: u64, max_deviation_bps: u64): bool {
+public fun validate_price_deviation(
+    twap_price: u64,
+    spot_price: u64,
+    max_deviation_bps: u64,
+): bool {
     if (twap_price == 0) { return true };
-    let diff = if (spot_price > twap_price) { spot_price - twap_price } else { twap_price - spot_price };
+    let diff = if (spot_price > twap_price) { spot_price - twap_price } else {
+        twap_price - spot_price
+    };
     let deviation_bps = diff * 10000 / twap_price;
     deviation_bps <= max_deviation_bps
 }
@@ -135,7 +143,11 @@ public fun spot_price<A, B>(pool: &SafePool<A, B>): u64 {
 }
 
 #[test_only]
-public fun create_pool_for_testing<A, B>(coin_a: Coin<A>, coin_b: Coin<B>, ctx: &mut TxContext): SafePool<A, B> {
+public fun create_pool_for_testing<A, B>(
+    coin_a: Coin<A>,
+    coin_b: Coin<B>,
+    ctx: &mut TxContext,
+): SafePool<A, B> {
     let price = coin::value(&coin_b) * 1_000_000 / coin::value(&coin_a);
     SafePool {
         id: object::new(ctx),

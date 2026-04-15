@@ -107,50 +107,51 @@ public fun accumulate_precise(
 
 ```move
 module defi::safe_math;
-    #[error]
-    const EOverflow: vector<u8> = b"Overflow";
-    #[error]
-    const EUnderflow: vector<u8> = b"Underflow";
-    #[error]
-    const EDivisionByZero: vector<u8> = b"Division By Zero";
 
-    public fun safe_mul(a: u64, b: u64): u64 {
-        let result = (a as u256) * (b as u256);
-        assert!(result <= 0xffffffffffffffff, EOverflow);
-        (result as u64)
-    }
+#[error]
+const EOverflow: vector<u8> = b"Overflow";
+#[error]
+const EUnderflow: vector<u8> = b"Underflow";
+#[error]
+const EDivisionByZero: vector<u8> = b"Division By Zero";
 
-    public fun safe_mul_div(a: u64, b: u64, c: u64): u64 {
-        assert!(c > 0, EDivisionByZero);
-        let result = (a as u256) * (b as u256) / (c as u256);
-        assert!(result <= 0xffffffffffffffff, EOverflow);
-        (result as u64)
-    }
+public fun safe_mul(a: u64, b: u64): u64 {
+    let result = (a as u256) * (b as u256);
+    assert!(result <= 0xffffffffffffffff, EOverflow);
+    (result as u64)
+}
 
-    public fun safe_sub(a: u64, b: u64): u64 {
-        assert!(a >= b, EUnderflow);
-        a - b
-    }
+public fun safe_mul_div(a: u64, b: u64, c: u64): u64 {
+    assert!(c > 0, EDivisionByZero);
+    let result = (a as u256) * (b as u256) / (c as u256);
+    assert!(result <= 0xffffffffffffffff, EOverflow);
+    (result as u64)
+}
 
-    public fun safe_div(a: u64, b: u64): u64 {
-        assert!(b > 0, EDivisionByZero);
-        a / b
-    }
+public fun safe_sub(a: u64, b: u64): u64 {
+    assert!(a >= b, EUnderflow);
+    a - b
+}
 
-    public fun safe_add(a: u64, b: u64): u64 {
-        let result = (a as u256) + (b as u256);
-        assert!(result <= 0xffffffffffffffff, EOverflow);
-        (result as u64)
-    }
+public fun safe_div(a: u64, b: u64): u64 {
+    assert!(b > 0, EDivisionByZero);
+    a / b
+}
 
-    public fun mul_to_u256(a: u64, b: u64): u256 {
-        (a as u256) * (b as u256)
-    }
+public fun safe_add(a: u64, b: u64): u64 {
+    let result = (a as u256) + (b as u256);
+    assert!(result <= 0xffffffffffffffff, EOverflow);
+    (result as u64)
+}
 
-    public fun u256_to_u64(v: u256): u64 {
-        assert!(v <= 0xffffffffffffffff, EOverflow);
-        (v as u64)
-    }
+public fun mul_to_u256(a: u64, b: u64): u256 {
+    (a as u256) * (b as u256)
+}
+
+public fun u256_to_u64(v: u256): u64 {
+    assert!(v <= 0xffffffffffffffff, EOverflow);
+    (v as u64)
+}
 ```
 
 ## 实战案例：收益分配的精度安全
@@ -159,64 +160,68 @@ module defi::safe_math;
 
 ```move
 module defi::yield_distribution;
-    use sui::object::{Self, UID};
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
 
-    public struct Pool has key {
-        id: UID,
-        total_shares: u64,
-        acc_reward_per_share: u64,
-        reward_balance: Coin<SUI>,
-        last_update_epoch: u64,
-    }
+use sui::coin::{Self, Coin};
+use sui::object::{Self, UID};
+use sui::sui::SUI;
 
-    public struct UserPosition has key {
-        id: UID,
-        shares: u64,
-        reward_debt: u64,
-        pending_reward: u64,
-    }
+public struct Pool has key {
+    id: UID,
+    total_shares: u64,
+    acc_reward_per_share: u64,
+    reward_balance: Coin<SUI>,
+    last_update_epoch: u64,
+}
 
-    const PRECISION: u64 = 1_000_000_000;
+public struct UserPosition has key {
+    id: UID,
+    shares: u64,
+    reward_debt: u64,
+    pending_reward: u64,
+}
 
-    public fun update_pool(pool: &mut Pool, current_epoch: u64) {
-        if (current_epoch <= pool.last_update_epoch) {
-            return
-        };
+const PRECISION: u64 = 1_000_000_000;
 
-        if (pool.total_shares == 0) {
-            pool.last_update_epoch = current_epoch;
-            return
-        };
+public fun update_pool(pool: &mut Pool, current_epoch: u64) {
+    if (current_epoch <= pool.last_update_epoch) {
+        return
+    };
 
-        let reward = coin::value(&pool.reward_balance);
-        if (reward == 0) {
-            pool.last_update_epoch = current_epoch;
-            return
-        };
+    if (pool.total_shares == 0) {
+        pool.last_update_epoch = current_epoch;
+        return
+    };
 
-        let reward_per_epoch = reward / (current_epoch - pool.last_update_epoch);
-        let increment = (reward_per_epoch as u256)
+    let reward = coin::value(&pool.reward_balance);
+    if (reward == 0) {
+        pool.last_update_epoch = current_epoch;
+        return
+    };
+
+    let reward_per_epoch = reward / (current_epoch - pool.last_update_epoch);
+    let increment =
+        (reward_per_epoch as u256)
             * (PRECISION as u256)
             / (pool.total_shares as u256);
 
-        pool.acc_reward_per_share = pool.acc_reward_per_share + (increment as u64);
-        pool.last_update_epoch = current_epoch;
-    }
+    pool.acc_reward_per_share = pool.acc_reward_per_share + (increment as u64);
+    pool.last_update_epoch = current_epoch;
+}
 
-    public fun harvest(position: &mut UserPosition, pool: &Pool) {
-        let accumulated = (position.shares as u256)
+public fun harvest(position: &mut UserPosition, pool: &Pool) {
+    let accumulated =
+        (position.shares as u256)
             * (pool.acc_reward_per_share as u256)
             / (PRECISION as u256);
-        let pending = (accumulated as u64) - position.reward_debt;
+    let pending = (accumulated as u64) - position.reward_debt;
 
-        position.pending_reward = position.pending_reward + pending;
-        position.reward_debt = (accumulated as u64);
-    }
+    position.pending_reward = position.pending_reward + pending;
+    position.reward_debt = (accumulated as u64);
+}
 ```
 
 关键设计决策：
+
 - 使用 `u256` 中间精度避免溢出
 - `PRECISION = 10^9`（BPS 级别的精度对 DeFi 不够）
 - `reward_debt` 模式避免对每个用户逐一结算
@@ -226,13 +231,13 @@ module defi::yield_distribution;
 
 在审计 DeFi 协议的数学代码时，检查以下每一项：
 
-| 检查项 | 关注点 |
-|--------|--------|
-| 乘法结果是否溢出？ | `a * b` 中的 a、b 最大值 |
-| 除法是否截断关键值？ | `a / b` 中 a < b 的场景 |
-| 精度因子是否足够？ | 最小操作单位的精度分辨率 |
-| 累加器是否有漂移？ | 长时间运行的误差累积 |
-| 类型转换是否安全？ | `u256 → u64` 的截断风险 |
+| 检查项               | 关注点                         |
+| -------------------- | ------------------------------ |
+| 乘法结果是否溢出？   | `a * b` 中的 a、b 最大值       |
+| 除法是否截断关键值？ | `a / b` 中 a < b 的场景        |
+| 精度因子是否足够？   | 最小操作单位的精度分辨率       |
+| 累加器是否有漂移？   | 长时间运行的误差累积           |
+| 类型转换是否安全？   | `u256 → u64` 的截断风险        |
 | 奖励分配是否有遗漏？ | `total_shares == 0` 的边界情况 |
 
 ## 小结

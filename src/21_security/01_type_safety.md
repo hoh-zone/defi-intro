@@ -4,13 +4,13 @@
 
 EVM 是"一切皆 storage slot"的世界。任何合约可以读写任何地址的存储，重入是常态，整数溢出曾经需要手动检查（Solidity < 0.8）。Move 采取了不同的安全哲学：
 
-| 安全属性 | EVM (Solidity) | Move |
-|----------|----------------|------|
-| 重入 | 可能，需手动防护 | 不可能（无动态调用） |
-| 双花 | 可能，需手动检查 | 不可能（线性类型保证资源唯一） |
-| 整数溢出 | < 0.8 默认不检查 | 编译期/运行期均检查 |
-| 未授权访问 | 需手动 require | Capability 模式强制鉴权 |
-| 存储冲突 | 可能 | 不可能（对象所有权隔离） |
+| 安全属性   | EVM (Solidity)   | Move                           |
+| ---------- | ---------------- | ------------------------------ |
+| 重入       | 可能，需手动防护 | 不可能（无动态调用）           |
+| 双花       | 可能，需手动检查 | 不可能（线性类型保证资源唯一） |
+| 整数溢出   | < 0.8 默认不检查 | 编译期/运行期均检查            |
+| 未授权访问 | 需手动 require   | Capability 模式强制鉴权        |
+| 存储冲突   | 可能             | 不可能（对象所有权隔离）       |
 
 Move 不需要 SafeERC20 包装器，不需要 ReentrancyGuard，不需要 SafeMath——因为这些保护内建在语言里。
 
@@ -31,33 +31,30 @@ public struct Coin has store { value: u64 }
 
 ```move
 module defi::asset_safety;
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
 
-    public struct LockedVault has key {
-        id: UID,
-        balance: Coin<SUI>,
-    }
+use sui::coin::{Self, Coin};
+use sui::sui::SUI;
 
-    public fun deposit(vault: &mut LockedVault, coin: Coin<SUI>) {
-        let amount = coin::value(&coin);
-        assert!(amount > 0, EInvalidAmount);
-        coin::put(&mut vault.balance, coin);
-    }
+public struct LockedVault has key {
+    id: UID,
+    balance: Coin<SUI>,
+}
 
-    public fun withdraw(
-        vault: &mut LockedVault,
-        amount: u64,
-        ctx: &mut TxContext,
-    ): Coin<SUI> {
-        assert!(coin::value(&vault.balance) >= amount, EInsufficientBalance);
-        coin::take(&mut vault.balance, amount, ctx)
-    }
+public fun deposit(vault: &mut LockedVault, coin: Coin<SUI>) {
+    let amount = coin::value(&coin);
+    assert!(amount > 0, EInvalidAmount);
+    coin::put(&mut vault.balance, coin);
+}
 
-    #[error]
-    const EInvalidAmount: vector<u8> = b"Invalid Amount";
-    #[error]
-    const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
+public fun withdraw(vault: &mut LockedVault, amount: u64, ctx: &mut TxContext): Coin<SUI> {
+    assert!(coin::value(&vault.balance) >= amount, EInsufficientBalance);
+    coin::take(&mut vault.balance, amount, ctx)
+}
+
+#[error]
+const EInvalidAmount: vector<u8> = b"Invalid Amount";
+#[error]
+const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
 ```
 
 `Coin<SUI>` 没有 `copy` 和 `drop`。这意味着：
@@ -94,22 +91,23 @@ public fun transfer(coin: Coin<SUI>, recipient: address, ctx: &mut TxContext) {
 
 ```move
 module defi::internal_state;
-    use sui::object::{Self, UID};
 
-    public struct ProtocolState has key {
-        id: UID,
-        total_debt: u64,
-        total_deposit: u64,
-        paused: bool,
-    }
+use sui::object::{Self, UID};
 
-    public fun total_debt(state: &ProtocolState): u64 {
-        state.total_debt
-    }
+public struct ProtocolState has key {
+    id: UID,
+    total_debt: u64,
+    total_deposit: u64,
+    paused: bool,
+}
 
-    public fun total_deposit(state: &ProtocolState): u64 {
-        state.total_deposit
-    }
+public fun total_debt(state: &ProtocolState): u64 {
+    state.total_debt
+}
+
+public fun total_deposit(state: &ProtocolState): u64 {
+    state.total_deposit
+}
 ```
 
 Move 的 struct 字段默认模块私有的。外部模块无法直接读写 `total_debt`，只能通过公开函数访问。这防止了外部合约篡改内部状态——在 EVM 中这需要额外的访问控制。
@@ -120,33 +118,34 @@ Move 的 struct 字段默认模块私有的。外部模块无法直接读写 `to
 
 ```move
 module defi::typed_permissions;
-    use sui::object::{Self, UID};
 
-    public struct Level1 has drop {}
-    public struct Level2 has drop {}
-    public struct Level3 has drop {}
+use sui::object::{Self, UID};
 
-    public struct Vault has key {
-        id: UID,
-        value: u64,
-    }
+public struct Level1 has drop {}
+public struct Level2 has drop {}
+public struct Level3 has drop {}
 
-    public fun deposit_level1(vault: &mut Vault, _witness: Level1, amount: u64) {
-        assert!(amount <= 1000, EExceedLimit);
-        vault.value = vault.value + amount;
-    }
+public struct Vault has key {
+    id: UID,
+    value: u64,
+}
 
-    public fun deposit_level2(vault: &mut Vault, _witness: Level2, amount: u64) {
-        assert!(amount <= 10000, EExceedLimit);
-        vault.value = vault.value + amount;
-    }
+public fun deposit_level1(vault: &mut Vault, _witness: Level1, amount: u64) {
+    assert!(amount <= 1000, EExceedLimit);
+    vault.value = vault.value + amount;
+}
 
-    public fun deposit_level3(vault: &mut Vault, _witness: Level3, amount: u64) {
-        vault.value = vault.value + amount;
-    }
+public fun deposit_level2(vault: &mut Vault, _witness: Level2, amount: u64) {
+    assert!(amount <= 10000, EExceedLimit);
+    vault.value = vault.value + amount;
+}
 
-    #[error]
-    const EExceedLimit: vector<u8> = b"Exceed Limit";
+public fun deposit_level3(vault: &mut Vault, _witness: Level3, amount: u64) {
+    vault.value = vault.value + amount;
+}
+
+#[error]
+const EExceedLimit: vector<u8> = b"Exceed Limit";
 ```
 
 `Level1`、`Level2`、`Level3` 是只有 `drop` ability 的类型。只有能创建这些类型的模块才能调用对应的函数。编译器在编译时保证权限正确——不需要运行时的 `require` 检查。

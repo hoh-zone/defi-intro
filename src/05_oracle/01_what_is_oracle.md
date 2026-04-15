@@ -90,38 +90,38 @@ NFT / 游戏：
 
 ```move
 module oracle::price_types;
-    use sui::clock::Clock;
 
-    public struct MarketPrice has store {
-        price: u64,
-        timestamp_ms: u64,
-        source: String,
-        confidence: u64,
-    }
+use sui::clock::Clock;
 
-    public struct ProtocolPrice has store {
-        price: u64,
-        last_update_ms: u64,
-        max_staleness_ms: u64,
-        source_id: u8,
-    }
+public struct MarketPrice has store {
+    price: u64,
+    timestamp_ms: u64,
+    source: String,
+    confidence: u64,
+}
 
-    public struct PriceFact has store {
-        price: u64,
-        publish_time_ms: u64,
-        publisher: address,
-        signature: vector<u8>,
-        ema_price: u64,
-    }
+public struct ProtocolPrice has store {
+    price: u64,
+    last_update_ms: u64,
+    max_staleness_ms: u64,
+    source_id: u8,
+}
 
-    public fun is_stale(protocol: &ProtocolPrice, clock: &Clock): bool {
-        clock.timestamp_ms() > protocol.last_update_ms + protocol.max_staleness_ms
-    }
+public struct PriceFact has store {
+    price: u64,
+    publish_time_ms: u64,
+    publisher: address,
+    signature: vector<u8>,
+    ema_price: u64,
+}
 
-    public fun deviation(p1: u64, p2: u64): u64 {
-        if (p1 > p2) { (p1 - p2) * 10000 / p2 }
-        else { (p2 - p1) * 10000 / p1 }
-    }
+public fun is_stale(protocol: &ProtocolPrice, clock: &Clock): bool {
+    clock.timestamp_ms() > protocol.last_update_ms + protocol.max_staleness_ms
+}
+
+public fun deviation(p1: u64, p2: u64): u64 {
+    if (p1 > p2) { (p1 - p2) * 10000 / p2 } else { (p2 - p1) * 10000 / p1 }
+}
 ```
 
 ## 预言机的冷启动问题
@@ -147,9 +147,9 @@ module oracle::price_types;
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 过度信任 | 盲目相信预言机数据，不做任何验证 |
-| 单点故障 | 只用一个预言机，如果它挂了协议就停摆 |
-| 延迟风险 | 预言机更新慢，价格在剧烈波动时严重偏离 |
+| 风险       | 描述                                     |
+| ---------- | ---------------------------------------- |
+| 过度信任   | 盲目相信预言机数据，不做任何验证         |
+| 单点故障   | 只用一个预言机，如果它挂了协议就停摆     |
+| 延迟风险   | 预言机更新慢，价格在剧烈波动时严重偏离   |
 | 数据源操纵 | 攻击者操纵预言机的数据源（如交易所价格） |

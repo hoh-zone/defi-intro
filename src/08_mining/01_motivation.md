@@ -49,60 +49,61 @@
 
 ```move
 module liquidity_mining::core;
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
-    use sui::tx_context::TxContext;
-    use sui::clock::Clock;
 
-    #[error]
-    const EInsufficientStake: vector<u8> = b"Insufficient Stake";
-    #[error]
-    const ENotAuthorized: vector<u8> = b"Not Authorized";
-    #[error]
-    const EPoolExpired: vector<u8> = b"Pool Expired";
+use sui::clock::Clock;
+use sui::coin::{Self, Coin};
+use sui::sui::SUI;
+use sui::tx_context::TxContext;
 
-    public struct StakeInfo has store, drop {
-        amount: u64,
-        reward_debt: u64,
-    }
+#[error]
+const EInsufficientStake: vector<u8> = b"Insufficient Stake";
+#[error]
+const ENotAuthorized: vector<u8> = b"Not Authorized";
+#[error]
+const EPoolExpired: vector<u8> = b"Pool Expired";
 
-    public struct RewardPool<phantom StakeCoin, phantom RewardCoin> has key {
-        id: UID,
-        total_stake: u64,
-        reward_per_share_stored: u64,
-        reward_rate: u64,
-        last_update_time_ms: u64,
-        reward_duration_ms: u64,
-        period_finish_ms: u64,
-        reward_balance: Coin<RewardCoin>,
-        stake_balance: Coin<StakeCoin>,
-        stakes: Bag,
-    }
+public struct StakeInfo has drop, store {
+    amount: u64,
+    reward_debt: u64,
+}
 
-    public struct UserStake has store, drop {
-        stake_amount: u64,
-        reward_debt: u64,
-        pending_reward: u64,
-    }
+public struct RewardPool<phantom StakeCoin, phantom RewardCoin> has key {
+    id: UID,
+    total_stake: u64,
+    reward_per_share_stored: u64,
+    reward_rate: u64,
+    last_update_time_ms: u64,
+    reward_duration_ms: u64,
+    period_finish_ms: u64,
+    reward_balance: Coin<RewardCoin>,
+    stake_balance: Coin<StakeCoin>,
+    stakes: Bag,
+}
+
+public struct UserStake has drop, store {
+    stake_amount: u64,
+    reward_debt: u64,
+    pending_reward: u64,
+}
 ```
 
 ### 关键字段解释
 
-| 字段 | 含义 |
-|---|---|
-| `total_stake` | 池中总质押量 |
+| 字段                      | 含义                         |
+| ------------------------- | ---------------------------- |
+| `total_stake`             | 池中总质押量                 |
 | `reward_per_share_stored` | 累计每份额奖励（核心累加器） |
-| `reward_rate` | 每毫秒释放的奖励数量 |
-| `last_update_time_ms` | 上次更新累加器的时间 |
-| `stakes` | 用户地址 → UserStake 的映射 |
+| `reward_rate`             | 每毫秒释放的奖励数量         |
+| `last_update_time_ms`     | 上次更新累加器的时间         |
+| `stakes`                  | 用户地址 → UserStake 的映射  |
 
 这个数据结构是后面所有挖矿算法的基础。8.2 节将详细解释 `reward_per_share` 累加器的数学原理。
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 通胀螺旋 | 高 APR → 代币增发 → 价格下跌 → 需要更高 APR → 恶性循环 |
-| Mercenary capital | 追逐高 APR 的短期资本，补贴一停就撤离 |
-| 智能合约风险 | 奖励计算错误可能导致奖励耗尽或用户无法提取 |
-| 治理攻击 | 持有大量代币的 mercenary 可能通过治理改变参数 |
+| 风险              | 描述                                                   |
+| ----------------- | ------------------------------------------------------ |
+| 通胀螺旋          | 高 APR → 代币增发 → 价格下跌 → 需要更高 APR → 恶性循环 |
+| Mercenary capital | 追逐高 APR 的短期资本，补贴一停就撤离                  |
+| 智能合约风险      | 奖励计算错误可能导致奖励耗尽或用户无法提取             |
+| 治理攻击          | 持有大量代币的 mercenary 可能通过治理改变参数          |

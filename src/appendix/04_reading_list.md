@@ -2,56 +2,56 @@
 
 ## DeFi 基础
 
-- *DeFi and the Future of Finance* — Harvey, Ramachandran, Santoro (2021)
-- *Mastering DeFi* — Umar iqram (2022)
+- _DeFi and the Future of Finance_ — Harvey, Ramachandran, Santoro (2021)
+- _Mastering DeFi_ — Umar iqram (2022)
 
 ## AMM 与 DEX
 
-- *Uniswap V2 Whitepaper* — Hayden Adams (2020): https://uniswap.org/whitepaper.pdf
-- *Uniswap V3 Whitepaper* — Adams, Zinsmeister, Salem, et al. (2021): https://uniswap.org/whitepaper-v3.pdf
-- *DeepBook Protocol Documentation*: https://deepbook.tech
+- _Uniswap V2 Whitepaper_ — Hayden Adams (2020): https://uniswap.org/whitepaper.pdf
+- _Uniswap V3 Whitepaper_ — Adams, Zinsmeister, Salem, et al. (2021): https://uniswap.org/whitepaper-v3.pdf
+- _DeepBook Protocol Documentation_: https://deepbook.tech
 
 ## 借贷
 
-- *Aave Protocol Whitepaper V2* (2020): https://docs.aave.com
-- *Compound Whitepaper* — Geoffrey Hayes, Robert Leshner (2019): https://compound.finance/documents/Compound.Whitepaper.pdf
-- *MakerDAO Purple Paper* (2020): https://makerdao.com/purple
+- _Aave Protocol Whitepaper V2_ (2020): https://docs.aave.com
+- _Compound Whitepaper_ — Geoffrey Hayes, Robert Leshner (2019): https://compound.finance/documents/Compound.Whitepaper.pdf
+- _MakerDAO Purple Paper_ (2020): https://makerdao.com/purple
 
 ## 预言机
 
-- *Pyth Network Whitepaper* (2021): https://pyth.network/whitepaper
-- *Chainlink 2.0 Whitepaper* (2021): https://chain.link/whitepaper
-- *Switchboard Documentation*: https://docs.switchboard.xyz
+- _Pyth Network Whitepaper_ (2021): https://pyth.network/whitepaper
+- _Chainlink 2.0 Whitepaper_ (2021): https://chain.link/whitepaper
+- _Switchboard Documentation_: https://docs.switchboard.xyz
 
 ## LSD
 
-- *Lido Finance Documentation*: https://docs.lido.fi
-- *Rocket Pool Whitepaper*: https://rocketpool.net
+- _Lido Finance Documentation_: https://docs.lido.fi
+- _Rocket Pool Whitepaper_: https://rocketpool.net
 
 ## 永续合约
 
-- *Perpetual Protocol Whitepaper* (2020): https://perp.com
-- *dYdX V4 Documentation*: https://dydx.exchange
+- _Perpetual Protocol Whitepaper_ (2020): https://perp.com
+- _dYdX V4 Documentation_: https://dydx.exchange
 
 ## 安全与审计
 
-- *Smart Contract Security Best Practices* — ConsenSys: https://consensys.github.io/smart-contract-best-practices
-- *DeFi Security Summit Talks*: https://www.defisecuritysummit.org
-- *Immunefi Bug Bounty Platform*: https://immunefi.com
-- *Trail of Bits Blog*: https://blog.trailofbits.com
+- _Smart Contract Security Best Practices_ — ConsenSys: https://consensys.github.io/smart-contract-best-practices
+- _DeFi Security Summit Talks_: https://www.defisecuritysummit.org
+- _Immunefi Bug Bounty Platform_: https://immunefi.com
+- _Trail of Bits Blog_: https://blog.trailofbits.com
 
 ## Sui 与 Move
 
-- *Sui Documentation*: https://docs.sui.io
-- *Move Language Reference*: https://move-language.github.io/move
-- *Sui Move by Example*: https://examples.sui.io
-- *Sui Framework Source*: https://github.com/MystenLabs/sui/tree/main/crates/sui-framework
+- _Sui Documentation_: https://docs.sui.io
+- _Move Language Reference_: https://move-language.github.io/move
+- _Sui Move by Example_: https://examples.sui.io
+- _Sui Framework Source_: https://github.com/MystenLabs/sui/tree/main/crates/sui-framework
 
 ## 经典攻击案例分析
 
-- *Rekt Leaderboard* (DeFi 攻击事件数据库): https://rekt.news/leaderboard
-- *Flash Boys in DeFi* — Qin, Zhou, et al. (2021): 分析闪电贷攻击的学术论文
-- *Oracle Manipulation Attacks* — quantstamp blog: 预言机操纵攻击的技术分析
+- _Rekt Leaderboard_ (DeFi 攻击事件数据库): https://rekt.news/leaderboard
+- _Flash Boys in DeFi_ — Qin, Zhou, et al. (2021): 分析闪电贷攻击的学术论文
+- _Oracle Manipulation Attacks_ — quantstamp blog: 预言机操纵攻击的技术分析
 
 ## 研究方向
 

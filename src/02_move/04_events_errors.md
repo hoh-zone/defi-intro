@@ -8,58 +8,55 @@
 
 ```move
 module defi_book::events_demo;
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
 
-    public struct Pool has key {
-        id: UID,
-        reserve: Coin<SUI>,
-        total_deposits: u64,
-        total_withdrawals: u64,
-    }
+use sui::coin::{Self, Coin};
+use sui::sui::SUI;
 
-    public struct DepositEvent has copy, drop {
-        pool_id: ID,
-        user: address,
-        amount: u64,
-        new_total: u64,
-        timestamp_ms: u64,
-    }
+public struct Pool has key {
+    id: UID,
+    reserve: Coin<SUI>,
+    total_deposits: u64,
+    total_withdrawals: u64,
+}
 
-    public struct WithdrawalEvent has copy, drop {
-        pool_id: ID,
-        user: address,
-        amount: u64,
-        fee: u64,
-        new_total: u64,
-    }
+public struct DepositEvent has copy, drop {
+    pool_id: ID,
+    user: address,
+    amount: u64,
+    new_total: u64,
+    timestamp_ms: u64,
+}
 
-    public struct PausedEvent has copy, drop {
-        pool_id: ID,
-        admin: address,
-    }
+public struct WithdrawalEvent has copy, drop {
+    pool_id: ID,
+    user: address,
+    amount: u64,
+    fee: u64,
+    new_total: u64,
+}
 
-    public entry fun deposit(
-        pool: &mut Pool,
-        coin: Coin<SUI>,
-        ctx: &mut TxContext,
-    ) {
-        let amount = coin.value(&coin);
-        coin::join(&mut pool.reserve, coin);
-        pool.total_deposits = pool.total_deposits + amount;
+public struct PausedEvent has copy, drop {
+    pool_id: ID,
+    admin: address,
+}
 
-        event::emit(DepositEvent {
-            pool_id: object::id(pool),
-            user: ctx.sender(),
-            amount,
-            new_total: pool.total_deposits,
-            timestamp_ms: tx_context::timestamp_ms(ctx),
-        });
-    }
+public entry fun deposit(pool: &mut Pool, coin: Coin<SUI>, ctx: &mut TxContext) {
+    let amount = coin.value(&coin);
+    coin::join(&mut pool.reserve, coin);
+    pool.total_deposits = pool.total_deposits + amount;
 
+    event::emit(DepositEvent {
+        pool_id: object::id(pool),
+        user: ctx.sender(),
+        amount,
+        new_total: pool.total_deposits,
+        timestamp_ms: tx_context::timestamp_ms(ctx),
+    });
+}
 ```
 
 一个好的事件设计包含：
+
 - **谁**（`user`）做了**什么**（`amount`）
 - **操作后的状态**（`new_total`）——避免前端再发一笔读取请求
 - **时间戳**（`timestamp_ms`）——便于排序和时间序列分析
@@ -70,60 +67,55 @@ module defi_book::events_demo;
 
 ```move
 module defi_book::error_demo;
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
 
-    #[error]
-    const EPoolPaused: vector<u8> = b"Pool Paused";
-    #[error]
-    const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
-    #[error]
-    const ESlippageExceeded: vector<u8> = b"Slippage Exceeded";
-    #[error]
-    const EInvalidAmount: vector<u8> = b"Invalid Amount";
-    #[error]
-    const EUnauthorized: vector<u8> = b"Unauthorized";
-    #[error]
-    const EDuplicatePosition: vector<u8> = b"Duplicate Position";
-    #[error]
-    const EPositionNotFound: vector<u8> = b"Position Not Found";
-    #[error]
-    const EInsufficientCollateral: vector<u8> = b"Insufficient Collateral";
-    #[error]
-    const EBorrowLimitExceeded: vector<u8> = b"Borrow Limit Exceeded";
-    #[error]
-    const ELiquidationThresholdBreached: vector<u8> = b"Liquidation Threshold Breached";
+use sui::coin::{Self, Coin};
+use sui::sui::SUI;
 
-    public struct Pool has key {
-        id: UID,
-        reserve: Coin<SUI>,
-        paused: bool,
-    }
+#[error]
+const EPoolPaused: vector<u8> = b"Pool Paused";
+#[error]
+const EInsufficientLiquidity: vector<u8> = b"Insufficient Liquidity";
+#[error]
+const ESlippageExceeded: vector<u8> = b"Slippage Exceeded";
+#[error]
+const EInvalidAmount: vector<u8> = b"Invalid Amount";
+#[error]
+const EUnauthorized: vector<u8> = b"Unauthorized";
+#[error]
+const EDuplicatePosition: vector<u8> = b"Duplicate Position";
+#[error]
+const EPositionNotFound: vector<u8> = b"Position Not Found";
+#[error]
+const EInsufficientCollateral: vector<u8> = b"Insufficient Collateral";
+#[error]
+const EBorrowLimitExceeded: vector<u8> = b"Borrow Limit Exceeded";
+#[error]
+const ELiquidationThresholdBreached: vector<u8> = b"Liquidation Threshold Breached";
 
-    public entry fun swap(
-        pool: &mut Pool,
-        coin_in: Coin<SUI>,
-        min_out: u64,
-        ctx: &mut TxContext,
-    ) {
-        assert!(!pool.paused, EPoolPaused);
-        assert!(coin_in.value(&coin_in) > 0, EInvalidAmount);
+public struct Pool has key {
+    id: UID,
+    reserve: Coin<SUI>,
+    paused: bool,
+}
 
-        let reserve = pool.reserve.value(&pool.reserve);
-        assert!(reserve > min_out, EInsufficientLiquidity);
+public entry fun swap(pool: &mut Pool, coin_in: Coin<SUI>, min_out: u64, ctx: &mut TxContext) {
+    assert!(!pool.paused, EPoolPaused);
+    assert!(coin_in.value(&coin_in) > 0, EInvalidAmount);
 
-        let amount_out = calculate_output(coin_in.value(&coin_in), reserve);
-        assert!(amount_out >= min_out, ESlippageExceeded);
+    let reserve = pool.reserve.value(&pool.reserve);
+    assert!(reserve > min_out, EInsufficientLiquidity);
 
-        execute_swap(pool, coin_in, ctx);
-    }
+    let amount_out = calculate_output(coin_in.value(&coin_in), reserve);
+    assert!(amount_out >= min_out, ESlippageExceeded);
 
-    fun calculate_output(amount_in: u64, reserve: u64): u64 {
-        reserve * amount_in * 9970 / ((reserve + amount_in) * 10000)
-    }
+    execute_swap(pool, coin_in, ctx);
+}
 
-    fun execute_swap(_pool: &mut Pool, _coin: Coin<SUI>, _ctx: &mut TxContext) {}
+fun calculate_output(amount_in: u64, reserve: u64): u64 {
+    reserve * amount_in * 9970 / ((reserve + amount_in) * 10000)
+}
 
+fun execute_swap(_pool: &mut Pool, _coin: Coin<SUI>, _ctx: &mut TxContext) {}
 ```
 
 命名建议：错误常量 **`EPascalCase`**，消息与常量含义一致；测试中 `expected_failure` 使用 **`abort_code = module::E…`**，避免魔法数字。

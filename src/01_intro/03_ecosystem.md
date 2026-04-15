@@ -41,23 +41,23 @@ graph TB
 
 **价格层**：DeFi 的基础设施。DEX 提供链上流动性，预言机提供外部价格数据。几乎所有上层协议都依赖这一层。
 
-| 协议 | 类型 | 特点 |
-|------|------|------|
-| Turbos Finance | CL-AMM | 集中流动性，资金效率高 |
-| Cetus | CL-AMM | 集中流动性，支持跨链 |
-| Aftermath Finance | 聚合 AMM | 路由优化，多池聚合 |
-| DeepBook | 订单簿 | 原生订单簿引擎 |
-| Pyth Network | 预言机 | 推送式价格，高频更新 |
-| Switchboard | 预言机 | 拉取式价格，多源聚合 |
+| 协议              | 类型     | 特点                   |
+| ----------------- | -------- | ---------------------- |
+| Turbos Finance    | CL-AMM   | 集中流动性，资金效率高 |
+| Cetus             | CL-AMM   | 集中流动性，支持跨链   |
+| Aftermath Finance | 聚合 AMM | 路由优化，多池聚合     |
+| DeepBook          | 订单簿   | 原生订单簿引擎         |
+| Pyth Network      | 预言机   | 推送式价格，高频更新   |
+| Switchboard       | 预言机   | 拉取式价格，多源聚合   |
 
 **信用层**：DeFi 的核心创新。借贷市场匹配资金供需，CDM 协议通过抵押铸造稳定币。两者都依赖价格层提供的价格数据。
 
-| 协议 | 类型 | 特点 |
-|------|------|------|
-| Scallop | 借贷 | 混合模型，利率动态调整 |
-| Navi Protocol | 借贷 | 隔离池设计 |
-| Bucket Protocol | CDP | SUI 抵押铸造 BUCK |
-| NAVX | CDP | 多资产抵押 |
+| 协议            | 类型 | 特点                   |
+| --------------- | ---- | ---------------------- |
+| Scallop         | 借贷 | 混合模型，利率动态调整 |
+| Navi Protocol   | 借贷 | 隔离池设计             |
+| Bucket Protocol | CDP  | SUI 抵押铸造 BUCK      |
+| NAVX            | CDP  | 多资产抵押             |
 
 **收益层**：在底层资产收益之上叠加收益策略。LSD 将质押的 SUI 转化为可交易的 LST（Liquid Staking Token），收益聚合器将资金分配到多个策略中。
 

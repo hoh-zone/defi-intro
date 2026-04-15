@@ -62,191 +62,188 @@
 
 ```move
 module yield_strategy::grid_trading;
-    use sui::coin::{Self, Coin};
-    use sui::clock::Clock;
-    use sui::balance::{Self, Balance};
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::event;
 
-    #[error]
-    const ENotOwner: vector<u8> = b"Not Owner";
-    #[error]
-    const EInvalidParams: vector<u8> = b"Invalid Params";
-    #[error]
-    const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
-    #[error]
-    const EPriceOutOfRange: vector<u8> = b"Price Out Of Range";
-    #[error]
-    const EGridNotTriggered: vector<u8> = b"Grid Not Triggered";
-    const PRECISION: u64 = 1_000_000_000;
+use sui::balance::{Self, Balance};
+use sui::clock::Clock;
+use sui::coin::{Self, Coin};
+use sui::event;
+use sui::object::{Self, UID};
+use sui::tx_context::TxContext;
 
-    public struct GridConfig has store {
-        upper_price: u64,
-        lower_price: u64,
-        grid_count: u64,
-        grid_spacing: u64,
-        amount_per_grid: u64,
-    }
+#[error]
+const ENotOwner: vector<u8> = b"Not Owner";
+#[error]
+const EInvalidParams: vector<u8> = b"Invalid Params";
+#[error]
+const EInsufficientBalance: vector<u8> = b"Insufficient Balance";
+#[error]
+const EPriceOutOfRange: vector<u8> = b"Price Out Of Range";
+#[error]
+const EGridNotTriggered: vector<u8> = b"Grid Not Triggered";
+const PRECISION: u64 = 1_000_000_000;
 
-    public struct GridState has store {
-        active_grids: vector<bool>,
-        filled_buys: u64,
-        filled_sells: u64,
-        total_profit: u64,
-    }
+public struct GridConfig has store {
+    upper_price: u64,
+    lower_price: u64,
+    grid_count: u64,
+    grid_spacing: u64,
+    amount_per_grid: u64,
+}
 
-    public struct GridBot has key {
-        id: UID,
-        config: GridConfig,
-        state: GridState,
-        base_balance: Balance<BaseCoin>,
-        quote_balance: Balance<QuoteCoin>,
-        last_price: u64,
-        owner: address,
-    }
+public struct GridState has store {
+    active_grids: vector<bool>,
+    filled_buys: u64,
+    filled_sells: u64,
+    total_profit: u64,
+}
 
-    public struct GridFilled has copy, drop {
-        grid_index: u64,
-        side: String,
-        price: u64,
-        amount: u64,
-    }
+public struct GridBot has key {
+    id: UID,
+    config: GridConfig,
+    state: GridState,
+    base_balance: Balance<BaseCoin>,
+    quote_balance: Balance<QuoteCoin>,
+    last_price: u64,
+    owner: address,
+}
 
-    public fun create<BaseCoin, QuoteCoin>(
-        base: Coin<BaseCoin>,
-        quote: Coin<QuoteCoin>,
-        upper_price: u64,
-        lower_price: u64,
-        grid_count: u64,
-        amount_per_grid: u64,
-        initial_price: u64,
-        ctx: &mut TxContext,
-    ) {
-        assert!(upper_price > lower_price, EInvalidParams);
-        assert!(grid_count > 1, EInvalidParams);
-        assert!(initial_price >= lower_price && initial_price <= upper_price, EInvalidParams);
-        let spacing = (upper_price - lower_price) / grid_count;
-        let mut active = vector::empty();
-        let mut i = 0;
-        while (i < grid_count) {
-            let grid_price = lower_price + spacing * i;
-            active.push_back(grid_price < initial_price);
-            i = i + 1;
-        };
-        let bot = GridBot {
-            id: object::new(ctx),
-            config: GridConfig {
-                upper_price,
-                lower_price,
-                grid_count,
-                grid_spacing: spacing,
-                amount_per_grid,
-            },
-            state: GridState {
-                active_grids: active,
-                filled_buys: 0,
-                filled_sells: 0,
-                total_profit: 0,
-            },
-            base_balance: coin::into_balance(base),
-            quote_balance: coin::into_balance(quote),
-            last_price: initial_price,
-            owner: ctx.sender(),
-        };
-        transfer::share_object(bot);
-    }
+public struct GridFilled has copy, drop {
+    grid_index: u64,
+    side: String,
+    price: u64,
+    amount: u64,
+}
 
-    public fun on_price_update(
-        bot: &mut GridBot,
-        new_price: u64,
-        clock: &Clock,
-        ctx: &mut TxContext,
-    ) {
-        assert!(ctx.sender() == bot.owner, ENotOwner);
-        let mut i = 0;
-        while (i < bot.config.grid_count) {
-            let grid_price = bot.config.lower_price + bot.config.grid_spacing * (i + 1);
-            if (bot.state.active_grids[i]) {
-                if (new_price >= grid_price && bot.last_price < grid_price) {
-                    let base_amount = bot.config.amount_per_grid;
-                    if (balance::value(&bot.base_balance) >= base_amount) {
-                        sell_grid(bot, i, base_amount, grid_price, ctx);
-                    };
-                    bot.state.active_grids[i] = false;
+public fun create<BaseCoin, QuoteCoin>(
+    base: Coin<BaseCoin>,
+    quote: Coin<QuoteCoin>,
+    upper_price: u64,
+    lower_price: u64,
+    grid_count: u64,
+    amount_per_grid: u64,
+    initial_price: u64,
+    ctx: &mut TxContext,
+) {
+    assert!(upper_price > lower_price, EInvalidParams);
+    assert!(grid_count > 1, EInvalidParams);
+    assert!(initial_price >= lower_price && initial_price <= upper_price, EInvalidParams);
+    let spacing = (upper_price - lower_price) / grid_count;
+    let mut active = vector::empty();
+    let mut i = 0;
+    while (i < grid_count) {
+        let grid_price = lower_price + spacing * i;
+        active.push_back(grid_price < initial_price);
+        i = i + 1;
+    };
+    let bot = GridBot {
+        id: object::new(ctx),
+        config: GridConfig {
+            upper_price,
+            lower_price,
+            grid_count,
+            grid_spacing: spacing,
+            amount_per_grid,
+        },
+        state: GridState {
+            active_grids: active,
+            filled_buys: 0,
+            filled_sells: 0,
+            total_profit: 0,
+        },
+        base_balance: coin::into_balance(base),
+        quote_balance: coin::into_balance(quote),
+        last_price: initial_price,
+        owner: ctx.sender(),
+    };
+    transfer::share_object(bot);
+}
+
+public fun on_price_update(bot: &mut GridBot, new_price: u64, clock: &Clock, ctx: &mut TxContext) {
+    assert!(ctx.sender() == bot.owner, ENotOwner);
+    let mut i = 0;
+    while (i < bot.config.grid_count) {
+        let grid_price = bot.config.lower_price + bot.config.grid_spacing * (i + 1);
+        if (bot.state.active_grids[i]) {
+            if (new_price >= grid_price && bot.last_price < grid_price) {
+                let base_amount = bot.config.amount_per_grid;
+                if (balance::value(&bot.base_balance) >= base_amount) {
+                    sell_grid(bot, i, base_amount, grid_price, ctx);
                 };
-            } else {
-                if (new_price <= grid_price && bot.last_price > grid_price) {
-                    let quote_needed = bot.config.amount_per_grid * grid_price / PRECISION;
-                    if (balance::value(&bot.quote_balance) >= quote_needed) {
-                        buy_grid(bot, i, quote_needed, grid_price, ctx);
-                    };
-                    bot.state.active_grids[i] = true;
-                };
+                bot.state.active_grids[i] = false;
             };
-            i = i + 1;
+        } else {
+            if (new_price <= grid_price && bot.last_price > grid_price) {
+                let quote_needed = bot.config.amount_per_grid * grid_price / PRECISION;
+                if (balance::value(&bot.quote_balance) >= quote_needed) {
+                    buy_grid(bot, i, quote_needed, grid_price, ctx);
+                };
+                bot.state.active_grids[i] = true;
+            };
         };
-        bot.last_price = new_price;
-    }
+        i = i + 1;
+    };
+    bot.last_price = new_price;
+}
 
-    fun sell_grid(
-        bot: &mut GridBot,
-        grid_index: u64,
-        base_amount: u64,
-        grid_price: u64,
-        ctx: &mut TxContext,
-    ) {
-        let base_coin = coin::take(&mut bot.base_balance, base_amount, ctx);
-        let quote_value = base_amount * grid_price / PRECISION;
-        bot.state.filled_sells = bot.state.filled_sells + 1;
-        bot.state.total_profit = bot.state.total_profit + bot.config.grid_spacing * base_amount / PRECISION;
-        event::emit(GridFilled {
-            grid_index,
-            side: string::utf8(b"sell"),
-            price: grid_price,
-            amount: base_amount,
-        });
-        coin::destroy_zero(base_coin);
-    }
+fun sell_grid(
+    bot: &mut GridBot,
+    grid_index: u64,
+    base_amount: u64,
+    grid_price: u64,
+    ctx: &mut TxContext,
+) {
+    let base_coin = coin::take(&mut bot.base_balance, base_amount, ctx);
+    let quote_value = base_amount * grid_price / PRECISION;
+    bot.state.filled_sells = bot.state.filled_sells + 1;
+    bot.state.total_profit =
+        bot.state.total_profit + bot.config.grid_spacing * base_amount / PRECISION;
+    event::emit(GridFilled {
+        grid_index,
+        side: string::utf8(b"sell"),
+        price: grid_price,
+        amount: base_amount,
+    });
+    coin::destroy_zero(base_coin);
+}
 
-    fun buy_grid(
-        bot: &mut GridBot,
-        grid_index: u64,
-        quote_amount: u64,
-        grid_price: u64,
-        ctx: &mut TxContext,
-    ) {
-        let quote_coin = coin::take(&mut bot.quote_balance, quote_amount, ctx);
-        let base_amount = quote_amount * PRECISION / grid_price;
-        bot.state.filled_buys = bot.state.filled_buys + 1;
-        event::emit(GridFilled {
-            grid_index,
-            side: string::utf8(b"buy"),
-            price: grid_price,
-            amount: base_amount,
-        });
-        coin::destroy_zero(quote_coin);
-    }
+fun buy_grid(
+    bot: &mut GridBot,
+    grid_index: u64,
+    quote_amount: u64,
+    grid_price: u64,
+    ctx: &mut TxContext,
+) {
+    let quote_coin = coin::take(&mut bot.quote_balance, quote_amount, ctx);
+    let base_amount = quote_amount * PRECISION / grid_price;
+    bot.state.filled_buys = bot.state.filled_buys + 1;
+    event::emit(GridFilled {
+        grid_index,
+        side: string::utf8(b"buy"),
+        price: grid_price,
+        amount: base_amount,
+    });
+    coin::destroy_zero(quote_coin);
+}
 
-    public fun grid_profit(bot: &GridBot): u64 {
-        bot.state.total_profit
-    }
+public fun grid_profit(bot: &GridBot): u64 {
+    bot.state.total_profit
+}
 
-    public fun grid_stats(bot: &GridBot): (u64, u64, u64) {
-        (bot.state.filled_buys, bot.state.filled_sells, bot.state.total_profit)
-    }
+public fun grid_stats(bot: &GridBot): (u64, u64, u64) {
+    (bot.state.filled_buys, bot.state.filled_sells, bot.state.total_profit)
+}
 
-    public fun withdraw<BaseCoin, QuoteCoin>(
-        bot: &mut GridBot,
-        base_amount: u64,
-        quote_amount: u64,
-        ctx: &mut TxContext,
-    ): (Coin<BaseCoin>, Coin<QuoteCoin>) {
-        assert!(ctx.sender() == bot.owner, ENotOwner);
-        let base = coin::take(&mut bot.base_balance, base_amount, ctx);
-        let quote = coin::take(&mut bot.quote_balance, quote_amount, ctx);
-        (base, quote)
-    }
+public fun withdraw<BaseCoin, QuoteCoin>(
+    bot: &mut GridBot,
+    base_amount: u64,
+    quote_amount: u64,
+    ctx: &mut TxContext,
+): (Coin<BaseCoin>, Coin<QuoteCoin>) {
+    assert!(ctx.sender() == bot.owner, ENotOwner);
+    let base = coin::take(&mut bot.base_balance, base_amount, ctx);
+    let quote = coin::take(&mut bot.quote_balance, quote_amount, ctx);
+    (base, quote)
+}
 ```
 
 ## 网格交易的收益估算
@@ -278,10 +275,10 @@ module yield_strategy::grid_trading;
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
+| 风险     | 描述                                           |
+| -------- | ---------------------------------------------- |
 | 单边行情 | 价格单方向突破区间，网格停止工作且持有单边资产 |
-| 资金效率 | 部分资金长期闲置（远离当前价的网格不会触发） |
-| Gas 成本 | 每次网格触发需要一笔交易，Sui gas 低但不是零 |
-| 滑点 | 实际成交价可能偏离网格价 |
-| 延迟 | 链上价格更新有延迟，可能错过最优成交点 |
+| 资金效率 | 部分资金长期闲置（远离当前价的网格不会触发）   |
+| Gas 成本 | 每次网格触发需要一笔交易，Sui gas 低但不是零   |
+| 滑点     | 实际成交价可能偏离网格价                       |
+| 延迟     | 链上价格更新有延迟，可能错过最优成交点         |

@@ -151,15 +151,15 @@ fun buy_internal<T>(
 
 ## 边界情况处理
 
-| 场景 | 结果 | 原因 |
-|------|------|------|
-| `shares = 0` | 失败 | `assert!(shares > 0)` |
-| 过了截止时间 | 失败 | `clock > trading_closes_ms` |
-| 已结算 | 失败 | `resolved != STATUS_TRADING` |
-| 付款不足 | 失败 | `coin::value < need` |
-| 付款刚好 | 成功 | 空 Coin 被 destroy_zero |
-| 多付 | 成功 | 剩余退回发送者 |
-| q + shares 导致 u128 溢出 | 取决于数值 | 极大 q 时 exp 计算可能失败 |
+| 场景                      | 结果       | 原因                         |
+| ------------------------- | ---------- | ---------------------------- |
+| `shares = 0`              | 失败       | `assert!(shares > 0)`        |
+| 过了截止时间              | 失败       | `clock > trading_closes_ms`  |
+| 已结算                    | 失败       | `resolved != STATUS_TRADING` |
+| 付款不足                  | 失败       | `coin::value < need`         |
+| 付款刚好                  | 成功       | 空 Coin 被 destroy_zero      |
+| 多付                      | 成功       | 剩余退回发送者               |
+| q + shares 导致 u128 溢出 | 取决于数值 | 极大 q 时 exp 计算可能失败   |
 
 ## 自检
 

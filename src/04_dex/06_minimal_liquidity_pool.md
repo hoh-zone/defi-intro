@@ -132,6 +132,7 @@ public struct LP<phantom A, phantom B> has key, store {
 ```
 
 `key + store` 的能力意味着 LP Token：
+
 - 可以被转移（`transfer::transfer`）
 - 可以被存储在其他对象中
 - 可以在 Kiosk 中出售

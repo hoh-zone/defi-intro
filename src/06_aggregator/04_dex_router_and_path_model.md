@@ -6,12 +6,12 @@
 
 ```typescript
 export interface DexRouter {
-  swap(
-    txb: Transaction,
-    flattenedPath: FlattenedPath,
-    swapContext: TransactionObjectArgument,
-    _extends?: Extends
-  ): void
+    swap(
+        txb: Transaction,
+        flattenedPath: FlattenedPath,
+        swapContext: TransactionObjectArgument,
+        _extends?: Extends,
+    ): void;
 }
 ```
 
@@ -30,15 +30,15 @@ export interface DexRouter {
 
 报价 API 解析后（逻辑见开源 `src/api.ts`），一跳通常包含：
 
-| 字段 | 用途 |
-|------|------|
-| `id` | 池 / 市场 / 注册表对象 ID |
-| `from` / `target` | 输入、输出 **Move 类型字符串** |
-| `direction` | 池内方向（与 CLMM 的 A→B 定义绑定） |
-| `amount_in` / `amount_out` | 链下求解器给出的 **计划量** |
-| `published_at` | 本跳应调用的 **包地址**（升级后池可能绑定新包） |
-| `provider` | 选用哪个 `DexRouter` 实现 |
-| `extended_details` | 协议私有扩展（DeepBook 常见） |
+| 字段                       | 用途                                            |
+| -------------------------- | ----------------------------------------------- |
+| `id`                       | 池 / 市场 / 注册表对象 ID                       |
+| `from` / `target`          | 输入、输出 **Move 类型字符串**                  |
+| `direction`                | 池内方向（与 CLMM 的 A→B 定义绑定）             |
+| `amount_in` / `amount_out` | 链下求解器给出的 **计划量**                     |
+| `published_at`             | 本跳应调用的 **包地址**（升级后池可能绑定新包） |
+| `provider`                 | 选用哪个 `DexRouter` 实现                       |
+| `extended_details`         | 协议私有扩展（DeepBook 常见）                   |
 
 **关键点**：`published_at` 不是装饰字段——PTB 里的 `target` 是  
 `{published_at}::模块::函数`，填错会直接 **找不到函数** 或 **类型不匹配 abort**。
@@ -65,8 +65,8 @@ export interface DexRouter {
 
 ## 小结
 
-1. **DexRouter** = 把 **FlattenedPath** 编译成 **一条 `moveCall`**；  
-2. **`published_at` + type args + 参数顺序** 错一个就整笔失败；  
+1. **DexRouter** = 把 **FlattenedPath** 编译成 **一条 `moveCall`**；
+2. **`published_at` + type args + 参数顺序** 错一个就整笔失败；
 3. **`MAX_AMOUNT_IN`** 是处理 **中间币舍入** 的常见手段。
 
 下一节：**Cetus CLMM** 的 `CetusRouter` 如何把这一切接到 **`{pkg}::cetus::swap`**。

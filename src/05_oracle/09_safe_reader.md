@@ -16,147 +16,148 @@
 
 ```move
 module oracle::safe_reader;
-    use sui::clock::Clock;
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::event;
 
-    #[error]
-    const EStale_PRICE: vector<u8> = b"Stale_PRICE";
-    #[error]
-    const EPriceDeviation: vector<u8> = b"Price Deviation";
-    #[error]
-    const ELowConfidence: vector<u8> = b"Low Confidence";
-    #[error]
-    const EEmergencyPause: vector<u8> = b"Emergency Pause";
+use sui::clock::Clock;
+use sui::event;
+use sui::object::{Self, UID};
+use sui::tx_context::TxContext;
 
-    public struct SafeOracleConfig has store {
-        max_staleness_ms: u64,
-        max_deviation_bps: u64,
-        min_confidence_ratio_bps: u64,
-        fallback_price: u64,
-        last_good_price: u64,
-        emergency_admin: address,
-        paused: bool,
-    }
+#[error]
+const EStale_PRICE: vector<u8> = b"Stale_PRICE";
+#[error]
+const EPriceDeviation: vector<u8> = b"Price Deviation";
+#[error]
+const ELowConfidence: vector<u8> = b"Low Confidence";
+#[error]
+const EEmergencyPause: vector<u8> = b"Emergency Pause";
 
-    public struct SafePriceReader has key {
-        id: UID,
-        config: SafeOracleConfig,
-        price_source: String,
-    }
+public struct SafeOracleConfig has store {
+    max_staleness_ms: u64,
+    max_deviation_bps: u64,
+    min_confidence_ratio_bps: u64,
+    fallback_price: u64,
+    last_good_price: u64,
+    emergency_admin: address,
+    paused: bool,
+}
 
-    public struct PriceRejected has copy, drop {
-        reason: String,
-        oracle_price: u64,
-        last_good_price: u64,
-        timestamp_ms: u64,
-    }
+public struct SafePriceReader has key {
+    id: UID,
+    config: SafeOracleConfig,
+    price_source: String,
+}
 
-    public fun create(
-        max_staleness_ms: u64,
-        max_deviation_bps: u64,
-        min_confidence_ratio_bps: u64,
-        initial_price: u64,
-        ctx: &mut TxContext,
-    ) {
-        let reader = SafePriceReader {
-            id: object::new(ctx),
-            config: SafeOracleConfig {
-                max_staleness_ms,
-                max_deviation_bps,
-                min_confidence_ratio_bps,
-                fallback_price: initial_price,
-                last_good_price: initial_price,
-                emergency_admin: ctx.sender(),
-                paused: false,
-            },
-            price_source: string::utf8(b"pyth"),
-        };
-        transfer::share_object(reader);
-    }
+public struct PriceRejected has copy, drop {
+    reason: String,
+    oracle_price: u64,
+    last_good_price: u64,
+    timestamp_ms: u64,
+}
 
-    public fun safe_read(
-        reader: &mut SafePriceReader,
-        raw_price: u64,
-        confidence: u64,
-        publish_time_ms: u64,
-        clock: &Clock,
-    ): u64 {
-        assert!(!reader.config.paused, EEmergencyPause);
+public fun create(
+    max_staleness_ms: u64,
+    max_deviation_bps: u64,
+    min_confidence_ratio_bps: u64,
+    initial_price: u64,
+    ctx: &mut TxContext,
+) {
+    let reader = SafePriceReader {
+        id: object::new(ctx),
+        config: SafeOracleConfig {
+            max_staleness_ms,
+            max_deviation_bps,
+            min_confidence_ratio_bps,
+            fallback_price: initial_price,
+            last_good_price: initial_price,
+            emergency_admin: ctx.sender(),
+            paused: false,
+        },
+        price_source: string::utf8(b"pyth"),
+    };
+    transfer::share_object(reader);
+}
 
-        let now = clock.timestamp_ms();
+public fun safe_read(
+    reader: &mut SafePriceReader,
+    raw_price: u64,
+    confidence: u64,
+    publish_time_ms: u64,
+    clock: &Clock,
+): u64 {
+    assert!(!reader.config.paused, EEmergencyPause);
 
-        if (now > publish_time_ms + reader.config.max_staleness_ms) {
-            event::emit(PriceRejected {
-                reason: string::utf8(b"stale"),
-                oracle_price: raw_price,
-                last_good_price: reader.config.last_good_price,
-                timestamp_ms: now,
-            });
-            return reader.config.fallback_price
-        };
+    let now = clock.timestamp_ms();
 
-        let deviation = if (raw_price > reader.config.last_good_price) {
-            (raw_price - reader.config.last_good_price) * 10000 / reader.config.last_good_price
-        } else {
-            (reader.config.last_good_price - raw_price) * 10000 / raw_price
-        };
-        if (deviation > reader.config.max_deviation_bps) {
-            event::emit(PriceRejected {
-                reason: string::utf8(b"deviation"),
-                oracle_price: raw_price,
-                last_good_price: reader.config.last_good_price,
-                timestamp_ms: now,
-            });
-            return reader.config.last_good_price
-        };
+    if (now > publish_time_ms + reader.config.max_staleness_ms) {
+        event::emit(PriceRejected {
+            reason: string::utf8(b"stale"),
+            oracle_price: raw_price,
+            last_good_price: reader.config.last_good_price,
+            timestamp_ms: now,
+        });
+        return reader.config.fallback_price
+    };
 
-        if (confidence * 10000 > raw_price * reader.config.min_confidence_ratio_bps) {
-            event::emit(PriceRejected {
-                reason: string::utf8(b"low_confidence"),
-                oracle_price: raw_price,
-                last_good_price: reader.config.last_good_price,
-                timestamp_ms: now,
-            });
-            return reader.config.last_good_price
-        };
+    let deviation = if (raw_price > reader.config.last_good_price) {
+        (raw_price - reader.config.last_good_price) * 10000 / reader.config.last_good_price
+    } else {
+        (reader.config.last_good_price - raw_price) * 10000 / raw_price
+    };
+    if (deviation > reader.config.max_deviation_bps) {
+        event::emit(PriceRejected {
+            reason: string::utf8(b"deviation"),
+            oracle_price: raw_price,
+            last_good_price: reader.config.last_good_price,
+            timestamp_ms: now,
+        });
+        return reader.config.last_good_price
+    };
 
-        reader.config.last_good_price = raw_price;
-        raw_price
-    }
+    if (confidence * 10000 > raw_price * reader.config.min_confidence_ratio_bps) {
+        event::emit(PriceRejected {
+            reason: string::utf8(b"low_confidence"),
+            oracle_price: raw_price,
+            last_good_price: reader.config.last_good_price,
+            timestamp_ms: now,
+        });
+        return reader.config.last_good_price
+    };
 
-    public fun update_config(
-        reader: &mut SafePriceReader,
-        max_staleness_ms: u64,
-        max_deviation_bps: u64,
-        min_confidence_ratio_bps: u64,
-        ctx: &mut TxContext,
-    ) {
-        assert!(ctx.sender() == reader.config.emergency_admin, 0);
-        reader.config.max_staleness_ms = max_staleness_ms;
-        reader.config.max_deviation_bps = max_deviation_bps;
-        reader.config.min_confidence_ratio_bps = min_confidence_ratio_bps;
-    }
+    reader.config.last_good_price = raw_price;
+    raw_price
+}
 
-    public fun emergency_pause(reader: &mut SafePriceReader, ctx: &mut TxContext) {
-        assert!(ctx.sender() == reader.config.emergency_admin, 0);
-        reader.config.paused = true;
-    }
+public fun update_config(
+    reader: &mut SafePriceReader,
+    max_staleness_ms: u64,
+    max_deviation_bps: u64,
+    min_confidence_ratio_bps: u64,
+    ctx: &mut TxContext,
+) {
+    assert!(ctx.sender() == reader.config.emergency_admin, 0);
+    reader.config.max_staleness_ms = max_staleness_ms;
+    reader.config.max_deviation_bps = max_deviation_bps;
+    reader.config.min_confidence_ratio_bps = min_confidence_ratio_bps;
+}
 
-    public fun emergency_unpause(reader: &mut SafePriceReader, ctx: &mut TxContext) {
-        assert!(ctx.sender() == reader.config.emergency_admin, 0);
-        reader.config.paused = false;
-    }
+public fun emergency_pause(reader: &mut SafePriceReader, ctx: &mut TxContext) {
+    assert!(ctx.sender() == reader.config.emergency_admin, 0);
+    reader.config.paused = true;
+}
 
-    public fun set_fallback_price(reader: &mut SafePriceReader, price: u64, ctx: &mut TxContext) {
-        assert!(ctx.sender() == reader.config.emergency_admin, 0);
-        reader.config.fallback_price = price;
-    }
+public fun emergency_unpause(reader: &mut SafePriceReader, ctx: &mut TxContext) {
+    assert!(ctx.sender() == reader.config.emergency_admin, 0);
+    reader.config.paused = false;
+}
 
-    public fun get_last_good_price(reader: &SafePriceReader): u64 {
-        reader.config.last_good_price
-    }
+public fun set_fallback_price(reader: &mut SafePriceReader, price: u64, ctx: &mut TxContext) {
+    assert!(ctx.sender() == reader.config.emergency_admin, 0);
+    reader.config.fallback_price = price;
+}
+
+public fun get_last_good_price(reader: &SafePriceReader): u64 {
+    reader.config.last_good_price
+}
 ```
 
 ## 四层防御的逻辑流
@@ -177,11 +178,11 @@ module oracle::safe_reader;
 
 ## 参数建议
 
-| 参数 | 保守值 | 激进值 | 说明 |
-|---|---|---|---|
-| max_staleness_ms | 60,000 (1 分钟) | 300,000 (5 分钟) | 越短越安全，但更容易触发 fallback |
-| max_deviation_bps | 200 (2%) | 500 (5%) | 越小越安全，但剧烈波动时会卡住 |
-| min_confidence_ratio_bps | 100 (1%) | 300 (3%) | 置信区间不能超过价格的这个比例 |
+| 参数                     | 保守值          | 激进值           | 说明                              |
+| ------------------------ | --------------- | ---------------- | --------------------------------- |
+| max_staleness_ms         | 60,000 (1 分钟) | 300,000 (5 分钟) | 越短越安全，但更容易触发 fallback |
+| max_deviation_bps        | 200 (2%)        | 500 (5%)         | 越小越安全，但剧烈波动时会卡住    |
+| min_confidence_ratio_bps | 100 (1%)        | 300 (3%)         | 置信区间不能超过价格的这个比例    |
 
 ## Fallback 策略
 
@@ -205,9 +206,9 @@ module oracle::safe_reader;
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 过度保守 | 参数设太紧，频繁触发 fallback，协议实际停摆 |
-| fallback 价格过时 | 如果长时间使用 fallback，价格严重偏离 |
-| 紧急权限滥用 | emergency_admin 可以暂停或设置任意 fallback 价格 |
-| 事件未监控 | PriceRejected 事件如果不被监控，攻击可能持续进行 |
+| 风险              | 描述                                             |
+| ----------------- | ------------------------------------------------ |
+| 过度保守          | 参数设太紧，频繁触发 fallback，协议实际停摆      |
+| fallback 价格过时 | 如果长时间使用 fallback，价格严重偏离            |
+| 紧急权限滥用      | emergency_admin 可以暂停或设置任意 fallback 价格 |
+| 事件未监控        | PriceRejected 事件如果不被监控，攻击可能持续进行 |

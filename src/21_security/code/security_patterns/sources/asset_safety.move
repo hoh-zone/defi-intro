@@ -1,6 +1,7 @@
 module security_patterns::asset_safety;
-use sui::coin::{Self, Coin};
+
 use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin};
 use sui::object::{Self, UID, ID};
 use sui::transfer;
 use sui::tx_context::{Self, TxContext};
@@ -44,7 +45,12 @@ public fun deposit<T>(pool: &mut SecurePool<T>, coin: Coin<T>) {
 }
 
 /// Withdraw with invariant check
-public fun withdraw<T>(cap: &PoolCap, pool: &mut SecurePool<T>, amount: u64, ctx: &mut TxContext): Coin<T> {
+public fun withdraw<T>(
+    cap: &PoolCap,
+    pool: &mut SecurePool<T>,
+    amount: u64,
+    ctx: &mut TxContext,
+): Coin<T> {
     assert!(object::id(pool) == cap.pool_id, EUnauthorized);
     check_invariant(pool);
     assert!(balance::value(&pool.balance) >= amount, EInsufficientBalance);
@@ -72,5 +78,7 @@ public fun sweep_dust<T>(cap: &PoolCap, pool: &mut SecurePool<T>, ctx: &mut TxCo
 }
 
 public fun balance<T>(pool: &SecurePool<T>): u64 { balance::value(&pool.balance) }
+
 public fun total_deposits<T>(pool: &SecurePool<T>): u64 { pool.total_deposits }
+
 public fun total_withdrawals<T>(pool: &SecurePool<T>): u64 { pool.total_withdrawals }

@@ -32,168 +32,165 @@ Vault Token（份额代币）：
 
 ```move
 module yield_strategy::yield_vault;
-    use sui::coin::{Self, Coin};
-    use sui::balance::{Self, Balance};
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::event;
 
-    #[error]
-    const ENotOwner: vector<u8> = b"Not Owner";
-    #[error]
-    const EZeroDeposit: vector<u8> = b"Zero Deposit";
-    #[error]
-    const EZeroWithdraw: vector<u8> = b"Zero Withdraw";
-    #[error]
-    const EInsufficientShares: vector<u8> = b"Insufficient Shares";
-    #[error]
-    const EStrategyFailed: vector<u8> = b"Strategy Failed";
-    const PRECISION: u64 = 1_000_000_000;
+use sui::balance::{Self, Balance};
+use sui::coin::{Self, Coin};
+use sui::event;
+use sui::object::{Self, UID};
+use sui::tx_context::TxContext;
 
-    public struct Vault<phantom Asset> has key {
-        id: UID,
-        balance: Balance<Asset>,
-        total_shares: u64,
-        strategy: Strategy,
-        fee_rate_bps: u64,
-        performance_fee_bps: u64,
-        fees_collected: Balance<Asset>,
-        owner: address,
-    }
+#[error]
+const ENotOwner: vector<u8> = b"Not Owner";
+#[error]
+const EZeroDeposit: vector<u8> = b"Zero Deposit";
+#[error]
+const EZeroWithdraw: vector<u8> = b"Zero Withdraw";
+#[error]
+const EInsufficientShares: vector<u8> = b"Insufficient Shares";
+#[error]
+const EStrategyFailed: vector<u8> = b"Strategy Failed";
+const PRECISION: u64 = 1_000_000_000;
 
-    public struct Strategy has store {
-        target_protocol: String,
-        last_harvest_ms: u64,
-        harvest_interval_ms: u64,
-        total_earned: u64,
-    }
+public struct Vault<phantom Asset> has key {
+    id: UID,
+    balance: Balance<Asset>,
+    total_shares: u64,
+    strategy: Strategy,
+    fee_rate_bps: u64,
+    performance_fee_bps: u64,
+    fees_collected: Balance<Asset>,
+    owner: address,
+}
 
-    public struct VaultShare has store {
-        shares: u64,
-    }
+public struct Strategy has store {
+    target_protocol: String,
+    last_harvest_ms: u64,
+    harvest_interval_ms: u64,
+    total_earned: u64,
+}
 
-    public struct Deposited has copy, drop {
-        user: address,
-        amount: u64,
-        shares_minted: u64,
-    }
+public struct VaultShare has store {
+    shares: u64,
+}
 
-    public struct Withdrawn has copy, drop {
-        user: address,
-        shares_burned: u64,
-        amount: u64,
-    }
+public struct Deposited has copy, drop {
+    user: address,
+    amount: u64,
+    shares_minted: u64,
+}
 
-    public struct Harvested has copy, drop {
-        profit: u64,
-        performance_fee: u64,
-    }
+public struct Withdrawn has copy, drop {
+    user: address,
+    shares_burned: u64,
+    amount: u64,
+}
 
-    public fun create<Asset>(
-        initial: Coin<Asset>,
-        fee_rate_bps: u64,
-        performance_fee_bps: u64,
-        ctx: &mut TxContext,
-    ) {
-        let balance = coin::into_balance(initial);
-        let vault = Vault<Asset> {
-            id: object::new(ctx),
-            balance,
-            total_shares: PRECISION,
-            strategy: Strategy {
-                target_protocol: string::utf8(b"auto"),
-                last_harvest_ms: 0,
-                harvest_interval_ms: 86_400_000,
-                total_earned: 0,
-            },
-            fee_rate_bps,
-            performance_fee_bps,
-            fees_collected: balance::zero(),
-            owner: ctx.sender(),
-        };
-        transfer::share_object(vault);
-    }
+public struct Harvested has copy, drop {
+    profit: u64,
+    performance_fee: u64,
+}
 
-    public fun price_per_share<Asset>(vault: &Vault<Asset>): u64 {
-        if (vault.total_shares == 0) { return PRECISION };
-        vault.balance.value() * PRECISION / vault.total_shares
-    }
+public fun create<Asset>(
+    initial: Coin<Asset>,
+    fee_rate_bps: u64,
+    performance_fee_bps: u64,
+    ctx: &mut TxContext,
+) {
+    let balance = coin::into_balance(initial);
+    let vault = Vault<Asset> {
+        id: object::new(ctx),
+        balance,
+        total_shares: PRECISION,
+        strategy: Strategy {
+            target_protocol: string::utf8(b"auto"),
+            last_harvest_ms: 0,
+            harvest_interval_ms: 86_400_000,
+            total_earned: 0,
+        },
+        fee_rate_bps,
+        performance_fee_bps,
+        fees_collected: balance::zero(),
+        owner: ctx.sender(),
+    };
+    transfer::share_object(vault);
+}
 
-    public fun deposit<Asset>(
-        vault: &mut Vault<Asset>,
-        coin: Coin<Asset>,
-        ctx: &mut TxContext,
-    ) {
-        let amount = coin.value();
-        assert!(amount > 0, EZeroDeposit);
-        let shares = if (vault.total_shares == 0) {
-            amount * PRECISION / PRECISION
-        } else {
-            amount * vault.total_shares / vault.balance.value()
-        };
-        assert!(shares > 0, EZeroDeposit);
-        balance::join(&mut vault.balance, coin::into_balance(coin));
-        vault.total_shares = vault.total_shares + shares;
-        event::emit(Deposited {
-            user: ctx.sender(),
-            amount,
-            shares_minted: shares,
-        });
-    }
+public fun price_per_share<Asset>(vault: &Vault<Asset>): u64 {
+    if (vault.total_shares == 0) { return PRECISION };
+    vault.balance.value() * PRECISION / vault.total_shares
+}
 
-    public fun withdraw<Asset>(
-        vault: &mut Vault<Asset>,
-        shares: u64,
-        ctx: &mut TxContext,
-    ): Coin<Asset> {
-        assert!(shares > 0, EZeroWithdraw);
-        assert!(shares <= vault.total_shares, EInsufficientShares);
-        let amount = shares * vault.balance.value() / vault.total_shares;
-        let withdrawal_fee = amount * vault.fee_rate_bps / 10000;
-        let net_amount = amount - withdrawal_fee;
-        balance::join(&mut vault.fees_collected, balance::split(balance::split(&mut vault.balance, amount), withdrawal_fee));
-        vault.total_shares = vault.total_shares - shares;
-        event::emit(Withdrawn {
-            user: ctx.sender(),
-            shares_burned: shares,
-            amount: net_amount,
-        });
-        coin::from_balance(balance::split(&mut vault.balance, net_amount), ctx)
-    }
+public fun deposit<Asset>(vault: &mut Vault<Asset>, coin: Coin<Asset>, ctx: &mut TxContext) {
+    let amount = coin.value();
+    assert!(amount > 0, EZeroDeposit);
+    let shares = if (vault.total_shares == 0) {
+        amount * PRECISION / PRECISION
+    } else {
+        amount * vault.total_shares / vault.balance.value()
+    };
+    assert!(shares > 0, EZeroDeposit);
+    balance::join(&mut vault.balance, coin::into_balance(coin));
+    vault.total_shares = vault.total_shares + shares;
+    event::emit(Deposited {
+        user: ctx.sender(),
+        amount,
+        shares_minted: shares,
+    });
+}
 
-    public fun harvest<Asset>(
-        vault: &mut Vault<Asset>,
-        profit: Coin<Asset>,
-        clock_ms: u64,
-        ctx: &mut TxContext,
-    ) {
-        assert!(ctx.sender() == vault.owner, ENotOwner);
-        let profit_amount = coin::value(&profit);
-        let perf_fee = profit_amount * vault.performance_fee_bps / 10000;
-        let net_profit = profit_amount - perf_fee;
-        let fee_balance = coin::split(&mut profit, perf_fee, ctx);
-        balance::join(&mut vault.fees_collected, coin::into_balance(fee_balance));
-        balance::join(&mut vault.balance, coin::into_balance(profit));
-        vault.strategy.total_earned = vault.strategy.total_earned + net_profit;
-        vault.strategy.last_harvest_ms = clock_ms;
-        event::emit(Harvested {
-            profit: net_profit,
-            performance_fee: perf_fee,
-        });
-    }
+public fun withdraw<Asset>(
+    vault: &mut Vault<Asset>,
+    shares: u64,
+    ctx: &mut TxContext,
+): Coin<Asset> {
+    assert!(shares > 0, EZeroWithdraw);
+    assert!(shares <= vault.total_shares, EInsufficientShares);
+    let amount = shares * vault.balance.value() / vault.total_shares;
+    let withdrawal_fee = amount * vault.fee_rate_bps / 10000;
+    let net_amount = amount - withdrawal_fee;
+    balance::join(
+        &mut vault.fees_collected,
+        balance::split(balance::split(&mut vault.balance, amount), withdrawal_fee),
+    );
+    vault.total_shares = vault.total_shares - shares;
+    event::emit(Withdrawn {
+        user: ctx.sender(),
+        shares_burned: shares,
+        amount: net_amount,
+    });
+    coin::from_balance(balance::split(&mut vault.balance, net_amount), ctx)
+}
 
-    public fun total_assets<Asset>(vault: &Vault<Asset>): u64 {
-        vault.balance.value()
-    }
+public fun harvest<Asset>(
+    vault: &mut Vault<Asset>,
+    profit: Coin<Asset>,
+    clock_ms: u64,
+    ctx: &mut TxContext,
+) {
+    assert!(ctx.sender() == vault.owner, ENotOwner);
+    let profit_amount = coin::value(&profit);
+    let perf_fee = profit_amount * vault.performance_fee_bps / 10000;
+    let net_profit = profit_amount - perf_fee;
+    let fee_balance = coin::split(&mut profit, perf_fee, ctx);
+    balance::join(&mut vault.fees_collected, coin::into_balance(fee_balance));
+    balance::join(&mut vault.balance, coin::into_balance(profit));
+    vault.strategy.total_earned = vault.strategy.total_earned + net_profit;
+    vault.strategy.last_harvest_ms = clock_ms;
+    event::emit(Harvested {
+        profit: net_profit,
+        performance_fee: perf_fee,
+    });
+}
 
-    public fun collect_fees<Asset>(
-        vault: &mut Vault<Asset>,
-        ctx: &mut TxContext,
-    ): Coin<Asset> {
-        assert!(ctx.sender() == vault.owner, ENotOwner);
-        let amount = balance::value(&vault.fees_collected);
-        coin::take(&mut vault.fees_collected, amount, ctx)
-    }
+public fun total_assets<Asset>(vault: &Vault<Asset>): u64 {
+    vault.balance.value()
+}
+
+public fun collect_fees<Asset>(vault: &mut Vault<Asset>, ctx: &mut TxContext): Coin<Asset> {
+    assert!(ctx.sender() == vault.owner, ENotOwner);
+    let amount = balance::value(&vault.fees_collected);
+    coin::take(&mut vault.fees_collected, amount, ctx)
+}
 ```
 
 ## Vault 的收益来源链
@@ -230,10 +227,10 @@ Vault 的价值在于自动化这个过程。
 
 ## 风险分析
 
-| 风险 | 描述 |
-|---|---|
-| 策略失败 | 底层策略（如借贷协议）出问题，Vault 资金受损 |
-| 管理员作恶 | harvest 函数的管理员权限可能被滥用 |
-| 费用过高 | performance fee + withdrawal fee 可能吃掉大部分收益 |
-| 复投滑点 | 自动复投时在 DEX 换币有滑点 |
-| 资金锁定 | 策略侧可能有提款延迟 |
+| 风险       | 描述                                                |
+| ---------- | --------------------------------------------------- |
+| 策略失败   | 底层策略（如借贷协议）出问题，Vault 资金受损        |
+| 管理员作恶 | harvest 函数的管理员权限可能被滥用                  |
+| 费用过高   | performance fee + withdrawal fee 可能吃掉大部分收益 |
+| 复投滑点   | 自动复投时在 DEX 换币有滑点                         |
+| 资金锁定   | 策略侧可能有提款延迟                                |

@@ -1,4 +1,5 @@
 module security_patterns::integer_safety;
+
 #[error]
 const EOverflow: vector<u8> = b"Overflow";
 #[error]
