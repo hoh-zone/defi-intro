@@ -18,7 +18,12 @@ function run() {
   hljs.registerLanguage('move', suiMove);
 
   document.querySelectorAll('pre code').forEach(function (block) {
-    hljs.highlightElement(block);
+    // mdBook ships Highlight.js 10.x (highlightBlock); v11+ uses highlightElement
+    if (typeof hljs.highlightElement === 'function') {
+      hljs.highlightElement(block);
+    } else if (typeof hljs.highlightBlock === 'function') {
+      hljs.highlightBlock(block);
+    }
   });
 }
 

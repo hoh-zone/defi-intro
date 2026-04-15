@@ -613,7 +613,11 @@
         hljs.registerLanguage("move2024", suiMove);
         hljs.registerLanguage("move", suiMove);
         document.querySelectorAll("pre code").forEach(function(block) {
-          hljs.highlightElement(block);
+          if (typeof hljs.highlightElement === "function") {
+            hljs.highlightElement(block);
+          } else if (typeof hljs.highlightBlock === "function") {
+            hljs.highlightBlock(block);
+          }
         });
       }
       if (document.readyState === "loading") {
