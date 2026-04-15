@@ -1,0 +1,8 @@
+{
+  "printWidth": 100,
+  "tabWidth": 4,
+  "useModuleLabel": true,
+  "autoGroupImports": "module",
+  "wrapComments": false,
+  "plugins": ["@mysten/prettier-plugin-move"]
+}

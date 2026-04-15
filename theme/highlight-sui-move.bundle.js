@@ -128,10 +128,10 @@
         // sui::event
         "emit"
       ];
-      function buildGrammarV11(hljs2) {
-        const regex = hljs2.regex;
-        const BLOCK_COMMENT = hljs2.COMMENT(/\/\*/, /\*\//, { contains: ["self"] });
-        const DOC_COMMENT = hljs2.COMMENT(/\/\/\//, /$/, {
+      function buildGrammarV11(hljs) {
+        const regex = hljs.regex;
+        const BLOCK_COMMENT = hljs.COMMENT(/\/\*/, /\*\//, { contains: ["self"] });
+        const DOC_COMMENT = hljs.COMMENT(/\/\/\//, /$/, {
           contains: [
             {
               scope: "doctag",
@@ -139,7 +139,7 @@
             }
           ]
         });
-        const LINE_COMMENT = hljs2.COMMENT(/\/\//, /$/, {});
+        const LINE_COMMENT = hljs.COMMENT(/\/\//, /$/, {});
         const BYTE_STRING = {
           scope: "string",
           begin: /b"/,
@@ -282,7 +282,7 @@
           begin: regex.concat(
             /\b/,
             /(?!let\b|for\b|while\b|if\b|else\b|match\b|loop\b|return\b|abort\b|break\b|continue\b|use\b|module\b|struct\b|enum\b|fun\b|const\b|type\b|macro\b)/,
-            hljs2.IDENT_RE,
+            hljs.IDENT_RE,
             regex.lookahead(/\s*(?:<[^>]*>)?\s*\(/)
           )
         };
@@ -317,7 +317,7 @@
           aliases: ["sui-move", "move-sui", "sui", "move2024"],
           unicodeRegex: true,
           keywords: {
-            $pattern: `${hljs2.IDENT_RE}!?`,
+            $pattern: `${hljs.IDENT_RE}!?`,
             keyword: KEYWORDS,
             literal: LITERALS,
             type: TYPES,
@@ -350,9 +350,9 @@
           ]
         };
       }
-      function buildGrammarV10(hljs2) {
-        const BLOCK_COMMENT = hljs2.COMMENT(/\/\*/, /\*\//, { contains: ["self"] });
-        const DOC_COMMENT = hljs2.COMMENT(/\/\/\//, /$/, {
+      function buildGrammarV10(hljs) {
+        const BLOCK_COMMENT = hljs.COMMENT(/\/\*/, /\*\//, { contains: ["self"] });
+        const DOC_COMMENT = hljs.COMMENT(/\/\/\//, /$/, {
           contains: [
             {
               className: "doctag",
@@ -360,7 +360,7 @@
             }
           ]
         });
-        const LINE_COMMENT = hljs2.COMMENT(/\/\//, /$/, {});
+        const LINE_COMMENT = hljs.COMMENT(/\/\//, /$/, {});
         const BYTE_STRING = {
           className: "string",
           begin: /b"/,
@@ -559,7 +559,7 @@
           name: "Sui Move",
           aliases: ["sui-move", "move-sui", "sui", "move2024"],
           keywords: {
-            $pattern: `${hljs2.IDENT_RE}!?`,
+            $pattern: `${hljs.IDENT_RE}!?`,
             keyword: KEYWORDS.join(" "),
             literal: LITERALS.join(" "),
             type: TYPES.join(" "),
@@ -592,8 +592,8 @@
           ]
         };
       }
-      module.exports = function suiMove(hljs2) {
-        return hljs2.regex != null ? buildGrammarV11(hljs2) : buildGrammarV10(hljs2);
+      module.exports = function suiMove(hljs) {
+        return hljs.regex != null ? buildGrammarV11(hljs) : buildGrammarV10(hljs);
       };
     }
   });
@@ -602,28 +602,65 @@
   var require_mdbook_sui_bridge = __commonJS({
     "scripts/mdbook-sui-bridge.js"() {
       var suiMove = require_sui_move();
+      var PRIMARY = "sui-move";
+      var ALIASES = ["move-sui", "sui", "move2024", "move"];
+      var TARGET_LANG = { "sui-move": true, "move-sui": true, sui: true, move2024: true, move: true };
+      function hljsRef() {
+        return typeof globalThis !== "undefined" && globalThis.hljs ? globalThis.hljs : typeof window !== "undefined" && window.hljs ? window.hljs : void 0;
+      }
+      function highlightWithVersion(hljs, lang, text) {
+        var v = String(hljs.versionString || "10");
+        var major = parseInt(v.split(".")[0], 10);
+        if (Number.isNaN(major)) major = 10;
+        if (major >= 11) {
+          return hljs.highlight(text, { language: lang });
+        }
+        return hljs.highlight(lang, text);
+      }
       function run() {
-        if (typeof hljs === "undefined") {
+        var hljs = hljsRef();
+        if (!hljs) {
           console.warn("highlightjs-sui (mdbook): global hljs not found");
           return;
         }
-        hljs.registerLanguage("sui-move", suiMove);
-        hljs.registerLanguage("move-sui", suiMove);
-        hljs.registerLanguage("sui", suiMove);
-        hljs.registerLanguage("move2024", suiMove);
-        hljs.registerLanguage("move", suiMove);
+        try {
+          hljs.registerLanguage(PRIMARY, suiMove);
+          if (typeof hljs.registerAliases === "function") {
+            hljs.registerAliases(ALIASES, { languageName: PRIMARY });
+          } else {
+            ALIASES.forEach(function(name) {
+              hljs.registerLanguage(name, suiMove);
+            });
+          }
+        } catch (e) {
+          console.error("highlightjs-sui (mdbook): registerLanguage failed", e);
+          return;
+        }
         document.querySelectorAll("pre code").forEach(function(block) {
-          if (typeof hljs.highlightElement === "function") {
-            hljs.highlightElement(block);
-          } else if (typeof hljs.highlightBlock === "function") {
-            hljs.highlightBlock(block);
+          var m = block.className.match(/language-([\w-]+)\b/);
+          if (!m) return;
+          var lang = m[1];
+          if (!TARGET_LANG[lang]) return;
+          if (!hljs.getLanguage(lang)) return;
+          var text = block.textContent;
+          if (text === "") return;
+          try {
+            var result = highlightWithVersion(hljs, lang, text);
+            block.innerHTML = result.value;
+            block.className = "hljs language-" + lang;
+          } catch (e) {
+            console.warn("highlightjs-sui (mdbook): highlight failed for language " + lang, e);
           }
         });
       }
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", run);
-      } else {
+      function schedule() {
         run();
+        setTimeout(run, 0);
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", schedule);
+      } else {
+        schedule();
       }
     }
   });
