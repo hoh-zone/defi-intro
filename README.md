@@ -75,6 +75,8 @@ mdbook serve --open
 
 代码块中的 **Move / Sui Move** 语法高亮使用 [highlightjs-sui](https://github.com/hoh-zone/highlightjs-sui)。预构建脚本已提交在 `theme/highlight-sui-move.bundle.js`，一般无需安装 Node。若你升级了 `highlightjs-sui` 或修改了 `scripts/mdbook-sui-bridge.js`，请在仓库根目录执行 `npm install && npm run build:highlight` 再 `mdbook build`。
 
+**Mermaid**（` ```mermaid `、`graph LR` 等）由已提交的 `theme/mermaid.min.js` 与 `theme/mermaid-mdbook.js` 在浏览器端渲染；GitHub Actions 仅需 `mdbook build`，无需额外安装 `mdbook-mermaid`。
+
 正文里的 ` ```move ` 代码块与仓库内 `.move` 源文件统一使用 Mysten 的 **[@mysten/prettier-plugin-move](https://www.npmjs.com/package/@mysten/prettier-plugin-move)**（与 VS Code 扩展 **Move Formatter** 一致）。安装依赖后执行 `npm run format` 可批量格式化；编辑器侧建议安装扩展 `mysten.prettier-move` 与 `esbenp.prettier-vscode`，并启用保存时格式化（仓库已含 `.vscode/settings.json`）。
 
 ## 章节速查
