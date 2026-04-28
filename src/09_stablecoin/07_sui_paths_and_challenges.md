@@ -55,3 +55,110 @@ graph TD
 - **算法**：链上模块可以很薄，但**经济可持续**与**压力测试**才是主战场；勿与 CDP 的「可验证抵押」混为一谈。
 
 下一节（**9.8**）讨论从机制正确到**系统可信度**的完整框架。
+
+## 从教学到生产：CDP 协议的扩展方向
+
+本书的 `cdp_stablecoin` 代码是教学级实现。生产级 CDP 还需要考虑：
+
+### 多抵押品支持
+
+```move
+// 教学版：单一系统
+public struct CDPSystem<Collateral> has key { ... }
+
+// 生产版：注册表模式
+public struct StablecoinProtocol has key {
+    treasury: TreasuryCap<USDs>,
+    systems: Bag,                    // Collateral type → CDPSystem
+    global_debt_ceiling: u64,
+    global_debt: u64,
+}
+
+public fun register_collateral<T>(
+    _: &GovernanceCap,
+    protocol: &mut StablecoinProtocol,
+    params: CollateralParams,
+    ctx: &mut TxContext,
+) {
+    // 为每种抵押品创建独立系统
+    let system = CDPSystem<T> { ... };
+    dynamic_field::add(&mut protocol.systems, type_name<T>(), system);
+}
+```
+
+### 稳定费机制
+
+生产级 CDP 通常对债务收取稳定费（类似利率）：
+
+```move
+public struct CDPSystem<Collateral> has key {
+    // ... 其他字段
+    stability_fee_bps: u64,      // 年化稳定费（基点）
+    last_fee_epoch: u64,         // 上次收费 epoch
+    accrued_fees: Balance<USDs>, // 累积的费用
+}
+
+// 每次操作前调用，累积自上次以来的费用
+public fun accrue_fees<Collateral>(
+    system: &mut CDPSystem<Collateral>,
+    current_epoch: u64,
+) {
+    let epochs_elapsed = current_epoch - system.last_fee_epoch;
+    if (epochs_elapsed > 0) {
+        let fee = system.total_debt * system.stability_fee_bps * epochs_elapsed / (10000 * 365);
+        // 从债务中收取（增加 total_debt 或直接从 treasury 铸造）
+    }
+}
+```
+
+### 清算的深度分析
+
+清算不仅需要代码正确，还需要**市场结构**支持：
+
+```
+清算是否有效取决于：
+1. 清算人是否有利可图？
+   - 清算折扣 > Gas + 交易成本 + 滑点
+   - 如果折扣太低，清算人不会来
+   - 如果折扣太高，借款人损失过大
+
+2. 清算后的抵押品能否卖出？
+   - DEX 上是否有足够的流动性？
+   - 大量清算导致的价格冲击是否会制造更多坏账？
+
+3. 清算是否及时？
+   - 预言机延迟会导致清算滞后
+   - Gas 竞争可能导致清算交易被挤出
+   - 如果多个仓位同时需要清算，排队如何处理？
+```
+
+### 坏账处理
+
+当抵押品价值不足以覆盖债务时：
+
+```move
+public fun handle_bad_debt<Collateral>(
+    system: &mut CDPSystem<Collateral>,
+    treasury: &mut StableTreasury,
+    amount: u64,
+) {
+    // 从保险基金中吸收坏账
+    if (balance::value(&system.insurance_fund) >= amount) {
+        let bad_coins = coin::mint(&mut treasury.cap, amount, ctx);
+        coin::burn(bad_coins, &mut treasury.cap);
+        balance::join(&mut system.insurance_fund, /* 从保险基金取 */);
+    } else {
+        // 保险基金不足：稀释所有持有者（最后手段）
+        // 或者暂停协议等待治理决策
+    }
+}
+```
+
+坏账处理的策略决定了协议在极端行情下的韧性。每种策略都有利弊：
+
+| 策略           | 优点               | 缺点                       |
+| -------------- | ------------------ | -------------------------- |
+| 保险基金吸收   | 不影响其他用户     | 基金可能耗尽               |
+| 稀释铸造       | 分散到所有持有者   | 稳定币价值下降             |
+| 治理兜底       | 灵活               | 响应慢，依赖治理参与       |
+| 自动暂停       | 止损               | 无法应对正在发生的坏账     |
