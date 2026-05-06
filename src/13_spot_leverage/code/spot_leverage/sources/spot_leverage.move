@@ -6,12 +6,14 @@
 /// - 清算触发
 ///
 /// 注意：本实现为教学原型，省略了预言机集成、利率计算等生产级功能。
+#[allow(duplicate_alias, unused_const)]
 module spot_leverage::spot_leverage;
 
 use sui::balance::{Self, Balance};
 use sui::coin::{Self, Coin};
 use sui::event;
 use sui::object::{Self, UID};
+use sui::sui::SUI;
 use sui::transfer;
 use sui::tx_context::TxContext;
 
@@ -36,9 +38,9 @@ const EInvalidRepay: u64 = 6;
 public struct LeveragePool has key {
     id: UID,
     /// 可借出的 SUI 流动性
-    available: Balance<sui::SUI>,
+    available: Balance<SUI>,
     /// 累积的利息（教学简化）
-    interest_reserve: Balance<sui::SUI>,
+    interest_reserve: Balance<SUI>,
     /// 借贷利率（年化，基点）
     borrow_rate_bps: u64,
     /// 最低抵押率（基点，如 15000 = 150%）
@@ -53,7 +55,7 @@ public struct LeveragePool has key {
 public struct LeveragePosition has key, store {
     id: UID,
     /// 存入的 SUI 抵押品
-    collateral: Balance<sui::SUI>,
+    collateral: Balance<SUI>,
     /// 借出的 SUI 数量（债务）
     debt: u64,
     /// 仓位所有者
@@ -104,7 +106,7 @@ public struct PositionClosed has copy, drop {
 
 /// 创建杠杆池
 public fun create_pool(
-    initial liquidity: Coin<sui::SUI>,
+    initial_liquidity: Coin<SUI>,
     borrow_rate_bps: u64,
     min_collateral_ratio_bps: u64,
     liquidation_threshold_bps: u64,
@@ -113,7 +115,7 @@ public fun create_pool(
 ) {
     let pool = LeveragePool {
         id: object::new(ctx),
-        available: coin::into_balance(liquidity),
+        available: coin::into_balance(initial_liquidity),
         interest_reserve: balance::zero(),
         borrow_rate_bps,
         min_collateral_ratio_bps,
@@ -130,7 +132,7 @@ public fun create_pool(
 /// > liquidation_threshold_bps → 安全
 /// <= liquidation_threshold_bps → 可清算
 public fun health_factor_bps(
-    pool: &LeveragePool,
+    _pool: &LeveragePool,
     position: &LeveragePosition,
     sui_price_bps: u64, // SUI 相对自身为 10000（教学简化）
 ): u64 {
@@ -157,8 +159,8 @@ public fun is_healthy(
 
 /// 开仓：存入初始抵押品
 public fun open_position(
-    pool: &mut LeveragePool,
-    collateral: Coin<sui::SUI>,
+    _pool: &mut LeveragePool,
+    collateral: Coin<SUI>,
     ctx: &mut TxContext,
 ): LeveragePosition {
     let amount = coin::value(&collateral);
@@ -185,7 +187,7 @@ public fun open_position(
 public fun add_collateral(
     pool: &mut LeveragePool,
     position: &mut LeveragePosition,
-    collateral: Coin<sui::SUI>,
+    collateral: Coin<SUI>,
     sui_price_bps: u64,
     ctx: &TxContext,
 ) {
@@ -213,7 +215,7 @@ public fun borrow(
     amount: u64,
     sui_price_bps: u64,
     ctx: &mut TxContext,
-): Coin<sui::SUI> {
+): Coin<SUI> {
     assert!(amount > 0, EZeroAmount);
     assert!(ctx.sender() == position.owner, ENotOwner);
     assert!(balance::value(&pool.available) >= amount, EInsufficientLiquidity);
@@ -245,7 +247,7 @@ public fun borrow(
 public fun repay(
     pool: &mut LeveragePool,
     position: &mut LeveragePosition,
-    payment: Coin<sui::SUI>,
+    payment: Coin<SUI>,
     ctx: &TxContext,
 ) {
     assert!(ctx.sender() == position.owner, ENotOwner);
@@ -269,7 +271,7 @@ public fun repay(
 public fun close_position(
     pool: &mut LeveragePool,
     position: LeveragePosition,
-    payment: Coin<sui::SUI>,
+    payment: Coin<SUI>,
     ctx: &mut TxContext,
 ) {
     let LeveragePosition { id, collateral, debt, owner } = position;
@@ -291,7 +293,7 @@ public fun close_position(
         debt_repaid: debt,
     });
 
-    transfer::transfer(returned, owner);
+    transfer::public_transfer(returned, owner);
     object::delete(id);
 }
 
@@ -301,10 +303,10 @@ public fun close_position(
 public fun liquidate(
     pool: &mut LeveragePool,
     position: &mut LeveragePosition,
-    payment: Coin<sui::SUI>,
+    mut payment: Coin<SUI>,
     sui_price_bps: u64,
     ctx: &mut TxContext,
-): Coin<sui::SUI> {
+): Coin<SUI> {
     let pay_amount = coin::value(&payment);
 
     // 检查仓位是否可清算
@@ -318,7 +320,7 @@ public fun liquidate(
     // 计算可获取的抵押品（按比例 + 罚金）
     let collateral_to_seize = actual_repay * BPS / hf;
     let penalty = collateral_to_seize * pool.liquidation_penalty_bps / BPS;
-    let total_seize = collateral_to_seize + penalty;
+    let mut total_seize = collateral_to_seize + penalty;
 
     // 不能超过实际抵押品
     let total_collateral = balance::value(&position.collateral);
@@ -328,7 +330,7 @@ public fun liquidate(
 
     // 更新状态
     position.debt = position.debt - actual_repay;
-    let seized = balance::split(&mut position.collateral, total_seize);
+    let mut seized = balance::split(&mut position.collateral, total_seize);
 
     // 剩余的 payment 返还给清算人
     if (pay_amount > actual_repay) {
@@ -380,96 +382,76 @@ public fun leverage_bps(position: &LeveragePosition): u64 {
 
 // ============ Tests ============
 
+#[test_only]
+fun create_pool_for_testing(
+    initial_liquidity: Coin<SUI>,
+    borrow_rate_bps: u64,
+    min_collateral_ratio_bps: u64,
+    liquidation_threshold_bps: u64,
+    liquidation_penalty_bps: u64,
+    ctx: &mut TxContext,
+): LeveragePool {
+    LeveragePool {
+        id: object::new(ctx),
+        available: coin::into_balance(initial_liquidity),
+        interest_reserve: balance::zero(),
+        borrow_rate_bps,
+        min_collateral_ratio_bps,
+        liquidation_threshold_bps,
+        liquidation_penalty_bps,
+    }
+}
+
 #[test]
-fun test_open_position_and_borrow() {
-    use sui::sui::SUI;
-    use sui::test_scenario;
+fun open_position_and_borrow() {
+    use std::unit_test::destroy;
+    use sui::tx_context;
 
-    let admin = @0xAD;
-    let user = @0xB0B;
+    let mut ctx = tx_context::dummy();
+    let liquidity = coin::mint_for_testing<SUI>(100_000_000_000_000, &mut ctx);
+    let mut pool = create_pool_for_testing(liquidity, 500, 15000, 13000, 500, &mut ctx);
 
-    // 创建池子
-    let mut scenario = test_scenario::begin(admin);
-    let ctx = scenario.ctx();
-    let liquidity = coin::mint_for_testing<SUI>(100_000_000_000_000, ctx); // 100k SUI
-    create_pool(liquidity, 500, 15000, 13000, 500, ctx); // 5% 利率, 150% 最低抵押率, 130% 清算线, 5% 罚金
-
-    // 用户开仓
-    let mut scenario2 = test_scenario::begin(user);
-    let ctx2 = scenario2.ctx();
-    let pool = scenario2.take_shared::<LeveragePool>();
-    let collateral = coin::mint_for_testing<SUI>(10_000_000_000_000, ctx2); // 10k SUI
-    let mut position = open_position(&pool, collateral, ctx2);
+    let collateral = coin::mint_for_testing<SUI>(10_000_000_000_000, &mut ctx);
+    let mut position = open_position(&mut pool, collateral, &mut ctx);
 
     assert!(position_collateral(&position) == 10_000_000_000_000);
     assert!(position_debt(&position) == 0);
 
-    // 借出（最多借 10k * 10000 / 15000 = 6666.67 SUI）
-    let borrow_coin = coin::mint_for_testing<SUI>(6_000_000_000_000, ctx2); // 6k SUI
-    // 需要先给 pool 添加流动性... 简化：直接用 pool 中的
-    let borrowed = borrow(&mut pool, &mut position, 6_000_000_000_000, 10000, ctx2);
+    let borrowed = borrow(&mut pool, &mut position, 6_000_000_000_000, 10000, &mut ctx);
 
     assert!(coin::value(&borrowed) == 6_000_000_000_000);
     assert!(position_debt(&position) == 6_000_000_000_000);
 
-    // health_factor = 10k * 10000 / 6k = 16667 bps > 15000 ✓
     let hf = health_factor_bps(&pool, &position, 10000);
     assert!(hf >= 15000);
-
-    // 杠杆 = 10k / (10k - 6k) = 2.5x
     assert!(leverage_bps(&position) == 25000);
 
-    scenario2.return_shared(pool);
-    transfer::transfer(position, user);
-    coin::destroy_for_testing(borrowed);
-
-    scenario2.end();
-    scenario.end();
+    destroy(borrowed);
+    destroy(position);
+    destroy(pool);
 }
 
 #[test]
-fun test_liquidation() {
-    use sui::sui::SUI;
-    use sui::test_scenario;
+fun partial_liquidation_after_price_drop() {
+    use std::unit_test::destroy;
+    use sui::tx_context;
 
-    let admin = @0xAD;
-    let user = @0xB0B;
-    let liquidator = @0xC0F;
+    let mut ctx = tx_context::dummy();
+    let liquidity = coin::mint_for_testing<SUI>(100_000_000_000_000, &mut ctx);
+    let mut pool = create_pool_for_testing(liquidity, 500, 15000, 13000, 500, &mut ctx);
 
-    // 创建池子
-    let mut scenario = test_scenario::begin(admin);
-    let ctx = scenario.ctx();
-    let liquidity = coin::mint_for_testing<SUI>(100_000_000_000_000, ctx);
-    create_pool(liquidity, 500, 15000, 13000, 500, ctx);
+    let collateral = coin::mint_for_testing<SUI>(10_000_000_000_000, &mut ctx);
+    let mut position = open_position(&mut pool, collateral, &mut ctx);
+    let borrowed = borrow(&mut pool, &mut position, 6_500_000_000_000, 10000, &mut ctx);
+    destroy(borrowed);
 
-    // 用户开仓并借出
-    let mut scenario2 = test_scenario::begin(user);
-    let ctx2 = scenario2.ctx();
-    let pool = scenario2.take_shared::<LeveragePool>();
-    let collateral = coin::mint_for_testing<SUI>(10_000_000_000_000, ctx2);
-    let mut position = open_position(&pool, collateral, ctx2);
+    let payment = coin::mint_for_testing<SUI>(3_250_000_000_000, &mut ctx);
+    let seized = liquidate(&mut pool, &mut position, payment, 8000, &mut ctx);
 
-    // 借出 7k SUI（hf = 10k * 10000 / 7k = 14286 bps > 13000 但接近）
-    let _borrowed = borrow(&mut pool, &mut position, 7_000_000_000_000, 10000, ctx2);
+    assert!(position_debt(&position) == 3_250_000_000_000);
+    assert!(coin::value(&seized) > 0);
 
-    scenario2.return_shared(pool);
-    transfer::transfer(position, user);
-    coin::destroy_for_testing(_borrowed);
-    scenario2.end();
-
-    // 清算人检查：模拟价格下跌使 hf < 13000
-    // 10k * price / 7k < 13000 → price < 9100 bps
-    // 用 price = 9000 bps → hf = 10k * 9000 / 7k = 12857 bps < 13000 → 可清算
-
-    let mut scenario3 = test_scenario::begin(liquidator);
-    let ctx3 = scenario3.ctx();
-    let pool = scenario3.take_shared::<LeveragePool>();
-    let position = scenario3.take_from_sender::<LeveragePosition>();
-
-    // 注意：实际清算中 position 是用户的对象，这里简化测试
-    // 在生产环境中，清算人通过交易直接与共享池和用户 position 交互
-    scenario3.return_shared(pool);
-    scenario3.end();
-
-    scenario.end();
+    destroy(seized);
+    destroy(position);
+    destroy(pool);
 }

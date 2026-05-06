@@ -100,3 +100,34 @@ public fun confirm_swap<CoinIn, CoinOut>(
     assert!(balance::value(&out_acc) >= min_out, EBelowMinOut);
     (coin::from_balance(pending_in, ctx), coin::from_balance(out_acc, ctx))
 }
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fun confirm_swap_returns_pending_and_output() {
+    use std::string;
+    use std::unit_test::destroy;
+    use sui::sui::SUI;
+    use sui::tx_context;
+
+    let mut ctx = tx_context::dummy();
+    let input = coin::mint_for_testing<SUI>(100, &mut ctx);
+    let output = coin::mint_for_testing<SUI>(95, &mut ctx);
+
+    let mut sc = new_swap_context_v2<SUI, SUI>(
+        string::utf8(b"quote-1"),
+        100,
+        90,
+        input,
+        &mut ctx,
+    );
+    record_leg_output(&mut sc, output);
+
+    let (pending, out) = confirm_swap(sc, &mut ctx);
+    assert!(coin::value(&pending) == 100);
+    assert!(coin::value(&out) == 95);
+    destroy(pending);
+    destroy(out);
+}

@@ -26,6 +26,25 @@
 - **第 16 章 16.7**：保险视角的短引；**本章**给完整机制与代码。
 - **第 18–22 章**：在你会写合约之后，再用攻击与风控语言回看 Oracle 与治理。
 
+## 资金与事实流
+
+```mermaid
+flowchart TD
+    Creator["市场创建者"] --> Market["Market Object"]
+    Trader["交易者抵押品"] --> Split["Split / Buy"]
+    Split --> Vault["抵押金库"]
+    Split --> Position["YES / NO Position"]
+    Market --> LMSR["LMSR 成本函数"]
+    Position --> Trade["买入 / 卖出 / 合并"]
+    Oracle["Oracle / Resolver"] --> Dispute["争议窗口"]
+    Dispute --> Resolution["最终结果"]
+    Resolution --> Claim["Claim 赎回"]
+    Vault --> Claim
+    Claim --> Winner["胜出头寸持有人"]
+```
+
+预测市场的安全性来自三条线同时闭合：抵押进入金库，头寸变化保持完整抵押不变量，结果裁决经过明确的权限和争议窗口。只实现交易函数而忽略裁决和赎回，协议就没有完成。
+
 ## 代码包与阅读顺序
 
 - 源码：`src/17_prediction_market/code/prediction_market/sources/pm.move`
@@ -65,3 +84,31 @@ sui move build
 ## 免责声明
 
 书中代码为**教学强化版**，未经正式审计；主网部署前须完成外部审计、参数仿真、合规评估与运维预案。
+
+
+## 本章目标
+
+- 理解条件代币、完整抵押、LMSR 定价和链上裁决。
+- 掌握二元、多结果、Scalar 市场的对象与数学差异。
+- 能阅读预测市场 Move 包和 SUI/Pyth 全栈示例。
+- 识别 Oracle、争议窗口、流动性参数和 Claim 规则的风险。
+
+## 先修知识
+
+- 理解 AMM 成本函数、预言机信任边界和状态机。
+- 能阅读 Move 泛型和前端交易组装说明。
+
+## 本章小结
+
+预测市场把“未来事件”拆成可交易、可结算的头寸。技术难点不只在定价公式，还在抵押不变量、事实裁决、争议流程和用户能否最终按规则赎回资产。
+
+## 练习题
+
+1. 证明 1 抵押拆成 1 YES + 1 NO 后金库仍保持完整抵押。
+2. 解释 LMSR 的 b 参数如何影响流动性和价格敏感度。
+3. 为一个比赛胜负市场设计 Oracle 和争议窗口。
+4. 说明 Scalar 市场为什么通常需要离散桶或赔付表。
+
+## 下一章连接
+
+到这里已经能写多类协议；下一篇开始系统回看这些协议会怎样被攻击。

@@ -47,7 +47,7 @@ Redeem（赎回）:
   金库变化: -1 USDC
 ```
 
-## 为什么不直接用 Coin<YES> 和 Coin<NO>
+## 为什么不直接用 `Coin<YES>` 和 `Coin<NO>`
 
 在 Sui Move 中，动态创建新的 Coin 类型需要 OTW（One-Time Witness）。如果每个市场都要独立的 `Coin<YES_MARKET_42>` 类型，工程复杂度很高。
 

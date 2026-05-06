@@ -271,3 +271,4 @@
     - [附录 C Sui CLI 与开发环境](./appendix/03_tooling.md)
     - [附录 D 延展阅读与参考资料](./appendix/04_reading_list.md)
     - [附录 E 本书案例索引与代码仓库](./appendix/05_code_index.md)
+    - [附录 F 从合约到产品的交付闭环](./appendix/06_fullstack_delivery.md)

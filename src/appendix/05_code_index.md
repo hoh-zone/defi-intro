@@ -2,6 +2,26 @@
 
 ## 代码示例索引
 
+## 快速验证命令
+
+核心 Move 教学包都以章节内 `code/` 目录组织。单包验证统一使用：
+
+```bash
+cd src/<chapter>/code/<package>
+sui move build
+sui move test
+```
+
+本轮已补齐并验证的包：
+
+| 章节 | 包 | 测试覆盖 |
+| ---- | -- | -------- |
+| 第 6 章 | `06_aggregator/code/aggregator_router_tutorial` | SwapContext 构造、输出记录、confirm 返回值 |
+| 第 11 章 | `11_yield_strategy/code/yield_vault` | Vault 初始化、存取款份额与提款费 |
+| 第 13 章 | `13_spot_leverage/code/spot_leverage` | 开仓借款、健康因子、价格下跌后的部分清算 |
+
+TypeScript 示例统一使用 `npm install && npm run build` 验证；第 14 章套利脚本的运行说明见 `src/14_arbitrage/code/README.md`。
+
 ### AMM / DEX
 
 | 示例                | 位置        | 描述                                   |

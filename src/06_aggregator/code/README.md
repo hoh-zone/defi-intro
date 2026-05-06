@@ -4,11 +4,26 @@
 
 - **内容**：单模块 `router_tutorial`，实现 **教学用** `SwapContext`、`new_swap_context`、`new_swap_context_v2`（`max_in` 断言）、`record_leg_output`、`confirm_swap`。
 - **目的**：与书中 **6.3 节** 对照，理解链上上下文 **长什么样**；**不等于** Cetus 主网路由合约。
-- **构建**：`cd aggregator_router_tutorial && sui move build`
+- **验证**：
+
+```bash
+cd aggregator_router_tutorial
+sui move build
+sui move test
+```
+
+当前测试覆盖 `new_swap_context_v2`、`record_leg_output` 与 `confirm_swap` 的成功路径，确保上下文能返回剩余输入和累计输出。
 
 ## `aggregator_ts/`（遗留）
 
 - 早期多跳拆分示例，**SDK 版本可能较旧**，仅保留思路参考。
+- 可运行命令：
+
+```bash
+cd aggregator_ts
+npm install
+npm run build
+```
 
 ## 生产级参考
 

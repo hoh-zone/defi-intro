@@ -8,7 +8,7 @@
     "liquidation": "tsx src/liquidation_arbitrage.ts"
   },
   "dependencies": {
-    "@mysten/sui": "^0.55.0"
+    "@mysten/sui": "^2.15.0"
   },
   "devDependencies": {
     "typescript": "^5.5.0",

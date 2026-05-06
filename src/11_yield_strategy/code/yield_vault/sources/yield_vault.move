@@ -3,6 +3,7 @@
 /// - 份额代币模型（price_per_share 单调递增）
 /// - 自动复投逻辑（harvest）
 /// - 管理费与绩效费
+#[allow(duplicate_alias, unused_const)]
 module yield_vault::yield_vault;
 
 use sui::balance::{Self, Balance};
@@ -108,17 +109,17 @@ public fun create<Asset>(
     withdrawal_fee_bps: u64,
     performance_fee_bps: u64,
     ctx: &mut TxContext,
-) {
+): VaultAdminCap {
     let amount = coin::value(&initial);
     assert!(amount > 0, EZeroDeposit);
 
     let vault_id = object::new(ctx);
-    let vault_id_copy = object::uid_to_inner(vault_id);
+    let vault_id_copy = object::uid_to_inner(&vault_id);
 
     let vault = Vault<Asset> {
         id: vault_id,
         balance: coin::into_balance(initial),
-        total_shares: PRECISION, // 初始份额 = 初始金额（1:1）
+        total_shares: amount,
         strategy: Strategy {
             name: b"auto_compound",
             last_harvest_ms: 0,
@@ -137,8 +138,8 @@ public fun create<Asset>(
     };
 
     transfer::share_object(vault);
-    transfer::transfer(admin_cap, ctx.sender());
     event::emit(VaultCreated { vault_id: vault_id_copy });
+    admin_cap
 }
 
 // ============ View Functions ============
@@ -146,7 +147,8 @@ public fun create<Asset>(
 /// 每份额净值（以 Asset 的最小单位计）
 public fun price_per_share<Asset>(vault: &Vault<Asset>): u64 {
     if (vault.total_shares == 0) { return PRECISION };
-    balance::value(&vault.balance) * PRECISION / vault.total_shares
+    (((balance::value(&vault.balance) as u128) * (PRECISION as u128) /
+        (vault.total_shares as u128)) as u64)
 }
 
 /// Vault 管理的总资产
@@ -174,7 +176,8 @@ public fun deposit<Asset>(
     let shares = if (vault.total_shares == 0) {
         amount
     } else {
-        amount * vault.total_shares / balance::value(&vault.balance)
+        (((amount as u128) * (vault.total_shares as u128) /
+            (balance::value(&vault.balance) as u128)) as u64)
     };
     assert!(shares > 0, EZeroDeposit);
 
@@ -185,9 +188,7 @@ public fun deposit<Asset>(
 
     let receipt = VaultReceipt {
         id: object::new(ctx),
-        vault_id: object::uid_to_inner(object::uid_from_address(
-            object::id_as_address(object::id(vault))
-        )),
+        vault_id: object::id(vault),
         shares,
     };
 
@@ -214,7 +215,8 @@ public fun withdraw<Asset>(
     assert!(shares <= vault.total_shares, EInsufficientShares);
 
     // 计算赎回金额
-    let gross_amount = shares * balance::value(&vault.balance) / vault.total_shares;
+    let gross_amount = (((shares as u128) * (balance::value(&vault.balance) as u128) /
+        (vault.total_shares as u128)) as u64);
 
     // 扣除提款手续费
     let fee = gross_amount * vault.withdrawal_fee_bps / 10000;
@@ -226,7 +228,7 @@ public fun withdraw<Asset>(
     // 将手续费部分转入 fees_collected
     if (fee > 0) {
         balance::join(&mut vault.fees_collected, balance::split(&mut withdrawn, fee));
-    }
+    };
 
     vault.total_shares = vault.total_shares - shares;
     object::delete(id);
@@ -250,7 +252,7 @@ public fun harvest<Asset>(
     vault: &mut Vault<Asset>,
     profit: Coin<Asset>,
     clock_ms: u64,
-    ctx: &mut TxContext,
+    _ctx: &mut TxContext,
 ) {
     let profit_amount = coin::value(&profit);
     assert!(profit_amount > 0, EZeroProfit);
@@ -262,7 +264,7 @@ public fun harvest<Asset>(
     let mut profit_balance = coin::into_balance(profit);
     if (perf_fee > 0) {
         balance::join(&mut vault.fees_collected, balance::split(&mut profit_balance, perf_fee));
-    }
+    };
     balance::join(&mut vault.balance, profit_balance);
 
     // 更新策略统计
@@ -294,72 +296,81 @@ public fun collect_fees<Asset>(
 
 // ============ Tests ============
 
-#[test]
-fun test_create_vault() {
-    use sui::sui::SUI;
-    use sui::test_scenario;
+#[test_only]
+fun create_for_testing<Asset>(
+    initial: Coin<Asset>,
+    withdrawal_fee_bps: u64,
+    performance_fee_bps: u64,
+    ctx: &mut TxContext,
+): (Vault<Asset>, VaultAdminCap) {
+    let amount = coin::value(&initial);
+    assert!(amount > 0, EZeroDeposit);
 
-    let admin = @0xAD;
-    let mut scenario = test_scenario::begin(admin);
+    let vault_id = object::new(ctx);
+    let vault_id_copy = object::uid_to_inner(&vault_id);
 
-    // 创建 vault，初始存入 1000 SUI
-    let ctx = scenario.ctx();
-    let initial = coin::mint_for_testing<SUI>(1000_000_000_000, ctx);
-    create<SUI>(initial, 10, 1000, ctx); // 0.1% 提款费, 10% 绩效费
+    let vault = Vault<Asset> {
+        id: vault_id,
+        balance: coin::into_balance(initial),
+        total_shares: amount,
+        strategy: Strategy {
+            name: b"auto_compound",
+            last_harvest_ms: 0,
+            harvest_interval_ms: 86_400_000,
+            total_earned: 0,
+        },
+        withdrawal_fee_bps,
+        performance_fee_bps,
+        fees_collected: balance::zero(),
+        owner: ctx.sender(),
+    };
 
-    // 验证 vault 创建
-    let vault = scenario.take_shared::<Vault<SUI>>();
-    assert!(total_shares(&vault) == PRECISION);
-    assert!(total_assets(&vault) == 1000_000_000_000);
-    assert!(price_per_share(&vault) == PRECISION);
-    scenario.return_shared(vault);
+    let admin_cap = VaultAdminCap {
+        id: object::new(ctx),
+        vault_id: vault_id_copy,
+    };
 
-    scenario.end();
+    (vault, admin_cap)
 }
 
 #[test]
-fun test_deposit_and_withdraw() {
+fun create_vault() {
+    use std::unit_test::destroy;
     use sui::sui::SUI;
-    use sui::test_scenario;
+    use sui::tx_context;
 
-    let admin = @0xAD;
-    let user = @0xB0B;
-    let mut scenario = test_scenario::begin(admin);
+    let mut ctx = tx_context::dummy();
+    let initial = coin::mint_for_testing<SUI>(1000_000_000_000, &mut ctx);
+    let (vault, admin_cap) = create_for_testing<SUI>(initial, 10, 1000, &mut ctx);
 
-    // 创建 vault
-    let ctx = scenario.ctx();
-    let initial = coin::mint_for_testing<SUI>(1000_000_000_000, ctx);
-    create<SUI>(initial, 10, 1000, ctx); // 0.1% 提款费
+    assert!(total_shares(&vault) == 1000_000_000_000);
+    assert!(total_assets(&vault) == 1000_000_000_000);
+    assert!(price_per_share(&vault) == PRECISION);
+    destroy(vault);
+    destroy(admin_cap);
+}
 
-    // 用户存入 500 SUI
-    let mut scenario2 = test_scenario::begin(user);
-    let ctx2 = scenario2.ctx();
-    let deposit_coin = coin::mint_for_testing<SUI>(500_000_000_000, ctx2);
+#[test]
+fun deposit_and_withdraw() {
+    use std::unit_test::destroy;
+    use sui::sui::SUI;
+    use sui::tx_context;
 
-    let vault = scenario2.take_shared::<Vault<SUI>>();
-    let receipt = deposit(&vault, deposit_coin, ctx2);
+    let mut ctx = tx_context::dummy();
+    let initial = coin::mint_for_testing<SUI>(1000_000_000_000, &mut ctx);
+    let (mut vault, admin_cap) = create_for_testing<SUI>(initial, 10, 1000, &mut ctx);
 
-    // 份额应该是 500 * PRECISION / 1000 * PRECISION / 1000 = 500M?
-    // price_per_share = 1000B * 1B / 1B = 1B (PRECISION)
-    // shares = 500B * 1B / 1000B = 500M (PRECISION/2)
-    assert!(receipt.shares == PRECISION / 2);
-    assert!(total_shares(&vault) == PRECISION + PRECISION / 2);
-    scenario2.return_shared(vault);
-    transfer::transfer(receipt, user);
+    let deposit_coin = coin::mint_for_testing<SUI>(500_000_000_000, &mut ctx);
+    let receipt = deposit(&mut vault, deposit_coin, &mut ctx);
 
-    // 用户取款
-    let vault = scenario2.take_shared::<Vault<SUI>>();
-    let receipt = scenario2.take_from_sender::<VaultReceipt>();
-    let withdrawn = withdraw(&vault, receipt, ctx2);
+    assert!(receipt.shares == 500_000_000_000);
+    assert!(total_shares(&vault) == 1500_000_000_000);
+
+    let withdrawn = withdraw(&mut vault, receipt, &mut ctx);
     let withdrawn_amount = coin::value(&withdrawn);
 
-    // 500B * 1500B / 1500B = 500B (gross)
-    // fee = 500B * 10 / 10000 = 500M
-    // net = 500B - 500M = 499_500_000_000
     assert!(withdrawn_amount == 499_500_000_000);
-    scenario2.return_shared(vault);
-    coin::destroy_for_testing(withdrawn);
-
-    scenario2.end();
-    scenario.end();
+    destroy(withdrawn);
+    destroy(vault);
+    destroy(admin_cap);
 }
